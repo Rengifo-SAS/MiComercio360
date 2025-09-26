@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS customer_contacts (
     created_by UUID REFERENCES profiles (id),
     CONSTRAINT valid_contact_email CHECK (
         email IS NULL
-        OR email ~ * '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+        OR email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
     ),
     CONSTRAINT valid_contact_phone CHECK (
         phone IS NULL

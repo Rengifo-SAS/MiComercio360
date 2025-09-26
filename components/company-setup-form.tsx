@@ -16,7 +16,14 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { CIIU_CODES, TAX_REGIMES, DEPARTMENTS } from '@/lib/data/colombia-data';
 import { getMunicipalitiesByDepartment } from '@/lib/data/municipalities-data';
-import { Wallet, Building2, CreditCard } from 'lucide-react';
+import {
+  Wallet,
+  Building2,
+  CreditCard,
+  FileText,
+  Receipt,
+  Calculator,
+} from 'lucide-react';
 
 interface CompanySetupFormProps {
   className?: string;
@@ -493,6 +500,85 @@ export function CompanySetupForm({
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              </div>
+
+              {/* Sección de numeraciones por defecto */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">
+                    Numeraciones por Defecto
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Se crearán automáticamente las siguientes numeraciones para
+                    tu empresa:
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  <Card className="border-green-200 bg-green-50/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <FileText className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-green-900">
+                            Facturas de Venta
+                          </h4>
+                          <p className="text-sm text-green-700">
+                            FAC000001 - FAC999999
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-blue-200 bg-blue-50/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Receipt className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-blue-900">
+                            Recibos de Caja
+                          </h4>
+                          <p className="text-sm text-blue-700">
+                            REC000001 - REC999999
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-purple-200 bg-purple-50/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Calculator className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-purple-900">
+                            Cotizaciones
+                          </h4>
+                          <p className="text-sm text-purple-700">
+                            COT000001 - COT999999
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    <strong>Nota:</strong> También se crearán numeraciones para
+                    Comprobantes de Egreso, Notas Crédito, Notas Débito, Órdenes
+                    de Compra, Remisiones, Comprobantes de Pago y Notas de
+                    Ajuste. Todas iniciarán en 1 y podrás personalizarlas
+                    después.
+                  </p>
                 </div>
               </div>
 

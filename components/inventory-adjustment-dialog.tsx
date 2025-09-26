@@ -135,7 +135,7 @@ export function InventoryAdjustmentDialog({
           Ajustar
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="w-[95vw] max-w-md sm:w-[90vw] md:w-[80vw]">
         <DialogHeader>
           <DialogTitle>Ajuste de Inventario</DialogTitle>
           <DialogDescription>

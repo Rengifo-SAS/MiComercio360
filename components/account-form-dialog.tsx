@@ -71,6 +71,17 @@ export function AccountFormDialog({
     }
 
     if (account) {
+      // Convertir fecha de vencimiento de YYYY-MM-DD a MM/YY para mostrar
+      let displayExpiryDate = '';
+      if (account.card_expiry_date) {
+        const date = new Date(account.card_expiry_date);
+        if (!isNaN(date.getTime())) {
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear().toString().slice(-2);
+          displayExpiryDate = `${month}/${year}`;
+        }
+      }
+
       setFormData({
         account_name: account.account_name,
         account_number: account.account_number || '',
@@ -80,7 +91,7 @@ export function AccountFormDialog({
         routing_number: account.routing_number || '',
         card_number_last_four: account.card_number_last_four || '',
         card_holder_name: account.card_holder_name || '',
-        card_expiry_date: account.card_expiry_date || '',
+        card_expiry_date: displayExpiryDate,
         currency: account.currency,
         initial_balance: account.initial_balance,
         credit_limit: account.credit_limit || 0,
@@ -116,12 +127,82 @@ export function AccountFormDialog({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Función para convertir fecha de vencimiento MM/YY a YYYY-MM-DD
+  const convertExpiryDateToFullDate = (expiryDate: string): string => {
+    if (expiryDate.includes('/')) {
+      const [month, year] = expiryDate.split('/');
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+
+      // Validar mes (1-12)
+      if (monthNum < 1 || monthNum > 12) {
+        throw new Error('Mes inválido. Debe estar entre 01 y 12');
+      }
+
+      // Validar año (debe ser de 2 dígitos)
+      if (year.length !== 2) {
+        throw new Error('Año inválido. Debe ser de 2 dígitos (ej: 25)');
+      }
+
+      const fullYear = yearNum < 50 ? 2000 + yearNum : 1900 + yearNum;
+      return `${fullYear}-${month.padStart(2, '0')}-01`;
+    }
+    return expiryDate;
+  };
+
+  // Función para validar formato de fecha de vencimiento
+  const validateExpiryDate = (date: string): boolean => {
+    if (!date) return true; // Campo opcional
+
+    // Formato MM/YY
+    if (date.includes('/')) {
+      const [month, year] = date.split('/');
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+
+      return (
+        monthNum >= 1 &&
+        monthNum <= 12 &&
+        year.length === 2 &&
+        !isNaN(monthNum) &&
+        !isNaN(yearNum)
+      );
+    }
+
+    // Formato YYYY-MM
+    if (date.includes('-')) {
+      const [year, month] = date.split('-');
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+
+      return (
+        monthNum >= 1 &&
+        monthNum <= 12 &&
+        year.length === 4 &&
+        !isNaN(monthNum) &&
+        !isNaN(yearNum)
+      );
+    }
+
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
+      // Validar fecha de vencimiento si se proporciona
+      if (
+        formData.card_expiry_date &&
+        !validateExpiryDate(formData.card_expiry_date)
+      ) {
+        throw new Error(
+          'Formato de fecha de vencimiento inválido. Use MM/YY (ej: 12/25) o YYYY-MM (ej: 2025-12)'
+        );
+      }
+
       // Limpiar campos vacíos antes de enviar
       const cleanedFormData = {
         ...formData,
@@ -131,7 +212,15 @@ export function AccountFormDialog({
         routing_number: formData.routing_number || undefined,
         card_number_last_four: formData.card_number_last_four || undefined,
         card_holder_name: formData.card_holder_name || undefined,
-        card_expiry_date: formData.card_expiry_date || undefined,
+        card_expiry_date: formData.card_expiry_date
+          ? formData.card_expiry_date.includes('/')
+            ? // Convertir formato MM/YY a YYYY-MM-DD
+              convertExpiryDateToFullDate(formData.card_expiry_date)
+            : // Si ya está en formato YYYY-MM, agregar el día 01
+            formData.card_expiry_date.includes('-')
+            ? `${formData.card_expiry_date}-01`
+            : formData.card_expiry_date
+          : undefined,
         credit_limit: formData.credit_limit || undefined,
         description: formData.description || undefined,
         notes: formData.notes || undefined,
@@ -157,7 +246,7 @@ export function AccountFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
           <DialogTitle>
             {account ? 'Editar Cuenta' : 'Nueva Cuenta'}
@@ -360,12 +449,42 @@ export function AccountFormDialog({
                     </Label>
                     <Input
                       id="card_expiry_date"
-                      type="month"
+                      type="text"
                       value={formData.card_expiry_date}
-                      onChange={(e) =>
-                        handleInputChange('card_expiry_date', e.target.value)
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        // Formatear automáticamente como MM/YY
+                        if (
+                          value.length === 2 &&
+                          !value.includes('/') &&
+                          !value.includes('-')
+                        ) {
+                          value = value + '/';
+                        }
+                        handleInputChange('card_expiry_date', value);
+                      }}
+                      placeholder="MM/YY o YYYY-MM"
+                      maxLength={7}
+                      className={
+                        formData.card_expiry_date &&
+                        !validateExpiryDate(formData.card_expiry_date)
+                          ? 'border-red-500 focus:border-red-500'
+                          : ''
                       }
                     />
+                    <p
+                      className={`text-xs mt-1 ${
+                        formData.card_expiry_date &&
+                        !validateExpiryDate(formData.card_expiry_date)
+                          ? 'text-red-600'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {formData.card_expiry_date &&
+                      !validateExpiryDate(formData.card_expiry_date)
+                        ? 'Formato inválido. Use MM/YY (ej: 12/25) o YYYY-MM (ej: 2025-12)'
+                        : 'Formato: MM/YY (ej: 12/25) o YYYY-MM (ej: 2025-12)'}
+                    </p>
                   </div>
 
                   <div>

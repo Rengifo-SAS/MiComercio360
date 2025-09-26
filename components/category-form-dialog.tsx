@@ -161,7 +161,7 @@ export function CategoryFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] max-w-lg sm:w-[90vw] md:w-[80vw]">
         <DialogHeader>
           <DialogTitle>
             {category ? 'Editar Categoría' : 'Nueva Categoría'}

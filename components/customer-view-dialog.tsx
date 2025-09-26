@@ -106,7 +106,7 @@ export function CustomerViewDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

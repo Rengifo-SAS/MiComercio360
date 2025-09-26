@@ -188,7 +188,7 @@ export function SupplierFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
           <DialogTitle>
             {supplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}

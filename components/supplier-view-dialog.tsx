@@ -60,7 +60,7 @@ export function SupplierViewDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="w-[95vw] max-w-4xl sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />

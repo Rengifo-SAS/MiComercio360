@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { AccountsService } from '@/lib/services/accounts-service';
 import type { Account, AccountTransaction } from '@/lib/types/accounts';
+import { ReconciliationFormDialog } from '@/components/reconciliation-form-dialog';
+import { ReconciliationsList } from '@/components/reconciliations-list';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,6 +34,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   RefreshCw,
+  Calculator,
 } from 'lucide-react';
 
 interface AccountViewDialogProps {
@@ -47,6 +50,8 @@ export function AccountViewDialog({
 }: AccountViewDialogProps) {
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showReconciliationDialog, setShowReconciliationDialog] =
+    useState(false);
 
   useEffect(() => {
     if (account && open) {
@@ -135,7 +140,7 @@ export function AccountViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[85vw] lg:w-[80vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             {getAccountIcon(account.account_type)}
@@ -149,9 +154,10 @@ export function AccountViewDialog({
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="transactions">Transacciones</TabsTrigger>
+            <TabsTrigger value="reconciliations">Conciliaciones</TabsTrigger>
             <TabsTrigger value="details">Detalles</TabsTrigger>
           </TabsList>
 
@@ -356,6 +362,42 @@ export function AccountViewDialog({
             )}
           </TabsContent>
 
+          <TabsContent value="reconciliations" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium">Conciliaciones Bancarias</h3>
+              <Button
+                onClick={() => setShowReconciliationDialog(true)}
+                disabled={!account.requires_reconciliation}
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                Nueva Conciliación
+              </Button>
+            </div>
+
+            {!account.requires_reconciliation && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <div className="flex">
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">
+                      Conciliación no requerida
+                    </h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>
+                        Esta cuenta no requiere conciliación bancaria regular.
+                        Puedes habilitar esta funcionalidad editando la cuenta.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <ReconciliationsList
+              accountId={account.id}
+              accountName={account.account_name}
+            />
+          </TabsContent>
+
           <TabsContent value="details" className="space-y-4">
             <Card>
               <CardHeader>
@@ -479,6 +521,17 @@ export function AccountViewDialog({
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Diálogo de conciliación */}
+        <ReconciliationFormDialog
+          account={account}
+          open={showReconciliationDialog}
+          onOpenChange={setShowReconciliationDialog}
+          onSave={() => {
+            setShowReconciliationDialog(false);
+            // Aquí podrías agregar lógica para actualizar la lista de conciliaciones
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

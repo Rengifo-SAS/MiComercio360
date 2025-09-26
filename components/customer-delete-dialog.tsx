@@ -112,7 +112,7 @@ export function CustomerDeleteDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="w-[95vw] max-w-md sm:w-[90vw] md:w-[80vw]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-destructive/10 rounded-lg">

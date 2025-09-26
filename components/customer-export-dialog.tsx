@@ -180,7 +180,7 @@ export function CustomerExportDialog({ customers }: CustomerExportDialogProps) {
           Exportar
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] max-w-md sm:w-[90vw] md:w-[80vw]">
         <DialogHeader>
           <DialogTitle>Exportar Clientes</DialogTitle>
           <DialogDescription>

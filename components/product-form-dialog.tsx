@@ -25,6 +25,10 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Package } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { TaxesService } from '@/lib/services/taxes-service';
+import { Tax } from '@/lib/types/taxes';
+import { CostCentersService } from '@/lib/services/cost-centers-service';
+import { CostCenter } from '@/lib/types/cost-centers';
 
 interface Product {
   id?: string;
@@ -43,11 +47,10 @@ interface Product {
   is_active: boolean;
   initial_quantity?: number;
   // Campos fiscales colombianos
-  iva_rate: number;
-  ica_rate: number;
-  retencion_rate: number;
+  tax_id?: string;
   fiscal_classification: string;
-  excise_tax: boolean;
+  // Centro de costos
+  cost_center_id?: string;
 }
 
 interface Category {
@@ -84,6 +87,8 @@ export function ProductFormDialog({
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [taxes, setTaxes] = useState<Tax[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
 
   const [formData, setFormData] = useState<Product>({
     name: '',
@@ -100,12 +105,11 @@ export function ProductFormDialog({
     image_url: '',
     is_active: true,
     initial_quantity: 0,
-    iva_rate: 19,
-    ica_rate: 0,
-    retencion_rate: 0,
+    tax_id: '',
     fiscal_classification: 'Bien',
-    excise_tax: false,
+    cost_center_id: '',
   });
+  const [defaultTaxId, setDefaultTaxId] = useState<string>('');
 
   // Inicializar formulario cuando se abre el modal
   useEffect(() => {
@@ -119,11 +123,8 @@ export function ProductFormDialog({
         max_stock: product.max_stock || 0,
         image_url: product.image_url || '',
         initial_quantity: 0, // No es parte del producto existente
-        iva_rate: product.iva_rate || 19,
-        ica_rate: product.ica_rate || 0,
-        retencion_rate: product.retencion_rate || 0,
         fiscal_classification: product.fiscal_classification || 'Bien',
-        excise_tax: product.excise_tax || false,
+        cost_center_id: product.cost_center_id || '',
       });
     } else if (open && !product) {
       setFormData({
@@ -141,22 +142,34 @@ export function ProductFormDialog({
         image_url: '',
         is_active: true,
         initial_quantity: 0,
-        iva_rate: 19,
-        ica_rate: 0,
-        retencion_rate: 0,
+        tax_id: defaultTaxId || '', // Usar el IVA 19% por defecto
         fiscal_classification: 'Bien',
-        excise_tax: false,
+        cost_center_id: '',
       });
     }
-  }, [open, product]);
+  }, [open, product, defaultTaxId]);
 
   const router = useRouter();
   const supabase = createClient();
 
-  // Cargar categorías, proveedores y bodegas
+  // Cargar categorías, proveedores, bodegas e impuestos
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Obtener company_id del usuario
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile?.company_id) return;
+
         // Cargar categorías
         const { data: categoriesData } = await supabase
           .from('categories')
@@ -178,9 +191,34 @@ export function ProductFormDialog({
           .eq('is_active', true)
           .order('name');
 
+        // Cargar impuestos
+        const taxesData = await TaxesService.getActiveTaxes(profile.company_id);
+
+        // Cargar centros de costos
+        const costCentersData = await CostCentersService.getActiveCostCenters(
+          profile.company_id
+        );
+
         setCategories(categoriesData || []);
         setSuppliers(suppliersData || []);
         setWarehouses(warehousesData || []);
+        setTaxes(taxesData);
+        setCostCenters(costCentersData);
+
+        // Encontrar el IVA 19% y establecerlo como predeterminado
+        const iva19Tax = taxesData.find(
+          (tax) =>
+            tax.name === 'IVA 19%' &&
+            tax.tax_type === 'VAT' &&
+            tax.percentage === 19
+        );
+        if (iva19Tax) {
+          setDefaultTaxId(iva19Tax.id);
+          // Si no hay producto existente, establecer el IVA 19% como predeterminado
+          if (!product) {
+            setFormData((prev) => ({ ...prev, tax_id: iva19Tax.id }));
+          }
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       }
@@ -216,11 +254,8 @@ export function ProductFormDialog({
           image_url: '',
           is_active: true,
           initial_quantity: 0,
-          iva_rate: 19,
-          ica_rate: 0,
-          retencion_rate: 0,
           fiscal_classification: 'Bien',
-          excise_tax: false,
+          cost_center_id: '',
         });
       }
     }
@@ -230,6 +265,37 @@ export function ProductFormDialog({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validaciones
+    if (!formData.name.trim()) {
+      setError('El nombre del producto es requerido');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.sku.trim()) {
+      setError('El código SKU es requerido');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.tax_id) {
+      setError('Debe seleccionar un impuesto principal');
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.cost_price < 0) {
+      setError('El precio de costo no puede ser negativo');
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.selling_price < 0) {
+      setError('El precio de venta no puede ser negativo');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       if (product?.id) {
@@ -249,11 +315,9 @@ export function ProductFormDialog({
           p_unit: formData.unit,
           p_image_url: formData.image_url || null,
           p_is_active: formData.is_active,
-          p_iva_rate: formData.iva_rate,
-          p_ica_rate: formData.ica_rate,
-          p_retencion_rate: formData.retencion_rate,
           p_fiscal_classification: formData.fiscal_classification,
-          p_excise_tax: formData.excise_tax,
+          p_tax_id: formData.tax_id || null,
+          p_cost_center_id: formData.cost_center_id || null,
         });
 
         if (rpcError) {
@@ -281,11 +345,9 @@ export function ProductFormDialog({
             p_unit: formData.unit,
             p_image_url: formData.image_url || null,
             p_initial_quantity: formData.initial_quantity || 0,
-            p_iva_rate: formData.iva_rate,
-            p_ica_rate: formData.ica_rate,
-            p_retencion_rate: formData.retencion_rate,
             p_fiscal_classification: formData.fiscal_classification,
-            p_excise_tax: formData.excise_tax,
+            p_tax_id: formData.tax_id || null,
+            p_cost_center_id: formData.cost_center_id || null,
           }
         );
 
@@ -310,7 +372,7 @@ export function ProductFormDialog({
     }
   };
 
-  const handleInputChange = (field: keyof Product, value: any) => {
+  const handleInputChange = (field: keyof Product, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -327,7 +389,7 @@ export function ProductFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
           <DialogTitle>
             {product ? 'Editar Producto' : 'Nuevo Producto'}
@@ -605,72 +667,81 @@ export function ProductFormDialog({
               </div>
             )}
 
-            {/* Campos fiscales colombianos */}
+            {/* Centro de costos */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Centro de Costos
+              </h4>
+              <div className="space-y-2">
+                <Label htmlFor="cost_center_id">Centro de Costos</Label>
+                <Select
+                  value={formData.cost_center_id || ''}
+                  onValueChange={(value: string) =>
+                    handleInputChange('cost_center_id', value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un centro de costos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {costCenters.map((costCenter) => (
+                      <SelectItem key={costCenter.id} value={costCenter.id}>
+                        {costCenter.code} - {costCenter.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Asigna este producto a un centro de costos para control
+                  presupuestario
+                </p>
+              </div>
+            </div>
+
+            {/* Información Fiscal (Colombia) */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground">
                 Información Fiscal (Colombia)
               </h4>
 
-              {/* IVA, ICA y Retención */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="iva_rate">IVA (%)</Label>
-                  <Select
-                    value={formData.iva_rate?.toString() || '0'}
-                    onValueChange={(value: string) =>
-                      handleInputChange('iva_rate', parseFloat(value))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">0% - Exento</SelectItem>
-                      <SelectItem value="5">5% - Reducido</SelectItem>
-                      <SelectItem value="19">19% - General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ica_rate">ICA (%)</Label>
-                  <Input
-                    id="ica_rate"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={formData.ica_rate}
-                    onChange={(e) =>
-                      handleInputChange(
-                        'ica_rate',
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="retencion_rate">Retención (%)</Label>
-                  <Input
-                    id="retencion_rate"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={formData.retencion_rate}
-                    onChange={(e) =>
-                      handleInputChange(
-                        'retencion_rate',
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    placeholder="0.00"
-                  />
-                </div>
+              {/* Impuesto Principal */}
+              <div className="space-y-2">
+                <Label htmlFor="tax_id">Impuesto Principal *</Label>
+                <Select
+                  value={formData.tax_id || ''}
+                  onValueChange={(value: string) =>
+                    handleInputChange('tax_id', value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un impuesto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taxes.map((tax) => (
+                      <SelectItem key={tax.id} value={tax.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{tax.name}</span>
+                          <span className="text-muted-foreground ml-2">
+                            {tax.percentage.toFixed(2)}%
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecciona el impuesto principal que se aplicará a este
+                  producto
+                </p>
               </div>
 
-              {/* Clasificación fiscal e impuesto al consumo */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Información adicional del producto */}
+              <div className="space-y-4">
+                <div className="text-sm font-medium text-muted-foreground">
+                  Información Adicional
+                </div>
+
+                {/* Clasificación fiscal */}
                 <div className="space-y-2">
                   <Label htmlFor="fiscal_classification">
                     Clasificación Fiscal
@@ -695,16 +766,9 @@ export function ProductFormDialog({
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="flex items-center space-x-2 pt-6">
-                  <Switch
-                    id="excise_tax"
-                    checked={formData.excise_tax}
-                    onCheckedChange={(checked: boolean) =>
-                      handleInputChange('excise_tax', checked)
-                    }
-                  />
-                  <Label htmlFor="excise_tax">Impuesto al Consumo</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Clasificación fiscal del producto para efectos contables
+                  </p>
                 </div>
               </div>
             </div>
