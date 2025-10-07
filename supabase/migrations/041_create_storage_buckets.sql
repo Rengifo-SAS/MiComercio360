@@ -2,34 +2,16 @@
 -- 041_create_storage_buckets.sql
 
 -- Crear bucket para assets de empresa (logos, documentos, etc.)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'company-assets',
-  'company-assets',
-  true,
-  52428800, -- 50MB
-  ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
-);
+INSERT INTO storage.buckets (id, name)
+VALUES ('company-assets', 'company-assets');
 
 -- Crear bucket para productos (imágenes de productos)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'product-images',
-  'product-images',
-  true,
-  10485760, -- 10MB
-  ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-);
+INSERT INTO storage.buckets (id, name)
+VALUES ('product-images', 'product-images');
 
 -- Crear bucket para documentos (facturas, recibos, etc.)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'documents',
-  'documents',
-  false,
-  104857600, -- 100MB
-  ARRAY['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-);
+INSERT INTO storage.buckets (id, name)
+VALUES ('documents', 'documents');
 
 -- Crear políticas RLS para company-assets
 CREATE POLICY "Users can view company assets" ON storage.objects FOR

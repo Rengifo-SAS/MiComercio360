@@ -244,17 +244,17 @@ export function PrintTemplateDeleteDialog({
             disabled={
               loading ||
               loadingValidation ||
-              (validationInfo && !validationInfo.canDelete)
+              (validationInfo !== null && !validationInfo.canDelete)
             }
             title={
-              validationInfo && !validationInfo.canDelete
+              validationInfo !== null && !validationInfo.canDelete
                 ? validationInfo.reason || 'No se puede eliminar esta plantilla'
                 : 'Eliminar la plantilla'
             }
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
-            {validationInfo && !validationInfo.canDelete
+            {validationInfo !== null && !validationInfo.canDelete
               ? 'No se puede eliminar'
               : 'Eliminar Plantilla'}
           </Button>

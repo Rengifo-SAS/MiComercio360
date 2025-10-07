@@ -320,17 +320,17 @@ export function NumerationDeleteDialog({
             disabled={
               loading ||
               loadingValidation ||
-              (validationInfo && !validationInfo.canDelete)
+              (validationInfo !== null && !validationInfo.canDelete)
             }
             title={
-              validationInfo && !validationInfo.canDelete
+              validationInfo !== null && !validationInfo.canDelete
                 ? 'No se puede eliminar esta numeración'
                 : 'Eliminar la numeración'
             }
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
-            {validationInfo && !validationInfo.canDelete
+            {validationInfo !== null && !validationInfo.canDelete
               ? 'No se puede eliminar'
               : 'Eliminar Numeración'}
           </Button>

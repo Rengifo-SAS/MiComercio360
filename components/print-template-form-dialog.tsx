@@ -94,6 +94,17 @@ export function PrintTemplateFormDialog({
     font_family: 'Arial',
     font_size: 12.0,
     line_height: 1.2,
+    template_style: 'CLASSIC',
+    font_type: 'HELVETICA',
+    font_size_preset: 'NORMAL',
+    item_spacing: 1,
+    show_total_items: true,
+    third_party_income: false,
+    taxes_included: true,
+    show_discount_column: true,
+    show_tax_value_column: true,
+    show_tax_percentage_column: true,
+    show_unit_measure_column: true,
     header_template: '',
     body_template: '',
     footer_template: '',
@@ -132,6 +143,18 @@ export function PrintTemplateFormDialog({
           font_family: template.font_family,
           font_size: template.font_size,
           line_height: template.line_height,
+          template_style: template.template_style || 'CLASSIC',
+          font_type: template.font_type || 'HELVETICA',
+          font_size_preset: template.font_size_preset || 'NORMAL',
+          item_spacing: template.item_spacing || 1,
+          show_total_items: template.show_total_items || true,
+          third_party_income: template.third_party_income || false,
+          taxes_included: template.taxes_included || true,
+          show_discount_column: template.show_discount_column || true,
+          show_tax_value_column: template.show_tax_value_column || true,
+          show_tax_percentage_column:
+            template.show_tax_percentage_column || true,
+          show_unit_measure_column: template.show_unit_measure_column || true,
           header_template: template.header_template || '',
           body_template: template.body_template,
           footer_template: template.footer_template || '',
@@ -164,6 +187,17 @@ export function PrintTemplateFormDialog({
           font_family: 'Arial',
           font_size: 12.0,
           line_height: 1.2,
+          template_style: 'CLASSIC',
+          font_type: 'HELVETICA',
+          font_size_preset: 'NORMAL',
+          item_spacing: 1,
+          show_total_items: true,
+          third_party_income: false,
+          taxes_included: true,
+          show_discount_column: true,
+          show_tax_value_column: true,
+          show_tax_percentage_column: true,
+          show_unit_measure_column: true,
           header_template: '',
           body_template: '',
           footer_template: '',
@@ -260,12 +294,19 @@ export function PrintTemplateFormDialog({
 
   const handleDocumentTypeChange = (type: TemplateDocumentType) => {
     const typeInfo = getDocumentTypeInfo(type);
-    setFormData((prev) => ({
-      ...prev,
-      document_type: type,
-      paper_size: typeInfo.defaultPaperSize,
-      page_orientation: typeInfo.defaultOrientation,
-    }));
+    if (typeInfo) {
+      setFormData((prev) => ({
+        ...prev,
+        document_type: type,
+        paper_size: typeInfo.defaultPaperSize,
+        page_orientation: typeInfo.defaultOrientation,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        document_type: type,
+      }));
+    }
   };
 
   const getDocumentTypeIcon = (type: TemplateDocumentType) => {
@@ -287,7 +328,7 @@ export function PrintTemplateFormDialog({
       TrendingUp,
       File,
     };
-    return iconMap[typeInfo.icon] || FileText;
+    return typeInfo ? iconMap[typeInfo.icon] || FileText : FileText;
   };
 
   const DocumentTypeIcon = getDocumentTypeIcon(formData.document_type);
@@ -358,7 +399,7 @@ export function PrintTemplateFormDialog({
                           <SelectItem key={type} value={type}>
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4" />
-                              {typeInfo.label}
+                              {typeInfo?.label || type}
                             </div>
                           </SelectItem>
                         );

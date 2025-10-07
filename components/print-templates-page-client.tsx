@@ -64,12 +64,21 @@ import {
 import { PrintTemplateFormDialog } from './print-template-form-dialog';
 import { PrintTemplateViewDialog } from './print-template-view-dialog';
 import { PrintTemplateDeleteDialog } from './print-template-delete-dialog';
+import { TemplateEditor, TemplateConfig } from './template-editor';
 import { createClient } from '@/lib/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export function PrintTemplatesPageClient() {
-  const [templates, setTemplates] = useState<PrintTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PrintTemplatesPageClientProps {
+  companyId: string;
+  initialTemplates?: PrintTemplate[];
+}
+
+export function PrintTemplatesPageClient({
+  companyId,
+  initialTemplates = [],
+}: PrintTemplatesPageClientProps) {
+  const [templates, setTemplates] = useState<PrintTemplate[]>(initialTemplates);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<TemplateDocumentType | 'all'>(
@@ -81,9 +90,13 @@ export function PrintTemplatesPageClient() {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<PrintTemplate | null>(null);
+  const [selectedDocumentType, setSelectedDocumentType] =
+    useState<TemplateDocumentType>('INVOICE');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [companyData, setCompanyData] = useState<any>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -91,29 +104,8 @@ export function PrintTemplatesPageClient() {
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError('Usuario no autenticado');
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.company_id) {
-        setError('No se encontró la compañía del usuario.');
-        setLoading(false);
-        return;
-      }
-
       const fetchedTemplates = await PrintTemplatesService.getTemplates(
-        profile.company_id
+        companyId
       );
       setTemplates(fetchedTemplates);
     } catch (err) {
@@ -126,9 +118,30 @@ export function PrintTemplatesPageClient() {
     }
   };
 
+  const loadCompanyData = async () => {
+    try {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (company) {
+        setCompanyData(company);
+      }
+    } catch (error) {
+      console.error('Error cargando datos de la empresa:', error);
+    }
+  };
+
   useEffect(() => {
     setIsHydrated(true);
-    loadTemplates();
+    // Cargar datos de la empresa
+    loadCompanyData();
+    // Solo cargar si no tenemos datos iniciales
+    if (initialTemplates.length === 0) {
+      loadTemplates();
+    }
   }, []);
 
   // Efecto para limpiar atributos de extensiones del navegador
@@ -170,7 +183,12 @@ export function PrintTemplatesPageClient() {
       (filterStatus === 'active' && template.is_active) ||
       (filterStatus === 'inactive' && !template.is_active);
 
-    return matchesSearch && matchesType && matchesStatus;
+    // Solo mostrar plantillas con tipos de documentos válidos
+    const isValidDocumentType = PrintDocumentTypeValues.includes(
+      template.document_type
+    );
+
+    return matchesSearch && matchesType && matchesStatus && isValidDocumentType;
   });
 
   const handleNewTemplate = () => {
@@ -224,8 +242,74 @@ export function PrintTemplatesPageClient() {
     }
   };
 
+  const handleOpenTemplateEditor = async (
+    documentType: TemplateDocumentType
+  ) => {
+    setSelectedDocumentType(documentType);
+
+    // Buscar si ya existe una plantilla para este tipo de documento
+    try {
+      const existingTemplates = await PrintTemplatesService.getTemplates(
+        companyId
+      );
+      const template = existingTemplates.find(
+        (t) => t.document_type === documentType
+      );
+      setSelectedTemplate(template || null);
+    } catch (error) {
+      console.error('Error buscando plantilla existente:', error);
+      setSelectedTemplate(null);
+    }
+
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleCloseTemplateEditor = () => {
+    setIsTemplateEditorOpen(false);
+    setSelectedTemplate(null);
+  };
+
+  const handleSaveTemplateConfig = async (config: TemplateConfig) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Guardar la configuración usando el servicio
+      await PrintTemplatesService.createOrUpdateTemplateConfig(
+        selectedDocumentType,
+        {
+          templateStyle: config.templateStyle,
+          fontType: config.fontType,
+          fontSizePreset: config.fontSizePreset,
+          itemSpacing: config.itemSpacing,
+          showTotalItems: config.showTotalItems,
+          thirdPartyIncome: config.thirdPartyIncome,
+          taxesIncluded: config.taxesIncluded,
+          showDiscountColumn: config.showDiscountColumn,
+          showTaxValueColumn: config.showTaxValueColumn,
+          showTaxPercentageColumn: config.showTaxPercentageColumn,
+          showUnitMeasureColumn: config.showUnitMeasureColumn,
+        }
+      );
+
+      setIsTemplateEditorOpen(false);
+      loadTemplates();
+    } catch (error) {
+      console.error('Error guardando configuración:', error);
+      setError('Error al guardar la configuración de la plantilla');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getDocumentTypeIcon = (type: TemplateDocumentType) => {
     const typeInfo = getDocumentTypeInfo(type);
+    if (!typeInfo) {
+      console.warn(
+        `No se encontró información para el tipo de documento: ${type}`
+      );
+      return FileText;
+    }
     const iconMap: Record<
       string,
       React.ComponentType<{ className?: string }>
@@ -269,16 +353,40 @@ export function PrintTemplatesPageClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">Plantillas de Impresión</h2>
-        <Button onClick={handleNewTemplate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Plantilla
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleNewTemplate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Plantilla
+          </Button>
+        </div>
       </div>
 
       <p className="text-muted-foreground">
         Gestiona las plantillas de impresión para diferentes tipos de documentos
         de tu empresa.
       </p>
+
+      {/* Document Type Buttons */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {PrintDocumentTypeValues.map((type) => {
+          const typeInfo = getDocumentTypeInfo(type);
+          const Icon = getDocumentTypeIcon(type);
+          if (!typeInfo) return null;
+          return (
+            <Button
+              key={type}
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-muted"
+              onClick={() => handleOpenTemplateEditor(type)}
+            >
+              <div className={`p-2 rounded-lg ${typeInfo.color} text-white`}>
+                <Icon className="h-6 w-6" />
+              </div>
+              <span className="text-sm font-medium">{typeInfo.label}</span>
+            </Button>
+          );
+        })}
+      </div>
 
       <div
         ref={searchContainerRef}
@@ -309,6 +417,7 @@ export function PrintTemplatesPageClient() {
             {PrintDocumentTypeValues.map((type) => {
               const typeInfo = getDocumentTypeInfo(type);
               const Icon = getDocumentTypeIcon(type);
+              if (!typeInfo) return null;
               return (
                 <SelectItem key={type} value={type}>
                   <div className="flex items-center gap-2">
@@ -371,6 +480,7 @@ export function PrintTemplatesPageClient() {
           const paperInfo = getPaperSizeInfo(template.paper_size);
           const orientationInfo = getOrientationInfo(template.page_orientation);
           const Icon = getDocumentTypeIcon(template.document_type);
+          if (!typeInfo) return null;
 
           return (
             <Card key={template.id} className="flex flex-col">
@@ -513,6 +623,16 @@ export function PrintTemplatesPageClient() {
           setIsDeleteDialogOpen(false);
           loadTemplates();
         }}
+      />
+
+      <TemplateEditor
+        documentType={selectedDocumentType}
+        isOpen={isTemplateEditorOpen}
+        onClose={handleCloseTemplateEditor}
+        onSave={handleSaveTemplateConfig}
+        loading={loading}
+        existingTemplate={selectedTemplate}
+        companyData={companyData}
       />
     </div>
   );

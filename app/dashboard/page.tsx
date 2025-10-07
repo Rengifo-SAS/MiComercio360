@@ -23,12 +23,15 @@ import {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) {
     redirect('/auth/login');
   }
 
-  const userId = data.claims.sub;
+  const userId = user.id;
   const setupStatus = await checkCompanySetup(userId);
 
   // Si no está configurado, redirigir a la configuración

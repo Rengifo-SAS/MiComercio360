@@ -22,12 +22,18 @@ interface InventoryActionsBarProps {
   warehouses: Warehouse[];
   categories: Category[];
   inventoryData?: any[];
+  companyId: string;
+  onDataChange?: (data: any[]) => void;
+  onStatsChange?: (stats: any) => void;
 }
 
 export function InventoryActionsBar({
   warehouses,
   categories,
   inventoryData = [],
+  companyId,
+  onDataChange,
+  onStatsChange,
 }: InventoryActionsBarProps) {
   const [filters, setFilters] = useState({
     search: '',
@@ -60,8 +66,9 @@ export function InventoryActionsBar({
       <InventorySearchFilter
         warehouses={warehouses}
         categories={categories}
-        onFiltersChange={handleFiltersChange}
-        onSearch={handleSearch}
+        companyId={companyId}
+        onDataChange={onDataChange}
+        onStatsChange={onStatsChange}
       />
       <div className="flex items-center gap-2">
         <InventoryExportDialog

@@ -232,6 +232,9 @@ export function InventoryPageClient({
           warehouses={warehouses}
           categories={categories}
           inventoryData={inventoryData}
+          companyId={companyId}
+          onDataChange={handleDataChange}
+          onStatsChange={handleStatsChange}
         />
       </div>
 

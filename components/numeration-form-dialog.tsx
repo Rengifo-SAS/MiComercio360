@@ -201,9 +201,11 @@ export function NumerationFormDialog({
 
   // Generar vista previa del número
   const generatePreview = () => {
-    const formattedNumber = formData.current_number
+    const currentNumber = formData.current_number || 1;
+    const numberLength = formData.number_length || 4;
+    const formattedNumber = currentNumber
       .toString()
-      .padStart(formData.number_length, '0');
+      .padStart(numberLength, '0');
     return `${formData.prefix}${formattedNumber}${formData.suffix}`;
   };
 

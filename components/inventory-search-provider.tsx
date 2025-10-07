@@ -8,21 +8,33 @@ import {
 } from '@/lib/hooks/use-inventory-search';
 
 interface InventorySearchContextType {
-  inventory: InventoryItem[];
+  data: InventoryItem[];
+  stats: any;
+  suggestions: any[];
   loading: boolean;
   error: string | null;
   filters: SearchFilters;
+  search: (filters: SearchFilters) => void;
   updateFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
-  searchInventory: (filters: SearchFilters) => void;
+  quickSearch: (searchTerm: string) => void;
+  getSuggestions: (searchTerm: string) => Promise<void>;
 }
 
 const InventorySearchContext = createContext<
   InventorySearchContextType | undefined
 >(undefined);
 
-export function InventorySearchProvider({ children }: { children: ReactNode }) {
-  const searchData = useInventorySearch();
+interface InventorySearchProviderProps {
+  children: ReactNode;
+  companyId: string;
+}
+
+export function InventorySearchProvider({
+  children,
+  companyId,
+}: InventorySearchProviderProps) {
+  const searchData = useInventorySearch(companyId);
 
   return (
     <InventorySearchContext.Provider value={searchData}>

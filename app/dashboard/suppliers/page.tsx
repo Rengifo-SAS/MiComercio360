@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { RouteGuard } from '@/components/route-guard';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import {
   Card,
@@ -58,6 +59,9 @@ export default async function SuppliersPage() {
   const suppliersWithPhone = suppliers?.filter((s) => s.phone).length || 0;
 
   return (
+
+
+    <RouteGuard requiredPermission="suppliers.read">
     <div className="flex-1 w-full flex flex-col gap-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -249,5 +253,7 @@ export default async function SuppliersPage() {
         </CardContent>
       </Card>
     </div>
+    </RouteGuard>
+
   );
 }

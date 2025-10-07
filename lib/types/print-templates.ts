@@ -4,30 +4,16 @@
 export type TemplateDocumentType = 
   | 'INVOICE'           // Factura de venta
   | 'QUOTATION'         // Cotización
-  | 'RECEIPT'           // Recibo de caja
-  | 'PURCHASE_ORDER'    // Orden de compra
   | 'DELIVERY_NOTE'     // Remisión
-  | 'CREDIT_NOTE'       // Nota crédito
-  | 'DEBIT_NOTE'        // Nota débito
-  | 'PAYMENT_VOUCHER'   // Comprobante de pago
-  | 'EXPENSE_VOUCHER'   // Comprobante de egreso
-  | 'INVENTORY_REPORT'  // Reporte de inventario
-  | 'SALES_REPORT'      // Reporte de ventas
-  | 'OTHER';            // Otros documentos
+  | 'TRANSACTION'       // Transacción
+  | 'PURCHASE_ORDER';   // Orden de compra
 
 export const PrintDocumentTypeValues: TemplateDocumentType[] = [
   'INVOICE',
   'QUOTATION',
-  'RECEIPT',
-  'PURCHASE_ORDER',
   'DELIVERY_NOTE',
-  'CREDIT_NOTE',
-  'DEBIT_NOTE',
-  'PAYMENT_VOUCHER',
-  'EXPENSE_VOUCHER',
-  'INVENTORY_REPORT',
-  'SALES_REPORT',
-  'OTHER'
+  'TRANSACTION',
+  'PURCHASE_ORDER'
 ];
 
 export type PaperSize = 
@@ -56,6 +42,50 @@ export const PageOrientationValues: PageOrientation[] = [
   'LANDSCAPE'
 ];
 
+// Tipos para configuración de plantillas
+export type TemplateStyle = 
+  | 'CLASSIC'      // Clásico (Carta electrónica)
+  | 'MODERN'       // Moderno
+  | 'MINIMAL'      // Minimalista
+  | 'CORPORATE';   // Corporativo
+
+export const TemplateStyleValues: TemplateStyle[] = [
+  'CLASSIC',
+  'MODERN',
+  'MINIMAL',
+  'CORPORATE'
+];
+
+export type FontType = 
+  | 'HELVETICA'    // Helvetica
+  | 'ARIAL'        // Arial
+  | 'TIMES'        // Times New Roman
+  | 'CALIBRI'      // Calibri
+  | 'GEORGIA'      // Georgia
+  | 'VERDANA';     // Verdana
+
+export const FontTypeValues: FontType[] = [
+  'HELVETICA',
+  'ARIAL',
+  'TIMES',
+  'CALIBRI',
+  'GEORGIA',
+  'VERDANA'
+];
+
+export type FontSize = 
+  | 'SMALL'        // Pequeño
+  | 'NORMAL'       // Normal
+  | 'LARGE'        // Grande
+  | 'EXTRA_LARGE'; // Extra Grande
+
+export const FontSizeValues: FontSize[] = [
+  'SMALL',
+  'NORMAL',
+  'LARGE',
+  'EXTRA_LARGE'
+];
+
 export type ChangeType = 
   | 'CREATED'      // Creado
   | 'UPDATED'      // Actualizado
@@ -64,6 +94,7 @@ export type ChangeType =
   | 'DELETED';     // Eliminado
 
 export interface PrintTemplate {
+  [key: string]: unknown;
   id: string;
   company_id: string;
   name: string;
@@ -88,6 +119,21 @@ export interface PrintTemplate {
   font_family: string;
   font_size: number;
   line_height: number;
+  
+  // Nueva configuración de plantilla
+  template_style: TemplateStyle;
+  font_type: FontType;
+  font_size_preset: FontSize;
+  item_spacing: number;
+  show_total_items: boolean;
+  third_party_income: boolean;
+  taxes_included: boolean;
+  
+  // Configuración de columnas
+  show_discount_column: boolean;
+  show_tax_value_column: boolean;
+  show_tax_percentage_column: boolean;
+  show_unit_measure_column: boolean;
   
   // Plantilla HTML/CSS
   header_template: string | null;
@@ -126,6 +172,7 @@ export interface PrintTemplateHistory {
 }
 
 export interface CreatePrintTemplateData {
+  [key: string]: unknown;
   name: string;
   description?: string;
   document_type: TemplateDocumentType;
@@ -148,6 +195,21 @@ export interface CreatePrintTemplateData {
   font_family?: string;
   font_size?: number;
   line_height?: number;
+  
+  // Nueva configuración de plantilla
+  template_style?: TemplateStyle;
+  font_type?: FontType;
+  font_size_preset?: FontSize;
+  item_spacing?: number;
+  show_total_items?: boolean;
+  third_party_income?: boolean;
+  taxes_included?: boolean;
+  
+  // Configuración de columnas
+  show_discount_column?: boolean;
+  show_tax_value_column?: boolean;
+  show_tax_percentage_column?: boolean;
+  show_unit_measure_column?: boolean;
   
   // Plantilla HTML/CSS
   header_template?: string;
@@ -196,7 +258,7 @@ export interface OrientationInfo {
 }
 
 // Utilidades
-export function getDocumentTypeInfo(type: TemplateDocumentType): DocumentTypeInfo {
+export function getDocumentTypeInfo(type: TemplateDocumentType): DocumentTypeInfo | undefined {
   const types: Record<TemplateDocumentType, DocumentTypeInfo> = {
     INVOICE: {
       label: 'Factura de Venta',
@@ -214,22 +276,6 @@ export function getDocumentTypeInfo(type: TemplateDocumentType): DocumentTypeInf
       defaultPaperSize: 'A4',
       defaultOrientation: 'PORTRAIT'
     },
-    RECEIPT: {
-      label: 'Recibo de Caja',
-      description: 'Comprobante de pago recibido',
-      icon: 'Receipt',
-      color: 'bg-emerald-500',
-      defaultPaperSize: 'HALF_LETTER',
-      defaultOrientation: 'PORTRAIT'
-    },
-    PURCHASE_ORDER: {
-      label: 'Orden de Compra',
-      description: 'Solicitud de compra a proveedores',
-      icon: 'ShoppingCart',
-      color: 'bg-orange-500',
-      defaultPaperSize: 'A4',
-      defaultOrientation: 'PORTRAIT'
-    },
     DELIVERY_NOTE: {
       label: 'Remisión',
       description: 'Documento de entrega de mercancía',
@@ -238,59 +284,19 @@ export function getDocumentTypeInfo(type: TemplateDocumentType): DocumentTypeInf
       defaultPaperSize: 'A4',
       defaultOrientation: 'PORTRAIT'
     },
-    CREDIT_NOTE: {
-      label: 'Nota Crédito',
-      description: 'Documento que reduce el valor de una factura',
-      icon: 'ArrowUpCircle',
-      color: 'bg-green-600',
-      defaultPaperSize: 'A4',
-      defaultOrientation: 'PORTRAIT'
-    },
-    DEBIT_NOTE: {
-      label: 'Nota Débito',
-      description: 'Documento que aumenta el valor de una factura',
-      icon: 'ArrowDownCircle',
-      color: 'bg-red-500',
-      defaultPaperSize: 'A4',
-      defaultOrientation: 'PORTRAIT'
-    },
-    PAYMENT_VOUCHER: {
-      label: 'Comprobante de Pago',
-      description: 'Documento que acredita un pago realizado',
+    TRANSACTION: {
+      label: 'Transacción',
+      description: 'Documento de transacción comercial',
       icon: 'CreditCard',
       color: 'bg-indigo-500',
-      defaultPaperSize: 'HALF_LETTER',
+      defaultPaperSize: 'A4',
       defaultOrientation: 'PORTRAIT'
     },
-    EXPENSE_VOUCHER: {
-      label: 'Comprobante de Egreso',
-      description: 'Documento que registra un gasto o egreso',
-      icon: 'ArrowRightCircle',
-      color: 'bg-red-600',
-      defaultPaperSize: 'HALF_LETTER',
-      defaultOrientation: 'PORTRAIT'
-    },
-    INVENTORY_REPORT: {
-      label: 'Reporte de Inventario',
-      description: 'Reporte del estado del inventario',
-      icon: 'Package',
-      color: 'bg-amber-500',
-      defaultPaperSize: 'A4',
-      defaultOrientation: 'LANDSCAPE'
-    },
-    SALES_REPORT: {
-      label: 'Reporte de Ventas',
-      description: 'Reporte de ventas realizadas',
-      icon: 'TrendingUp',
-      color: 'bg-green-600',
-      defaultPaperSize: 'A4',
-      defaultOrientation: 'LANDSCAPE'
-    },
-    OTHER: {
-      label: 'Otros Documentos',
-      description: 'Otros tipos de documentos personalizados',
-      icon: 'File',
-      color: 'bg-gray-500',
+    PURCHASE_ORDER: {
+      label: 'Orden de Compra',
+      description: 'Solicitud de compra a proveedores',
+      icon: 'ShoppingCart',
+      color: 'bg-orange-500',
       defaultPaperSize: 'A4',
       defaultOrientation: 'PORTRAIT'
     }
@@ -365,21 +371,126 @@ export function getOrientationInfo(orientation: PageOrientation): OrientationInf
   return orientations[orientation];
 }
 
+// Información de estilos de plantilla para UI
+export interface TemplateStyleInfo {
+  label: string;
+  description: string;
+  icon: string;
+}
+
+// Información de tipos de fuente para UI
+export interface FontTypeInfo {
+  label: string;
+  fontFamily: string;
+  icon: string;
+}
+
+// Información de tamaños de fuente para UI
+export interface FontSizeInfo {
+  label: string;
+  size: number;
+  icon: string;
+}
+
+export function getTemplateStyleInfo(style: TemplateStyle): TemplateStyleInfo {
+  const styles: Record<TemplateStyle, TemplateStyleInfo> = {
+    CLASSIC: {
+      label: 'Clásico (Carta electrónica)',
+      description: 'Estilo clásico para documentos electrónicos',
+      icon: 'FileText'
+    },
+    MODERN: {
+      label: 'Moderno',
+      description: 'Diseño moderno y limpio',
+      icon: 'Zap'
+    },
+    MINIMAL: {
+      label: 'Minimalista',
+      description: 'Diseño minimalista y simple',
+      icon: 'Minus'
+    },
+    CORPORATE: {
+      label: 'Corporativo',
+      description: 'Diseño profesional corporativo',
+      icon: 'Building'
+    }
+  };
+  
+  return styles[style];
+}
+
+export function getFontTypeInfo(fontType: FontType): FontTypeInfo {
+  const fonts: Record<FontType, FontTypeInfo> = {
+    HELVETICA: {
+      label: 'Helvetica',
+      fontFamily: 'Helvetica, Arial, sans-serif',
+      icon: 'Type'
+    },
+    ARIAL: {
+      label: 'Arial',
+      fontFamily: 'Arial, sans-serif',
+      icon: 'Type'
+    },
+    TIMES: {
+      label: 'Times New Roman',
+      fontFamily: 'Times New Roman, serif',
+      icon: 'Type'
+    },
+    CALIBRI: {
+      label: 'Calibri',
+      fontFamily: 'Calibri, sans-serif',
+      icon: 'Type'
+    },
+    GEORGIA: {
+      label: 'Georgia',
+      fontFamily: 'Georgia, serif',
+      icon: 'Type'
+    },
+    VERDANA: {
+      label: 'Verdana',
+      fontFamily: 'Verdana, sans-serif',
+      icon: 'Type'
+    }
+  };
+  
+  return fonts[fontType];
+}
+
+export function getFontSizeInfo(fontSize: FontSize): FontSizeInfo {
+  const sizes: Record<FontSize, FontSizeInfo> = {
+    SMALL: {
+      label: 'Pequeño',
+      size: 10,
+      icon: 'Minus'
+    },
+    NORMAL: {
+      label: 'Normal',
+      size: 12,
+      icon: 'Type'
+    },
+    LARGE: {
+      label: 'Grande',
+      size: 14,
+      icon: 'Plus'
+    },
+    EXTRA_LARGE: {
+      label: 'Extra Grande',
+      size: 16,
+      icon: 'Maximize'
+    }
+  };
+  
+  return sizes[fontSize];
+}
+
 // Función para generar código de plantilla
 export function generateTemplateCode(documentType: TemplateDocumentType, existingCodes: string[]): string {
   const typePrefix: Record<TemplateDocumentType, string> = {
     INVOICE: 'FAC',
     QUOTATION: 'COT',
-    RECEIPT: 'REC',
-    PURCHASE_ORDER: 'OC',
     DELIVERY_NOTE: 'REM',
-    CREDIT_NOTE: 'NC',
-    DEBIT_NOTE: 'ND',
-    PAYMENT_VOUCHER: 'CP',
-    EXPENSE_VOUCHER: 'CE',
-    INVENTORY_REPORT: 'RI',
-    SALES_REPORT: 'RV',
-    OTHER: 'DOC'
+    TRANSACTION: 'TRA',
+    PURCHASE_ORDER: 'OC'
   };
   
   const prefix = typePrefix[documentType];
@@ -415,16 +526,16 @@ export function validateTemplate(template: CreatePrintTemplateData): string[] {
     }
   }
   
-  if (template.margin_top < 0 || template.margin_bottom < 0 || 
-      template.margin_left < 0 || template.margin_right < 0) {
+  if ((template.margin_top ?? 0) < 0 || (template.margin_bottom ?? 0) < 0 || 
+      (template.margin_left ?? 0) < 0 || (template.margin_right ?? 0) < 0) {
     errors.push('Los márgenes no pueden ser negativos');
   }
   
-  if (template.font_size <= 0) {
+  if ((template.font_size ?? 0) <= 0) {
     errors.push('El tamaño de fuente debe ser mayor a 0');
   }
   
-  if (template.line_height <= 0) {
+  if ((template.line_height ?? 0) <= 0) {
     errors.push('El interlineado debe ser mayor a 0');
   }
   

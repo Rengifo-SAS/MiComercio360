@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { DashboardLayoutClient } from '@/components/dashboard-layout-client';
+import { RouteGuard } from '@/components/route-guard';
 
 export default async function DashboardLayout({
   children,
@@ -10,12 +11,15 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) {
     redirect('/auth/login');
   }
 
-  const userId = data.claims.sub;
+  const userId = user.id;
   const setupStatus = await checkCompanySetup(userId);
 
   // Si no está configurado, redirigir a la configuración
@@ -24,11 +28,13 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardLayoutClient
-      companyName={setupStatus.company?.name}
-      userRole={setupStatus.profile?.role}
-    >
-      {children}
-    </DashboardLayoutClient>
+    <RouteGuard requiredModule="dashboard">
+      <DashboardLayoutClient
+        companyName={setupStatus.company?.name}
+        userRole={setupStatus.profile?.role}
+      >
+        {children}
+      </DashboardLayoutClient>
+    </RouteGuard>
   );
 }

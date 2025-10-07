@@ -219,14 +219,14 @@ export class PrintTemplatesService {
       
       const duplicateData: CreatePrintTemplateData = {
         name: newName,
-        description: originalTemplate.description,
+        description: originalTemplate.description || undefined,
         document_type: originalTemplate.document_type,
         is_default: false, // La copia no es por defecto
         is_active: originalTemplate.is_active,
         paper_size: originalTemplate.paper_size,
         page_orientation: originalTemplate.page_orientation,
-        custom_width: originalTemplate.custom_width,
-        custom_height: originalTemplate.custom_height,
+        custom_width: originalTemplate.custom_width || undefined,
+        custom_height: originalTemplate.custom_height || undefined,
         margin_top: originalTemplate.margin_top,
         margin_bottom: originalTemplate.margin_bottom,
         margin_left: originalTemplate.margin_left,
@@ -234,10 +234,10 @@ export class PrintTemplatesService {
         font_family: originalTemplate.font_family,
         font_size: originalTemplate.font_size,
         line_height: originalTemplate.line_height,
-        header_template: originalTemplate.header_template,
-        body_template: originalTemplate.body_template,
-        footer_template: originalTemplate.footer_template,
-        css_styles: originalTemplate.css_styles,
+        header_template: originalTemplate.header_template || undefined,
+        body_template: originalTemplate.body_template || '',
+        footer_template: originalTemplate.footer_template || undefined,
+        css_styles: originalTemplate.css_styles || undefined,
         show_company_logo: originalTemplate.show_company_logo,
         show_company_info: originalTemplate.show_company_info,
         show_document_number: originalTemplate.show_document_number,
@@ -246,7 +246,19 @@ export class PrintTemplatesService {
         show_items_table: originalTemplate.show_items_table,
         show_totals: originalTemplate.show_totals,
         show_payment_info: originalTemplate.show_payment_info,
-        show_notes: originalTemplate.show_notes
+        show_notes: originalTemplate.show_notes,
+        // Nuevas propiedades de configuración
+        template_style: originalTemplate.template_style,
+        font_type: originalTemplate.font_type,
+        font_size_preset: originalTemplate.font_size_preset,
+        item_spacing: originalTemplate.item_spacing,
+        show_total_items: originalTemplate.show_total_items,
+        third_party_income: originalTemplate.third_party_income,
+        taxes_included: originalTemplate.taxes_included,
+        show_discount_column: originalTemplate.show_discount_column,
+        show_tax_value_column: originalTemplate.show_tax_value_column,
+        show_tax_percentage_column: originalTemplate.show_tax_percentage_column,
+        show_unit_measure_column: originalTemplate.show_unit_measure_column
       };
 
       return await this.createTemplate(duplicateData);
@@ -411,7 +423,7 @@ export class PrintTemplatesService {
     total: number;
     active: number;
     inactive: number;
-    byType: Record<DocumentType, number>;
+    byType: Record<TemplateDocumentType, number>;
     defaultTemplates: number;
   }> {
     const templates = await this.getTemplates(companyId);
@@ -420,7 +432,7 @@ export class PrintTemplatesService {
       total: templates.length,
       active: templates.filter(t => t.is_active).length,
       inactive: templates.filter(t => !t.is_active).length,
-      byType: {} as Record<DocumentType, number>,
+      byType: {} as Record<TemplateDocumentType, number>,
       defaultTemplates: templates.filter(t => t.is_default).length
     };
 
@@ -452,6 +464,118 @@ export class PrintTemplatesService {
       return { canDelete: true, isDefault: false };
     } catch (error) {
       console.error('Error en getDeletionValidationInfo:', error);
+      throw error;
+    }
+  }
+
+  // Crear o actualizar plantilla con configuración específica
+  static async createOrUpdateTemplateConfig(
+    documentType: TemplateDocumentType,
+    config: {
+      templateStyle: string;
+      fontType: string;
+      fontSizePreset: string;
+      itemSpacing: number;
+      showTotalItems: boolean;
+      thirdPartyIncome: boolean;
+      taxesIncluded: boolean;
+      showDiscountColumn: boolean;
+      showTaxValueColumn: boolean;
+      showTaxPercentageColumn: boolean;
+      showUnitMeasureColumn: boolean;
+    }
+  ): Promise<PrintTemplate> {
+    try {
+      // Obtener company_id del usuario
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        throw new Error('No se encontró la compañía del usuario');
+      }
+
+      // Buscar si ya existe una plantilla para este tipo de documento
+      const { data: existingTemplate } = await supabase
+        .from('print_templates')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .eq('document_type', documentType)
+        .single();
+
+      const templateData = {
+        name: `Plantilla ${documentType}`,
+        description: `Plantilla personalizada para ${documentType}`,
+        document_type: documentType,
+        is_default: true,
+        is_active: true,
+        paper_size: 'A4' as const,
+        page_orientation: 'PORTRAIT' as const,
+        margin_top: 20,
+        margin_bottom: 20,
+        margin_left: 20,
+        margin_right: 20,
+        font_family: config.fontType.toLowerCase(),
+        font_size: config.fontSizePreset === 'SMALL' ? 10 : config.fontSizePreset === 'NORMAL' ? 12 : config.fontSizePreset === 'LARGE' ? 14 : 16,
+        line_height: 1.4,
+        show_company_logo: true,
+        show_company_info: true,
+        show_document_number: true,
+        show_document_date: true,
+        show_customer_info: true,
+        show_items_table: true,
+        show_totals: true,
+        show_payment_info: true,
+        show_notes: true,
+        // Nuevas propiedades de configuración
+        template_style: config.templateStyle,
+        font_type: config.fontType,
+        font_size_preset: config.fontSizePreset,
+        item_spacing: config.itemSpacing,
+        show_total_items: config.showTotalItems,
+        third_party_income: config.thirdPartyIncome,
+        taxes_included: config.taxesIncluded,
+        show_discount_column: config.showDiscountColumn,
+        show_tax_value_column: config.showTaxValueColumn,
+        show_tax_percentage_column: config.showTaxPercentageColumn,
+        show_unit_measure_column: config.showUnitMeasureColumn,
+        company_id: profile.company_id,
+        created_by: user.id,
+        updated_by: user.id
+      };
+
+      if (existingTemplate) {
+        // Actualizar plantilla existente
+        const { data: template, error } = await supabase
+          .from('print_templates')
+          .update({
+            ...templateData,
+            updated_by: user.id
+          })
+          .eq('id', existingTemplate.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return template;
+      } else {
+        // Crear nueva plantilla
+        const { data: template, error } = await supabase
+          .from('print_templates')
+          .insert(templateData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return template;
+      }
+    } catch (error) {
+      console.error('Error creando/actualizando configuración de plantilla:', error);
       throw error;
     }
   }

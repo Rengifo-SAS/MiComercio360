@@ -108,8 +108,8 @@ export function SettingsPageClient() {
       description: 'Configuración de seguridad, autenticación y auditoría',
       icon: Shield,
       color: 'bg-gray-700',
-      status: 'active',
-      route: '/dashboard/settings/security',
+      status: 'coming-soon',
+      badge: 'Próximamente',
     },
     {
       id: 'notifications',
@@ -118,8 +118,8 @@ export function SettingsPageClient() {
         'Configuración de alertas, emails y notificaciones del sistema',
       icon: Bell,
       color: 'bg-yellow-500',
-      status: 'active',
-      route: '/dashboard/settings/notifications',
+      status: 'coming-soon',
+      badge: 'Próximamente',
     },
     {
       id: 'backup',
@@ -128,8 +128,8 @@ export function SettingsPageClient() {
         'Configuración de respaldos, exportación e importación de datos',
       icon: Database,
       color: 'bg-teal-500',
-      status: 'active',
-      route: '/dashboard/settings/backup',
+      status: 'coming-soon',
+      badge: 'Próximamente',
     },
     {
       id: 'integrations',
@@ -146,8 +146,8 @@ export function SettingsPageClient() {
       description: 'Configuración de pasarelas de pago y métodos de cobro',
       icon: CreditCard,
       color: 'bg-pink-500',
-      status: 'coming-soon',
-      badge: 'Próximamente',
+      status: 'active',
+      route: '/dashboard/settings/payment-methods',
     },
     {
       id: 'reports',

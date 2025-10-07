@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { RouteGuard } from '@/components/route-guard';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { InventoryPageClient } from '@/components/inventory-page-client';
 
@@ -68,6 +69,9 @@ export default async function InventoryPage() {
   };
 
   return (
+
+
+    <RouteGuard requiredPermission="inventory.read">
     <InventoryPageClient
       warehouses={warehouses || []}
       categories={categories || []}
@@ -75,5 +79,7 @@ export default async function InventoryPage() {
       initialData={initialInventoryData || []}
       initialStats={initialStats}
     />
+    </RouteGuard>
+
   );
 }

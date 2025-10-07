@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { RouteGuard } from '@/components/route-guard';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { NumerationsPageClient } from '@/components/numerations-page-client';
 import { DocumentType } from '@/lib/types/numerations';
@@ -7,12 +8,15 @@ import { DocumentType } from '@/lib/types/numerations';
 export default async function NumerationsPage() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) {
     redirect('/auth/login');
   }
 
-  const userId = data.claims.sub;
+  const userId = user.id;
   const setupStatus = await checkCompanySetup(userId);
 
   if (!setupStatus.isSetupComplete) {
@@ -56,17 +60,19 @@ export default async function NumerationsPage() {
       document_types: Object.entries(documentTypeStats).map(
         ([type, stats]) => ({
           type: type as DocumentType,
-          count: stats.total,
-          active_count: stats.active,
+          count: (stats as any).total,
+          active_count: (stats as any).active,
         })
       ),
     },
   };
 
   return (
-    <NumerationsPageClient
-      companyId={setupStatus.company!.id}
-      initialData={initialData}
-    />
+    <RouteGuard requiredPermission="settings.numerations">
+      <NumerationsPageClient
+        companyId={setupStatus.company!.id}
+        initialData={initialData}
+      />
+    </RouteGuard>
   );
 }

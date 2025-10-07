@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { CustomersService } from '@/lib/services/customers-service';
 import { CustomerSearchFilter } from '@/components/customer-search-filter';
 import { CustomerActionsBar } from '@/components/customer-actions-bar';
 import { CustomerTable } from '@/components/customer-table';
@@ -143,28 +144,12 @@ export function CustomersPageClient({
     setError(null);
 
     try {
-      const { data: customersData, error: customersError } = await supabase.rpc(
-        'search_customers',
-        {
-          p_company_id: companyId,
-          p_search_term: '',
-          p_person_type: null,
-          p_tax_responsibility: null,
-          p_department: null,
-          p_municipality: null,
-          p_is_active: null,
-          p_sort_by: 'business_name',
-          p_sort_order: 'asc',
-          p_limit: 50,
-          p_offset: 0,
-        }
-      );
+      const result = await CustomersService.getCustomers(companyId, {
+        limit: 50,
+        offset: 0,
+      });
 
-      if (customersError) {
-        throw new Error(customersError.message);
-      }
-
-      handleDataChange(customersData || []);
+      handleDataChange(result.customers);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando clientes');
       console.error('Error cargando clientes:', err);
@@ -297,7 +282,6 @@ export function CustomersPageClient({
       {showCustomerDialog && (
         <CustomerFormDialog
           customer={selectedCustomer}
-          departments={departments}
           onSave={handleCustomerSaved}
           onClose={() => setShowCustomerDialog(false)}
         />

@@ -171,12 +171,14 @@ export function CustomerSearchFilter({
       const newStats = {
         total_customers: customersData?.length || 0,
         natural_persons:
-          customersData?.filter((c) => c.person_type === 'NATURAL').length || 0,
+          customersData?.filter((c: any) => c.person_type === 'NATURAL')
+            .length || 0,
         juridical_persons:
-          customersData?.filter((c) => c.person_type === 'JURIDICA').length ||
-          0,
-        active_customers: customersData?.filter((c) => c.is_active).length || 0,
-        vip_customers: customersData?.filter((c) => c.is_vip).length || 0,
+          customersData?.filter((c: any) => c.person_type === 'JURIDICA')
+            .length || 0,
+        active_customers:
+          customersData?.filter((c: any) => c.is_active).length || 0,
+        vip_customers: customersData?.filter((c: any) => c.is_vip).length || 0,
       };
       onStatsChange(newStats);
     } catch (err) {

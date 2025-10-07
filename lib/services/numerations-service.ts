@@ -305,17 +305,32 @@ export class NumerationsService {
   static async getNumerationHistory(numerationId: string): Promise<NumerationHistory[]> {
     const { data, error } = await supabase
       .from('numeration_history')
-      .select(`
-        *,
-        changed_by_user:profiles!numeration_history_changed_by_fkey(
-          first_name,
-          last_name
-        )
-      `)
+      .select('*')
       .eq('numeration_id', numerationId)
       .order('changed_at', { ascending: false });
 
     if (error) throw error;
+    
+    // Obtener información de usuarios por separado si hay registros
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(record => record.changed_by).filter(Boolean))];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+        
+        // Mapear la información de usuarios a los registros
+        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        
+        return data.map(record => ({
+          ...record,
+          changed_by_user: record.changed_by ? profilesMap.get(record.changed_by) : null
+        }));
+      }
+    }
+    
     return data || [];
   }
 

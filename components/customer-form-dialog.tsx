@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { CustomersService } from '@/lib/services/customers-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -189,7 +190,13 @@ export function CustomerFormDialog({
       const municipalitiesData = getMunicipalitiesByDepartment(departmentName);
 
       console.log('Municipios encontrados:', municipalitiesData.length);
-      setMunicipalities(municipalitiesData);
+      // Mapear los datos para que coincidan con el tipo esperado
+      const mappedMunicipalities = municipalitiesData.map((municipality) => ({
+        code: municipality.code,
+        name: municipality.name,
+        department_code: municipality.department,
+      }));
+      setMunicipalities(mappedMunicipalities);
     } catch (err) {
       console.error('Error cargando municipios:', err);
       setMunicipalities([]);
@@ -229,52 +236,43 @@ export function CustomerFormDialog({
 
       const customerData = {
         company_id: profile.company_id,
-        identification_type: formData.identification_type,
+        identification_type: formData.identification_type as 'CC' | 'CE' | 'NIT' | 'PP' | 'TI' | 'RC' | 'PA',
         identification_number: formData.identification_number,
         business_name: formData.business_name,
-        person_type: formData.person_type,
-        tax_responsibility: formData.tax_responsibility,
+        person_type: formData.person_type as 'NATURAL' | 'JURIDICA',
+        tax_responsibility: formData.tax_responsibility as any,
         department: formData.department,
         municipality: formData.municipality,
         address: formData.address,
-        postal_code: formData.postal_code || null,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        mobile_phone: formData.mobile_phone || null,
-        website: formData.website || null,
-        tax_id: formData.tax_id || null,
-        tax_regime: formData.tax_regime || null,
-        economic_activity_code: formData.economic_activity_code || null,
+        postal_code: formData.postal_code || undefined,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        mobile_phone: formData.mobile_phone || undefined,
+        website: formData.website || undefined,
+        tax_id: formData.tax_id || undefined,
+        tax_regime: formData.tax_regime || undefined,
+        economic_activity_code: formData.economic_activity_code || undefined,
         economic_activity_description:
-          formData.economic_activity_description || null,
-        bank_name: formData.bank_name || null,
-        account_type: formData.account_type || null,
-        account_number: formData.account_number || null,
+          formData.economic_activity_description || undefined,
+        bank_name: formData.bank_name || undefined,
+        account_type: formData.account_type as 'AHORROS' | 'CORRIENTE' | 'FIDUCIARIA' | undefined,
+        account_number: formData.account_number || undefined,
         credit_limit: formData.credit_limit,
         payment_terms: formData.payment_terms,
         discount_percentage: formData.discount_percentage,
         is_active: formData.is_active,
         is_vip: formData.is_vip,
-        notes: formData.notes || null,
+        notes: formData.notes || undefined,
         created_by: user.id,
         updated_by: user.id,
       };
 
       if (customer) {
         // Actualizar cliente existente
-        const { error: updateError } = await supabase
-          .from('customers')
-          .update(customerData)
-          .eq('id', customer.id);
-
-        if (updateError) throw updateError;
+        await CustomersService.updateCustomer(customer.id, customerData);
       } else {
         // Crear nuevo cliente
-        const { error: insertError } = await supabase
-          .from('customers')
-          .insert([customerData]);
-
-        if (insertError) throw insertError;
+        await CustomersService.createCustomer(customerData);
       }
 
       onSave();

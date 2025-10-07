@@ -570,21 +570,23 @@ export function NumerationViewDialog({
                     variant="outline"
                     className="w-full justify-start"
                     onClick={handleReset}
-                    disabled={resetting || (usageInfo && !usageInfo.canReset)}
+                    disabled={
+                      resetting || (usageInfo !== null && !usageInfo.canReset)
+                    }
                     title={
-                      usageInfo && !usageInfo.canReset
+                      usageInfo !== null && !usageInfo.canReset
                         ? 'Esta numeración ya ha sido utilizada y no puede ser reseteada para evitar duplicados'
                         : 'Resetear la numeración a 0'
                     }
                   >
                     {resetting ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : usageInfo && !usageInfo.canReset ? (
+                    ) : usageInfo !== null && !usageInfo.canReset ? (
                       <XCircle className="h-4 w-4 mr-2 text-red-500" />
                     ) : (
                       <RotateCcw className="h-4 w-4 mr-2" />
                     )}
-                    {usageInfo && !usageInfo.canReset
+                    {usageInfo !== null && !usageInfo.canReset
                       ? 'No se puede resetear'
                       : 'Resetear a 0'}
                   </Button>
@@ -606,15 +608,15 @@ export function NumerationViewDialog({
                     variant="destructive"
                     className="w-full justify-start"
                     onClick={() => onDelete(numeration)}
-                    disabled={deletionInfo && !deletionInfo.canDelete}
+                    disabled={deletionInfo !== null && !deletionInfo.canDelete}
                     title={
-                      deletionInfo && !deletionInfo.canDelete
+                      deletionInfo !== null && !deletionInfo.canDelete
                         ? 'No se puede eliminar esta numeración'
                         : 'Eliminar la numeración'
                     }
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {deletionInfo && !deletionInfo.canDelete
+                    {deletionInfo !== null && !deletionInfo.canDelete
                       ? 'No se puede eliminar'
                       : 'Eliminar Numeración'}
                   </Button>

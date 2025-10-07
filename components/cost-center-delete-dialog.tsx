@@ -69,7 +69,7 @@ export function CostCenterDeleteDialog({
         const isDefault = costCenter.is_default;
 
         // Verificar si tiene centros de costos hijos
-        const { data: children } = await CostCentersService.getCostCenters(
+        const children = await CostCentersService.getCostCenters(
           costCenter.company_id
         );
         const hasChildren = children.some(
@@ -355,10 +355,10 @@ export function CostCenterDeleteDialog({
             disabled={
               loading ||
               loadingValidation ||
-              (validationInfo && !validationInfo.canDelete)
+              (validationInfo !== null && !validationInfo.canDelete)
             }
             title={
-              validationInfo && !validationInfo.canDelete
+              validationInfo !== null && !validationInfo.canDelete
                 ? validationInfo.reason ||
                   'No se puede eliminar este centro de costos'
                 : 'Eliminar el centro de costos'
@@ -366,7 +366,7 @@ export function CostCenterDeleteDialog({
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
-            {validationInfo && !validationInfo.canDelete
+            {validationInfo !== null && !validationInfo.canDelete
               ? 'No se puede eliminar'
               : 'Eliminar Centro de Costos'}
           </Button>

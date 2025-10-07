@@ -297,17 +297,17 @@ export function TaxDeleteDialog({
             disabled={
               loading ||
               loadingValidation ||
-              (validationInfo && !validationInfo.canDelete)
+              (validationInfo !== null && !validationInfo.canDelete)
             }
             title={
-              validationInfo && !validationInfo.canDelete
+              validationInfo !== null && !validationInfo.canDelete
                 ? validationInfo.reason || 'No se puede eliminar este impuesto'
                 : 'Eliminar el impuesto'
             }
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
-            {validationInfo && !validationInfo.canDelete
+            {validationInfo !== null && !validationInfo.canDelete
               ? 'No se puede eliminar'
               : 'Eliminar Impuesto'}
           </Button>

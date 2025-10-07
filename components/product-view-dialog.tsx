@@ -23,30 +23,7 @@ import {
   Image,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  description?: string;
-  category_id?: string;
-  supplier_id?: string;
-  warehouse_id?: string;
-  cost_price: number;
-  selling_price: number;
-  min_stock: number;
-  max_stock?: number;
-  unit: string;
-  barcode?: string;
-  image_url?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  // Relaciones
-  categories?: Category;
-  suppliers?: Supplier;
-  warehouses?: Warehouse;
-}
+import { Product } from '@/lib/types/sales';
 
 interface Category {
   id: string;
@@ -236,6 +213,37 @@ export function ProductViewDialog({
             </div>
           </div>
 
+          {/* Información de Ubicación y Centro de Costos */}
+          {(product.warehouse_id || product.cost_center_id) && (
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3">Ubicación y Costos</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {product.warehouse_id && (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Bodega</p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {product.warehouse_id}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {product.cost_center_id && (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Centro de Costos</p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {product.cost_center_id}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Precios y Margen */}
           <div className="border-t pt-4">
             <h4 className="text-sm font-medium mb-3">Información Financiera</h4>
@@ -262,10 +270,61 @@ export function ProductViewDialog({
             </div>
           </div>
 
+          {/* Información Fiscal */}
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-medium mb-3">Información Fiscal</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <BarChart3 className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-sm font-medium">IVA</p>
+                <p className="text-lg font-bold">{product.iva_rate}%</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <BarChart3 className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-sm font-medium">ICA</p>
+                <p className="text-lg font-bold">{product.ica_rate}%</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <BarChart3 className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-sm font-medium">Retención</p>
+                <p className="text-lg font-bold">{product.retencion_rate}%</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <Tag className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-sm font-medium">Clasificación</p>
+                <p className="text-sm font-bold">
+                  {product.fiscal_classification}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <div className="w-4 h-4 rounded-full bg-blue-500" />
+                <div>
+                  <p className="text-sm font-medium">Impuesto de Consumo</p>
+                  <p className="text-xs text-muted-foreground">
+                    {product.excise_tax ? 'Sí aplica' : 'No aplica'}
+                  </p>
+                </div>
+              </div>
+              {product.tax_id && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">ID Tributario</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {product.tax_id}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Inventario */}
           <div className="border-t pt-4">
             <h4 className="text-sm font-medium mb-3">Inventario</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-muted rounded-lg">
                 <Package className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
                 <p className="text-sm font-medium">En Stock</p>
@@ -273,6 +332,15 @@ export function ProductViewDialog({
                   {isLoading ? '...' : inventoryQuantity}
                 </p>
               </div>
+              {product.available_quantity !== undefined && (
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <Package className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                  <p className="text-sm font-medium">Disponible</p>
+                  <p className="text-lg font-bold">
+                    {product.available_quantity}
+                  </p>
+                </div>
+              )}
               <div className="text-center p-3 bg-muted rounded-lg">
                 <Package className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
                 <p className="text-sm font-medium">Mínimo</p>

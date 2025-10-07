@@ -468,7 +468,6 @@ export function NumerationsPageClient({
                         <Switch
                           checked={numeration.is_active}
                           onCheckedChange={() => handleToggleStatus(numeration)}
-                          size="sm"
                         />
                       </div>
                     </div>
