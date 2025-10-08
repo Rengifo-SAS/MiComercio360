@@ -19,6 +19,7 @@ import {
   Truck,
   Tag,
   FileText,
+  Monitor,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -46,6 +47,14 @@ const navigationItems: NavigationItem[] = [
     badge: null,
     permission: 'sales.read',
     module: 'sales',
+  },
+  {
+    title: 'POS',
+    href: '/dashboard/pos',
+    icon: Monitor,
+    badge: null,
+    permission: 'sales.read',
+    module: 'pos',
   },
   {
     title: 'Productos',

@@ -567,6 +567,15 @@ export class SalesPrintService {
           ${sale.retencion_amount && sale.retencion_amount > 0 ? `<div>Retención: -${this.formatCurrency(sale.retencion_amount)}</div>` : ''}
           ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `<div>Impuestos: ${this.formatCurrency(sale.tax_amount)}</div>` : ''}
           <div class="total-row">TOTAL: ${this.formatCurrency(sale.total_amount || 0)}</div>
+          
+          <!-- Información de pago -->
+          <div style="margin-top: 15px; border-top: 1px solid #000; padding-top: 10px;">
+            <div style="font-weight: bold; margin-bottom: 5px;">INFORMACIÓN DE PAGO</div>
+            <div>Método: ${this.getPaymentMethodName(sale.payment_method)}</div>
+            ${sale.payment_reference ? `<div>Referencia: ${sale.payment_reference}</div>` : ''}
+            ${sale.payment_amount_received ? `<div>Recibido: ${this.formatCurrency(sale.payment_amount_received)}</div>` : ''}
+            ${sale.payment_change !== undefined && sale.payment_change !== null ? `<div>Cambio: ${this.formatCurrency(sale.payment_change)}</div>` : ''}
+          </div>
         </div>
 
         ${paperSize === 'thermal-80mm' ? `
@@ -605,6 +614,35 @@ export class SalesPrintService {
     } catch (e) {
       return 'N/A';
     }
+  }
+
+  // Obtener nombre del método de pago
+  private static getPaymentMethodName(paymentMethod: any): string {
+    if (!paymentMethod) return 'No especificado';
+    
+    // Si es un objeto PaymentMethod, usar el name
+    if (typeof paymentMethod === 'object' && paymentMethod.name) {
+      return paymentMethod.name;
+    }
+    
+    // Si es un string, mapear a nombres legibles
+    if (typeof paymentMethod === 'string') {
+      const methodNames: { [key: string]: string } = {
+        'cash': 'Efectivo',
+        'card': 'Tarjeta',
+        'transfer': 'Transferencia',
+        'check': 'Cheque',
+        'digital_wallet': 'Billetera Digital',
+        'CASH': 'Efectivo',
+        'CARD': 'Tarjeta',
+        'TRANSFER': 'Transferencia',
+        'CHECK': 'Cheque',
+        'DIGITAL_WALLET': 'Billetera Digital'
+      };
+      return methodNames[paymentMethod] || paymentMethod;
+    }
+    
+    return 'No especificado';
   }
 
   // Imprimir venta

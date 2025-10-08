@@ -17,6 +17,11 @@ export interface Sale {
   company_id: string;
   account_id?: string;
   
+  // Información de pago
+  payment_reference?: string;
+  payment_amount_received?: number;
+  payment_change?: number;
+  
   // Impuestos específicos
   iva_amount?: number;
   ica_amount?: number;
@@ -172,11 +177,17 @@ export type ShiftStatus = 'open' | 'closed';
 export interface CreateSaleData {
   customer_id?: string;
   items: CreateSaleItemData[];
-  payment_method: PaymentMethod;
+  payment_method: string;
   notes?: string;
   discount_amount?: number;
   // Cuenta bancaria/caja donde se recibirá el dinero de la venta
   account_id?: string;
+  // Numeración a usar para la venta
+  numeration_id?: string;
+  // Información de pago
+  payment_reference?: string;
+  payment_amount_received?: number;
+  payment_change?: number;
 }
 
 export interface CreateSaleItemData {
@@ -193,8 +204,12 @@ export interface CreateSaleItemData {
 export interface UpdateSaleData {
   customer_id?: string;
   items?: CreateSaleItemData[];
-  payment_method?: PaymentMethod;
+  payment_method?: string;
   notes?: string;
+  // Información de pago
+  payment_reference?: string;
+  payment_amount_received?: number;
+  payment_change?: number;
   discount_amount?: number;
   status?: SaleStatus;
 }

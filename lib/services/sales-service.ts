@@ -176,21 +176,41 @@ export class SalesService {
     
     const totals = calculateSaleTotals(items, saleInfo.discount_amount || 0, productsForCalculation);
     
-    // Generar número de venta
-    const saleNumber = await this.generateSaleNumber(companyId);
+    // Generar número de venta usando la numeración específica si se proporciona
+    const saleNumber = await this.generateSaleNumber(companyId, saleInfo.numeration_id);
+
+    // Mapear payment_type a valores válidos para la tabla sales
+    const mapPaymentMethod = (paymentType: string): string => {
+      const mapping: { [key: string]: string } = {
+        'CASH': 'cash',
+        'CARD': 'card',
+        'TRANSFER': 'transfer',
+        'CHECK': 'cash', // Mapear CHECK a cash como fallback
+        'DIGITAL_WALLET': 'transfer', // Mapear DIGITAL_WALLET a transfer como fallback
+      };
+      return mapping[paymentType] || 'cash'; // Default a cash si no se encuentra
+    };
+
+    // Preparar datos de venta con payment_method mapeado
+    const saleInsertData = {
+      company_id: companyId,
+      sale_number: saleNumber,
+      subtotal: totals.subtotal,
+      tax_amount: totals.tax_amount,
+      discount_amount: totals.discount_amount,
+      total_amount: totals.total_amount,
+      ...saleInfo,
+      payment_method: mapPaymentMethod(saleInfo.payment_method),
+      // Incluir información de pago si está disponible
+      payment_reference: saleInfo.payment_reference,
+      payment_amount_received: saleInfo.payment_amount_received,
+      payment_change: saleInfo.payment_change
+    };
 
     // Crear la venta
     const { data: sale, error: saleError } = await this.supabase
       .from('sales')
-      .insert({
-        company_id: companyId,
-        sale_number: saleNumber,
-        subtotal: totals.subtotal,
-        tax_amount: totals.tax_amount,
-        discount_amount: totals.discount_amount,
-        total_amount: totals.total_amount,
-        ...saleInfo
-      })
+      .insert(saleInsertData)
       .select()
       .single();
 
@@ -559,16 +579,26 @@ export class SalesService {
   }
 
   // Generar número de venta usando el servicio de numeraciones
-  private static async generateSaleNumber(companyId: string): Promise<string> {
+  private static async generateSaleNumber(companyId: string, numerationId?: string): Promise<string> {
     try {
-      // Usar el servicio de numeraciones para obtener el siguiente número
-      const saleNumber = await NumerationsService.getNextNumber(
-        companyId, 
-        'invoice', // Tipo de documento para ventas
-        'Facturas de Venta Principal' // Nombre de la numeración por defecto
-      );
-      
-      return saleNumber;
+      if (numerationId) {
+        // Usar la numeración específica proporcionada
+        const numeration = await NumerationsService.getNumeration(numerationId);
+        const saleNumber = await NumerationsService.getNextNumber(
+          companyId, 
+          'invoice', // Tipo de documento para ventas
+          numeration.name
+        );
+        return saleNumber;
+      } else {
+        // Usar la numeración por defecto
+        const saleNumber = await NumerationsService.getNextNumber(
+          companyId, 
+          'invoice', // Tipo de documento para ventas
+          'Facturas de Venta Principal' // Nombre de la numeración por defecto
+        );
+        return saleNumber;
+      }
     } catch (error) {
       console.error('Error generando número de venta:', error);
       // Fallback: usar timestamp si hay error
