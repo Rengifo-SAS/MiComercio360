@@ -59,6 +59,7 @@ import {
   Users,
   FileText,
   Printer,
+  RefreshCw,
 } from 'lucide-react';
 import { SalesService } from '@/lib/services/sales-service';
 import {
@@ -75,6 +76,9 @@ import {
 import { SalesFormDialog } from './sales-form-dialog';
 import { SalesViewDialog } from './sales-view-dialog';
 import { SalesDeleteDialog } from './sales-delete-dialog';
+import { SalesPrintDialog } from './sales-print-dialog';
+import { RefundRequestDialog } from './refund-request-dialog';
+import { RefundsManagementDialog } from './refunds-management-dialog';
 
 interface SalesPageClientProps {
   companyId: string;
@@ -105,6 +109,9 @@ export function SalesPageClient({
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [showRefundsManagement, setShowRefundsManagement] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
 
   // Cargar ventas
@@ -219,6 +226,14 @@ export function SalesPageClient({
 
   // Manejar editar venta
   const handleEditSale = (sale: Sale) => {
+    // Verificar si la venta está completada
+    if (sale.status === 'completed') {
+      alert(
+        'No se puede editar una venta que ya está completada. Solo se pueden editar ventas pendientes o en proceso.'
+      );
+      return;
+    }
+
     setEditingSale(sale);
     setShowFormDialog(true);
   };
@@ -233,6 +248,24 @@ export function SalesPageClient({
   const handleDeleteSale = (sale: Sale) => {
     setSelectedSale(sale);
     setShowDeleteDialog(true);
+  };
+
+  // Manejar reembolso/anulación
+  const handleRefundSale = (sale: Sale) => {
+    // Verificar si la venta ya está anulada
+    if (sale.status === 'cancelled') {
+      alert('Esta venta ya ha sido anulada anteriormente.');
+      return;
+    }
+
+    setSelectedSale(sale);
+    setShowRefundDialog(true);
+  };
+
+  // Manejar imprimir venta
+  const handlePrintSale = (sale: Sale) => {
+    setSelectedSale(sale);
+    setShowPrintDialog(true);
   };
 
   // Manejar guardar venta
@@ -394,6 +427,14 @@ export function SalesPageClient({
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowRefundsManagement(true)}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reembolsos
+          </Button>
         </div>
       </div>
 
@@ -408,11 +449,12 @@ export function SalesPageClient({
               <div>
                 <label className="text-sm font-medium">Estado</label>
                 <Select
-                  value={searchParams.filters?.status?.[0] || ''}
+                  value={searchParams.filters?.status?.[0] || 'all'}
                   onValueChange={(value) =>
                     handleFiltersChange({
                       ...searchParams.filters,
-                      status: value ? [value as any] : undefined,
+                      status:
+                        value && value !== 'all' ? [value as any] : undefined,
                     })
                   }
                 >
@@ -420,7 +462,7 @@ export function SalesPageClient({
                     <SelectValue placeholder="Todos los estados" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los estados</SelectItem>
+                    <SelectItem value="all">Todos los estados</SelectItem>
                     <SelectItem value="completed">Completada</SelectItem>
                     <SelectItem value="pending">Pendiente</SelectItem>
                     <SelectItem value="cancelled">Cancelada</SelectItem>
@@ -430,11 +472,12 @@ export function SalesPageClient({
               <div>
                 <label className="text-sm font-medium">Método de Pago</label>
                 <Select
-                  value={searchParams.filters?.payment_method?.[0] || ''}
+                  value={searchParams.filters?.payment_method?.[0] || 'all'}
                   onValueChange={(value) =>
                     handleFiltersChange({
                       ...searchParams.filters,
-                      payment_method: value ? [value as any] : undefined,
+                      payment_method:
+                        value && value !== 'all' ? [value as any] : undefined,
                     })
                   }
                 >
@@ -442,7 +485,7 @@ export function SalesPageClient({
                     <SelectValue placeholder="Todos los métodos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los métodos</SelectItem>
+                    <SelectItem value="all">Todos los métodos</SelectItem>
                     <SelectItem value="cash">Efectivo</SelectItem>
                     <SelectItem value="card">Tarjeta</SelectItem>
                     <SelectItem value="transfer">Transferencia</SelectItem>
@@ -518,9 +561,21 @@ export function SalesPageClient({
               </TableHeader>
               <TableBody>
                 {sales.map((sale) => (
-                  <TableRow key={sale.id}>
+                  <TableRow
+                    key={sale.id}
+                    className={
+                      sale.status === 'completed'
+                        ? 'opacity-75 bg-muted/30'
+                        : ''
+                    }
+                  >
                     <TableCell className="font-medium">
                       #{sale.sale_number}
+                      {sale.status === 'completed' && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          Finalizada
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {sale.customer?.business_name || 'Sin cliente'}
@@ -562,13 +617,33 @@ export function SalesPageClient({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleEditSale(sale)}
+                            disabled={sale.status === 'completed'}
+                            className={
+                              sale.status === 'completed'
+                                ? 'opacity-50 cursor-not-allowed'
+                                : ''
+                            }
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handlePrintSale(sale)}
+                          >
                             <Printer className="mr-2 h-4 w-4" />
                             Imprimir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRefundSale(sale)}
+                            disabled={sale.status === 'cancelled'}
+                            className={
+                              sale.status === 'cancelled'
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'text-orange-600'
+                            }
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Reembolso/Anulación
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -608,6 +683,7 @@ export function SalesPageClient({
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         sale={selectedSale}
+        companyId={companyId}
       />
 
       <SalesDeleteDialog
@@ -615,6 +691,34 @@ export function SalesPageClient({
         onOpenChange={setShowDeleteDialog}
         sale={selectedSale}
         onConfirm={handleConfirmDelete}
+      />
+
+      <SalesPrintDialog
+        open={showPrintDialog}
+        onOpenChange={setShowPrintDialog}
+        sale={selectedSale}
+        companyId={companyId}
+      />
+
+      <RefundRequestDialog
+        open={showRefundDialog}
+        onOpenChange={setShowRefundDialog}
+        sale={selectedSale}
+        companyId={companyId}
+        onSuccess={() => {
+          loadSales();
+          loadStats();
+        }}
+      />
+
+      <RefundsManagementDialog
+        open={showRefundsManagement}
+        onOpenChange={setShowRefundsManagement}
+        companyId={companyId}
+        onSuccess={() => {
+          loadSales();
+          loadStats();
+        }}
       />
     </div>
   );

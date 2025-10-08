@@ -15,6 +15,12 @@ export interface Sale {
   created_at: string;
   updated_at: string;
   company_id: string;
+  account_id?: string;
+  
+  // Impuestos específicos
+  iva_amount?: number;
+  ica_amount?: number;
+  retencion_amount?: number;
   
   // Relaciones
   customer?: Customer;
@@ -34,6 +40,10 @@ export interface SaleItem {
   total_price: number;
   created_at: string;
   
+  // Campos adicionales para impresión
+  product_name?: string;
+  sku?: string;
+  
   // Relaciones
   product?: Product;
 }
@@ -48,6 +58,11 @@ export interface Customer {
   tax_responsibility: string;
   department: string;
   municipality: string;
+  
+  // Campos adicionales para compatibilidad
+  name?: string;
+  city?: string;
+  state?: string;
   address: string;
   postal_code?: string;
   email?: string;
@@ -160,6 +175,8 @@ export interface CreateSaleData {
   payment_method: PaymentMethod;
   notes?: string;
   discount_amount?: number;
+  // Cuenta bancaria/caja donde se recibirá el dinero de la venta
+  account_id?: string;
 }
 
 export interface CreateSaleItemData {
@@ -167,6 +184,10 @@ export interface CreateSaleItemData {
   quantity: number;
   unit_price: number;
   discount_percentage?: number;
+  // Tasas capturadas del producto al momento de agregarlo a la venta
+  iva_rate?: number;
+  ica_rate?: number;
+  retencion_rate?: number;
 }
 
 export interface UpdateSaleData {
@@ -323,32 +344,21 @@ export function calculateSaleTotals(
   let ica_amount = 0;
   let retencion_amount = 0;
 
-  if (products && items.length > 0) {
+  if (items.length > 0) {
     items.forEach(item => {
-      const product = products.find(p => p.id === item.product_id);
-      if (product) {
-        const itemSubtotal = (item.quantity * item.unit_price) - 
-          (item.discount_percentage ? (item.quantity * item.unit_price * item.discount_percentage) / 100 : 0);
-        
-        // IVA (19% por defecto en Colombia)
-        if (product.iva_rate > 0) {
-          iva_amount += (itemSubtotal * product.iva_rate) / 100;
-        }
-        
-        // ICA (Impuesto de Industria y Comercio - varía por municipio)
-        if (product.ica_rate > 0) {
-          ica_amount += (itemSubtotal * product.ica_rate) / 100;
-        }
-        
-        // Retención en la fuente
-        if (product.retencion_rate > 0) {
-          retencion_amount += (itemSubtotal * product.retencion_rate) / 100;
-        }
-      }
+      const base = (item.quantity * item.unit_price) - 
+        (item.discount_percentage ? (item.quantity * item.unit_price * item.discount_percentage) / 100 : 0);
+
+      // Usar tasas del ítem si están presentes; si no, intentar de products[] como respaldo
+      const prod = products?.find(p => p.id === item.product_id);
+      const iva = (item.iva_rate ?? prod?.iva_rate ?? 0);
+      const ica = (item.ica_rate ?? prod?.ica_rate ?? 0);
+      const rete = (item.retencion_rate ?? prod?.retencion_rate ?? 0);
+
+      if (iva > 0) iva_amount += (base * iva) / 100;
+      if (ica > 0) ica_amount += (base * ica) / 100;
+      if (rete > 0) retencion_amount += (base * rete) / 100;
     });
-  } else {
-    // Si no hay productos, aplicar IVA estándar del 19% al subtotal
-    iva_amount = (subtotalAfterDiscount * 19) / 100;
   }
 
   const tax_amount = iva_amount + ica_amount;

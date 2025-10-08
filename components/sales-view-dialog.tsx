@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
   CreditCard,
   FileText,
   Package,
+  Loader2,
 } from 'lucide-react';
 import {
   Sale,
@@ -36,28 +38,52 @@ import {
   formatCurrency,
   formatDateTime,
 } from '@/lib/types/sales';
+import { SalesPrintService } from '@/lib/services/sales-print-service';
 
 interface SalesViewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sale: Sale | null;
+  companyId: string;
 }
 
 export function SalesViewDialog({
   open,
   onOpenChange,
   sale,
+  companyId,
 }: SalesViewDialogProps) {
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
   if (!sale) return null;
 
-  const handlePrint = () => {
-    // TODO: Implementar impresión
-    console.log('Imprimir venta:', sale.id);
+  const handlePrint = async () => {
+    if (!sale) return;
+
+    setIsPrinting(true);
+    try {
+      await SalesPrintService.printSale(sale, companyId);
+    } catch (error) {
+      console.error('Error imprimiendo venta:', error);
+      alert('Error al imprimir la venta. Inténtalo de nuevo.');
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
-  const handleExport = () => {
-    // TODO: Implementar exportación
-    console.log('Exportar venta:', sale.id);
+  const handleExport = async () => {
+    if (!sale) return;
+
+    setIsExporting(true);
+    try {
+      await SalesPrintService.generatePDF(sale, companyId);
+    } catch (error) {
+      console.error('Error exportando venta:', error);
+      alert('Error al exportar la venta. Inténtalo de nuevo.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -75,13 +101,31 @@ export function SalesViewDialog({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                disabled={isPrinting || isExporting}
+              >
+                {isPrinting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Printer className="h-4 w-4 mr-2" />
+                )}
+                {isPrinting ? 'Imprimiendo...' : 'Imprimir'}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isPrinting || isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isExporting ? 'Exportando...' : 'Exportar'}
               </Button>
             </div>
           </div>
@@ -139,11 +183,13 @@ export function SalesViewDialog({
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Nombre:</span>
-                      <span className="font-medium">{sale.customer.name}</span>
+                      <span className="font-medium">
+                        {sale.customer.business_name}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Documento:</span>
-                      <span>{sale.customer.document_number}</span>
+                      <span>{sale.customer.identification_number}</span>
                     </div>
                     {sale.customer.email && (
                       <div className="flex justify-between">
@@ -326,9 +372,13 @@ export function SalesViewDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cerrar
             </Button>
-            <Button onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
+            <Button onClick={handlePrint} disabled={isPrinting || isExporting}>
+              {isPrinting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
+              {isPrinting ? 'Imprimiendo...' : 'Imprimir'}
             </Button>
           </div>
         </div>

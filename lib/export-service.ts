@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { createClient } from '@/lib/supabase/client';
 
 export interface ExportOptions {
   format: 'pdf' | 'excel' | 'csv';
@@ -64,6 +65,88 @@ export class ExportService {
       default:
         throw new Error('Formato de exportación no soportado');
     }
+  }
+
+  // Nueva función que consulta directamente la base de datos
+  static async exportInventoryFromDatabase(
+    companyId: string,
+    options: ExportOptions
+  ): Promise<void> {
+    try {
+      // Obtener datos directamente de la base de datos
+      const data = await this.fetchInventoryData(companyId, options);
+      
+      // Exportar con los datos obtenidos
+      await this.exportInventory(data, options);
+    } catch (error) {
+      console.error('Error exporting inventory from database:', error);
+      throw error;
+    }
+  }
+
+  // Función para obtener datos de inventario desde la base de datos
+  private static async fetchInventoryData(
+    companyId: string,
+    options: ExportOptions
+  ): Promise<InventoryItem[]> {
+    const supabase = createClient();
+
+    // Construir parámetros para la función RPC
+    const rpcParams: any = {
+      p_company_id: companyId,
+      p_search_term: '',
+      p_category_id: null,
+      p_supplier_id: null,
+      p_warehouse_id: options.warehouse_id || null,
+      p_stock_status: '',
+      p_sort_by: 'name',
+      p_sort_order: 'asc',
+      p_limit: 10000, // Límite alto para obtener todos los datos
+      p_offset: 0,
+    };
+
+    // Obtener datos de inventario
+    const { data: inventoryData, error } = await supabase.rpc(
+      'search_products_advanced',
+      rpcParams
+    );
+
+    if (error) {
+      console.error('Error fetching inventory data:', error);
+      throw new Error('Error al obtener datos del inventario');
+    }
+
+    // Transformar datos al formato esperado
+    return (inventoryData || []).map((item: any): InventoryItem => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      description: item.description || '',
+      category: item.category_name ? {
+        id: '',
+        name: item.category_name,
+        color: item.category_color || '#000000'
+      } : undefined,
+      supplier: item.supplier_name ? {
+        id: '',
+        name: item.supplier_name
+      } : undefined,
+      warehouse: item.warehouse_name ? {
+        id: item.warehouse_id || '',
+        name: item.warehouse_name,
+        code: item.warehouse_code || ''
+      } : undefined,
+      cost_price: parseFloat(item.cost_price) || 0,
+      selling_price: parseFloat(item.selling_price) || 0,
+      min_stock: parseInt(item.min_stock) || 0,
+      max_stock: item.max_stock ? parseInt(item.max_stock) : undefined,
+      unit: item.unit || 'pcs',
+      image_url: item.image_url,
+      is_active: item.is_active,
+      quantity: parseInt(item.quantity) || 0,
+      last_updated: item.last_updated,
+      stock_status: item.stock_status as 'in_stock' | 'low_stock' | 'out_of_stock'
+    }));
   }
 
   private static async exportToPDF(
@@ -403,7 +486,6 @@ export class ExportService {
     }
 
     const canvas = await html2canvas(element, {
-      scale: 2,
       useCORS: true,
       allowTaint: true,
     });

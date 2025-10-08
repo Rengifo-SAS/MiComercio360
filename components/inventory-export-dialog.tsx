@@ -39,6 +39,7 @@ interface Warehouse {
 interface InventoryExportDialogProps {
   warehouses: Warehouse[];
   inventoryData: InventoryItem[];
+  companyId: string;
   onExport?: (options: ExportOptions) => void;
   trigger?: React.ReactNode;
 }
@@ -46,6 +47,7 @@ interface InventoryExportDialogProps {
 export function InventoryExportDialog({
   warehouses,
   inventoryData,
+  companyId,
   onExport,
   trigger,
 }: InventoryExportDialogProps) {
@@ -66,17 +68,10 @@ export function InventoryExportDialog({
 
   const handleExport = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Filtrar datos según la bodega seleccionada
-      let filteredData = inventoryData;
-      if (options.warehouse_id && options.warehouse_id !== 'all') {
-        filteredData = inventoryData.filter(
-          (item) => item.warehouse?.id === options.warehouse_id
-        );
-      }
-
-      // Exportar usando el servicio
-      await ExportService.exportInventory(filteredData, options);
+      // Exportar directamente desde la base de datos
+      await ExportService.exportInventoryFromDatabase(companyId, options);
 
       // Notificar al componente padre si es necesario
       onExport?.(options);

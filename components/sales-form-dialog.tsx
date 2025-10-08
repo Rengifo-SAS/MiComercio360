@@ -44,11 +44,14 @@ import {
   Sale,
   CreateSaleData,
   CreateSaleItemData,
-  PaymentMethod,
+  PaymentMethod as SalePaymentMethod,
   PaymentMethodLabels,
   formatCurrency,
   calculateSaleTotals,
 } from '@/lib/types/sales';
+import { PaymentMethod } from '@/lib/types/payment-methods';
+import { AccountsService } from '@/lib/services/accounts-service';
+import type { Account } from '@/lib/types/accounts';
 import { Product } from '@/lib/types/sales';
 import { Customer } from '@/lib/types/sales';
 
@@ -78,6 +81,7 @@ export function SalesFormDialog({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
@@ -90,6 +94,7 @@ export function SalesFormDialog({
       loadCustomers();
       loadProducts();
       loadPaymentMethods();
+      loadAccounts();
 
       if (sale) {
         setFormData({
@@ -127,6 +132,22 @@ export function SalesFormDialog({
         limit: 100,
       });
       setCustomers(result.customers);
+
+      // Si no hay venta existente, establecer Consumidor Final como cliente por defecto
+      if (!sale && result.customers.length > 0) {
+        const consumidorFinal = result.customers.find(
+          (customer) =>
+            customer.business_name.toLowerCase().includes('consumidor') &&
+            customer.business_name.toLowerCase().includes('final')
+        );
+
+        if (consumidorFinal) {
+          setFormData((prev) => ({
+            ...prev,
+            customer_id: consumidorFinal.id,
+          }));
+        }
+      }
     } catch (error) {
       console.error('Error cargando clientes:', error);
       setCustomers([]);
@@ -166,9 +187,25 @@ export function SalesFormDialog({
     }
   };
 
-  // Función para convertir payment_type a PaymentMethod
-  const convertPaymentTypeToMethod = (paymentType: string): PaymentMethod => {
-    const typeMap: Record<string, PaymentMethod> = {
+  const loadAccounts = async () => {
+    try {
+      const list = await AccountsService.getAccounts(companyId);
+      setAccounts(list);
+      const cash = list.find((a) => a.account_name === 'Efectivo POS');
+      if (cash && !formData.account_id) {
+        setFormData((prev) => ({ ...prev, account_id: cash.id }));
+      }
+    } catch (error) {
+      console.error('Error cargando cuentas:', error);
+      setAccounts([]);
+    }
+  };
+
+  // Función para convertir payment_type a SalePaymentMethod
+  const convertPaymentTypeToMethod = (
+    paymentType: string
+  ): SalePaymentMethod => {
+    const typeMap: Record<string, SalePaymentMethod> = {
       CASH: 'cash',
       CARD: 'card',
       TRANSFER: 'transfer',
@@ -223,6 +260,18 @@ export function SalesFormDialog({
         quantity: 1,
         unit_price: product.selling_price,
         discount_percentage: 0,
+        iva_rate:
+          typeof product.iva_rate === 'number'
+            ? product.iva_rate
+            : parseFloat(String(product.iva_rate)) || 0,
+        ica_rate:
+          typeof product.ica_rate === 'number'
+            ? product.ica_rate
+            : parseFloat(String(product.ica_rate)) || 0,
+        retencion_rate:
+          typeof product.retencion_rate === 'number'
+            ? product.retencion_rate
+            : parseFloat(String(product.retencion_rate)) || 0,
       };
       setFormData((prev) => ({
         ...prev,
@@ -269,6 +318,17 @@ export function SalesFormDialog({
   };
 
   const handleSave = async () => {
+    // Validar que la venta no esté cancelada o reembolsada
+    if (sale && sale.status === 'cancelled') {
+      alert('No se puede editar una venta cancelada o reembolsada');
+      return;
+    }
+
+    if (!formData.customer_id) {
+      alert('Debe seleccionar un cliente para la venta');
+      return;
+    }
+
     if (formData.items.length === 0) {
       alert('Debe agregar al menos un producto');
       return;
@@ -289,6 +349,9 @@ export function SalesFormDialog({
       setLoading(false);
     }
   };
+
+  // Determinar si el formulario debe estar deshabilitado
+  const isFormDisabled = Boolean(sale && sale.status === 'cancelled');
 
   const totals = calculateSaleTotals(
     formData.items,
@@ -312,6 +375,38 @@ export function SalesFormDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Alerta para ventas canceladas */}
+          {isFormDisabled && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Venta Cancelada o Reembolsada
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>
+                      Esta venta ha sido cancelada o reembolsada y no puede ser
+                      editada.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Información básica */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -331,14 +426,14 @@ export function SalesFormDialog({
                 </Button>
               </div>
               <Select
-                value={formData.customer_id || 'no-customer'}
+                value={formData.customer_id || ''}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    customer_id: value === 'no-customer' ? undefined : value,
+                    customer_id: value,
                   }))
                 }
-                disabled={loadingCustomers}
+                disabled={loadingCustomers || isFormDisabled}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -350,7 +445,6 @@ export function SalesFormDialog({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-customer">Sin cliente</SelectItem>
                   {customers.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.business_name} -{' '}
@@ -371,7 +465,7 @@ export function SalesFormDialog({
                     payment_method: convertPaymentTypeToMethod(value),
                   }))
                 }
-                disabled={loadingPaymentMethods}
+                disabled={loadingPaymentMethods || isFormDisabled}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -399,6 +493,42 @@ export function SalesFormDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label htmlFor="account_id">Cuenta de Ingreso</Label>
+              <Select
+                value={
+                  formData.account_id ||
+                  (accounts.find((a) => a.account_name === 'Efectivo POS')
+                    ?.id ??
+                    '')
+                }
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    account_id: value || undefined,
+                  }))
+                }
+                disabled={!accounts.length || isFormDisabled}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !accounts.length
+                        ? 'Cargando cuentas...'
+                        : 'Seleccionar cuenta'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.account_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Productos */}
@@ -410,6 +540,7 @@ export function SalesFormDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowProductSearch(true)}
+                disabled={isFormDisabled}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Producto
@@ -517,6 +648,7 @@ export function SalesFormDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveItem(index)}
+                            disabled={isFormDisabled}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -552,6 +684,7 @@ export function SalesFormDialog({
                       discount_amount: parseFloat(e.target.value) || 0,
                     }))
                   }
+                  disabled={isFormDisabled}
                 />
               </div>
               <div className="space-y-2">
@@ -575,7 +708,7 @@ export function SalesFormDialog({
                 </div>
                 {totals.iva_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span>IVA (19%):</span>
+                    <span>IVA:</span>
                     <span className="font-medium text-green-600">
                       +{formatCurrency(totals.iva_amount)}
                     </span>
@@ -629,7 +762,7 @@ export function SalesFormDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={loading}>
+            <Button onClick={handleSave} disabled={loading || isFormDisabled}>
               {loading ? 'Guardando...' : sale ? 'Actualizar' : 'Crear'} Venta
             </Button>
           </div>

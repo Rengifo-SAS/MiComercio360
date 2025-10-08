@@ -40,13 +40,19 @@ interface Product {
 interface WarehouseTransferDialogProps {
   onTransfer?: () => void;
   trigger?: React.ReactNode;
+  selectedProduct?: {
+    id: string;
+    name: string;
+    sku: string;
+  };
 }
 
 export function WarehouseTransferDialog({
   onTransfer,
   trigger,
+  selectedProduct,
 }: WarehouseTransferDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!selectedProduct); // Abrir automáticamente si hay producto seleccionado
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -56,7 +62,7 @@ export function WarehouseTransferDialog({
   const [formData, setFormData] = useState({
     from_warehouse_id: '',
     to_warehouse_id: '',
-    product_id: '',
+    product_id: selectedProduct?.id || '',
     quantity: 0,
     reason: '',
     notes: '',
@@ -178,8 +184,10 @@ export function WarehouseTransferDialog({
         reason: '',
         notes: '',
       });
-      setAvailableQuantity(0);
+
+      // Notificar al componente padre
       onTransfer?.();
+      setAvailableQuantity(0);
       router.refresh();
     } catch (error) {
       console.error('Error creating transfer:', error);
@@ -196,7 +204,7 @@ export function WarehouseTransferDialog({
     }));
   };
 
-  const selectedProduct = products.find((p) => p.id === formData.product_id);
+  const currentProduct = products.find((p) => p.id === formData.product_id);
   const fromWarehouse = warehouses.find(
     (w) => w.id === formData.from_warehouse_id
   );
@@ -308,11 +316,11 @@ export function WarehouseTransferDialog({
             </div>
 
             {/* Información del producto seleccionado */}
-            {selectedProduct && fromWarehouse && (
+            {currentProduct && fromWarehouse && (
               <div className="bg-muted p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Package className="h-4 w-4" />
-                  <span className="font-medium">{selectedProduct.name}</span>
+                  <span className="font-medium">{currentProduct.name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Building2 className="h-4 w-4" />
@@ -377,7 +385,7 @@ export function WarehouseTransferDialog({
           </div>
 
           {/* Resumen */}
-          {selectedProduct &&
+          {currentProduct &&
             fromWarehouse &&
             toWarehouse &&
             formData.quantity > 0 && (
@@ -387,8 +395,8 @@ export function WarehouseTransferDialog({
                 </h4>
                 <div className="space-y-1 text-sm text-blue-800">
                   <p>
-                    <strong>Producto:</strong> {selectedProduct.name} (
-                    {selectedProduct.sku})
+                    <strong>Producto:</strong> {currentProduct.name} (
+                    {currentProduct.sku})
                   </p>
                   <p>
                     <strong>Cantidad:</strong> {formData.quantity} unidades
@@ -407,7 +415,10 @@ export function WarehouseTransferDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                onTransfer?.();
+              }}
               disabled={isLoading}
             >
               Cancelar

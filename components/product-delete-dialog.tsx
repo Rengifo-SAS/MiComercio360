@@ -24,12 +24,14 @@ interface Product {
 interface ProductDeleteDialogProps {
   product: Product;
   onDelete?: () => void;
+  onProductDeleted?: (productId: string) => void;
   trigger?: React.ReactNode;
 }
 
 export function ProductDeleteDialog({
   product,
   onDelete,
+  onProductDeleted,
   trigger,
 }: ProductDeleteDialogProps) {
   const [open, setOpen] = useState(false);
@@ -100,6 +102,7 @@ export function ProductDeleteDialog({
 
       // Cerrar el modal y notificar
       setOpen(false);
+      onProductDeleted?.(product.id);
       onDelete?.();
       router.refresh();
     } catch (error) {

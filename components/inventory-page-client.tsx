@@ -387,6 +387,11 @@ export function InventoryPageClient({
 
       {showTransferDialog && selectedProduct && (
         <WarehouseTransferDialog
+          selectedProduct={{
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            sku: selectedProduct.sku,
+          }}
           onTransfer={() => setShowTransferDialog(false)}
         />
       )}

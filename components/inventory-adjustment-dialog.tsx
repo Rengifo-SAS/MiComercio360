@@ -38,7 +38,7 @@ export function InventoryAdjustmentDialog({
   currentQuantity = 0,
   onAdjust,
 }: InventoryAdjustmentDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true); // Abrir automáticamente cuando se renderiza
   const [movementType, setMovementType] = useState<'in' | 'out' | 'adjustment'>(
     'adjustment'
   );
@@ -92,7 +92,7 @@ export function InventoryAdjustmentDialog({
       setReason('');
       setMovementType('adjustment');
 
-      // Notificar al componente padre para refrescar
+      // Notificar al componente padre
       onAdjust?.();
 
       // Refrescar la página para mostrar los cambios
@@ -239,7 +239,10 @@ export function InventoryAdjustmentDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                onAdjust?.();
+              }}
             >
               Cancelar
             </Button>

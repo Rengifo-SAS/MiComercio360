@@ -74,6 +74,7 @@ export function InventoryActionsBar({
         <InventoryExportDialog
           warehouses={warehouses}
           inventoryData={inventoryData}
+          companyId={companyId}
           onExport={handleExport}
         />
         <WarehouseTransferDialog />

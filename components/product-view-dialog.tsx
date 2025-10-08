@@ -159,13 +159,13 @@ export function ProductViewDialog({
             </div>
 
             {/* Información de Bodega */}
-            {product.warehouses && (
+            {product.warehouse_id && (
               <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <span className="text-sm font-medium">Bodega:</span>
                   <p className="text-sm text-muted-foreground">
-                    {product.warehouses.name} ({product.warehouses.code})
+                    ID: {product.warehouse_id}
                   </p>
                 </div>
               </div>

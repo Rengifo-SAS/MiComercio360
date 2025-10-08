@@ -28,30 +28,12 @@ import { useRouter } from 'next/navigation';
 import { TaxesService } from '@/lib/services/taxes-service';
 import { Tax } from '@/lib/types/taxes';
 import { CostCentersService } from '@/lib/services/cost-centers-service';
-import { CostCenter } from '@/lib/types/cost-centers';
+import { Product as BaseProduct } from '@/lib/types/sales';
 
-interface Product {
-  id?: string;
-  name: string;
-  sku: string;
-  description?: string;
-  category_id?: string;
-  supplier_id?: string;
-  warehouse_id?: string;
-  cost_price: number;
-  selling_price: number;
-  min_stock: number;
-  max_stock?: number;
-  unit: string;
-  image_url?: string;
-  is_active: boolean;
+interface ProductFormData extends Partial<BaseProduct> {
   initial_quantity?: number;
-  // Campos fiscales colombianos
-  tax_id?: string;
-  fiscal_classification: string;
-  // Centro de costos
-  cost_center_id?: string;
 }
+import { CostCenter } from '@/lib/types/cost-centers';
 
 interface Category {
   id: string;
@@ -71,14 +53,18 @@ interface Warehouse {
 }
 
 interface ProductFormDialogProps {
-  product?: Product | null;
+  product?: ProductFormData | null;
   onSave?: () => void;
+  onProductCreated?: (product: BaseProduct) => void;
+  onProductUpdated?: (product: BaseProduct) => void;
   trigger?: React.ReactNode;
 }
 
 export function ProductFormDialog({
   product,
   onSave,
+  onProductCreated,
+  onProductUpdated,
   trigger,
 }: ProductFormDialogProps) {
   const [open, setOpen] = useState(false);
@@ -90,7 +76,7 @@ export function ProductFormDialog({
   const [taxes, setTaxes] = useState<Tax[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
 
-  const [formData, setFormData] = useState<Product>({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     sku: '',
     description: '',
@@ -205,6 +191,13 @@ export function ProductFormDialog({
         setTaxes(taxesData);
         setCostCenters(costCentersData);
 
+        // Encontrar la bodega principal (main) y establecerla como predeterminada
+        const mainWarehouse = warehousesData?.find(
+          (warehouse) =>
+            warehouse.name.toLowerCase() === 'main' ||
+            warehouse.code.toLowerCase() === 'main'
+        );
+
         // Encontrar el IVA 19% y establecerlo como predeterminado
         const iva19Tax = taxesData.find(
           (tax) =>
@@ -212,12 +205,47 @@ export function ProductFormDialog({
             tax.tax_type === 'VAT' &&
             tax.percentage === 19
         );
+
         if (iva19Tax) {
           setDefaultTaxId(iva19Tax.id);
-          // Si no hay producto existente, establecer el IVA 19% como predeterminado
-          if (!product) {
-            setFormData((prev) => ({ ...prev, tax_id: iva19Tax.id }));
-          }
+        }
+
+        // Inicializar formulario con valores predeterminados
+        if (product) {
+          // Producto existente
+          setFormData({
+            ...product,
+            category_id: product.category_id || '',
+            supplier_id: product.supplier_id || '',
+            max_stock: product.max_stock || 0,
+            warehouse_id:
+              product.warehouse_id ||
+              mainWarehouse?.id ||
+              warehousesData?.[0]?.id ||
+              '',
+            tax_id: product.tax_id || iva19Tax?.id || '',
+          });
+        } else {
+          // Nuevo producto - establecer valores predeterminados incluyendo bodega
+          setFormData({
+            name: '',
+            sku: '',
+            description: '',
+            category_id: '',
+            supplier_id: '',
+            warehouse_id: mainWarehouse?.id || warehousesData?.[0]?.id || '', // Bodega principal como predeterminada
+            cost_price: 0,
+            selling_price: 0,
+            min_stock: 0,
+            max_stock: 0,
+            unit: 'pcs',
+            image_url: '',
+            is_active: true,
+            initial_quantity: 0,
+            fiscal_classification: 'Bien',
+            cost_center_id: '',
+            tax_id: iva19Tax?.id || '',
+          });
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -227,39 +255,7 @@ export function ProductFormDialog({
     if (open) {
       loadData();
     }
-  }, [open, supabase]);
-
-  // Inicializar formulario cuando se abre el modal
-  useEffect(() => {
-    if (open) {
-      if (product) {
-        setFormData({
-          ...product,
-          category_id: product.category_id || '',
-          supplier_id: product.supplier_id || '',
-          max_stock: product.max_stock || 0,
-        });
-      } else {
-        setFormData({
-          name: '',
-          sku: '',
-          description: '',
-          category_id: '',
-          supplier_id: '',
-          cost_price: 0,
-          selling_price: 0,
-          min_stock: 0,
-          max_stock: 0,
-          unit: 'pcs',
-          image_url: '',
-          is_active: true,
-          initial_quantity: 0,
-          fiscal_classification: 'Bien',
-          cost_center_id: '',
-        });
-      }
-    }
-  }, [open, product]);
+  }, [open, supabase, product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,13 +263,13 @@ export function ProductFormDialog({
     setError(null);
 
     // Validaciones
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       setError('El nombre del producto es requerido');
       setIsLoading(false);
       return;
     }
 
-    if (!formData.sku.trim()) {
+    if (!formData.sku?.trim()) {
       setError('El código SKU es requerido');
       setIsLoading(false);
       return;
@@ -285,13 +281,13 @@ export function ProductFormDialog({
       return;
     }
 
-    if (formData.cost_price < 0) {
+    if ((formData.cost_price || 0) < 0) {
       setError('El precio de costo no puede ser negativo');
       setIsLoading(false);
       return;
     }
 
-    if (formData.selling_price < 0) {
+    if ((formData.selling_price || 0) < 0) {
       setError('El precio de venta no puede ser negativo');
       setIsLoading(false);
       return;
@@ -362,6 +358,43 @@ export function ProductFormDialog({
 
       // Cerrar el modal y limpiar
       setOpen(false);
+
+      // Llamar callbacks apropiados
+      const productData: BaseProduct = {
+        id: product?.id || '', // Para productos nuevos, se generará en el backend
+        name: formData.name || '',
+        sku: formData.sku || '',
+        description: formData.description,
+        cost_price: formData.cost_price || 0,
+        selling_price: formData.selling_price || 0,
+        min_stock: formData.min_stock || 0,
+        max_stock: formData.max_stock,
+        unit: formData.unit || 'pcs',
+        image_url: formData.image_url,
+        is_active: formData.is_active ?? true,
+        warehouse_id: formData.warehouse_id,
+        category_id: formData.category_id,
+        supplier_id: formData.supplier_id,
+        cost_center_id: formData.cost_center_id,
+        tax_id: formData.tax_id,
+        fiscal_classification: formData.fiscal_classification || 'Bien',
+        iva_rate: 19, // Valor por defecto
+        ica_rate: 0,
+        retencion_rate: 0,
+        excise_tax: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        company_id: '',
+      };
+
+      if (product) {
+        // Producto actualizado
+        onProductUpdated?.(productData);
+      } else {
+        // Producto creado
+        onProductCreated?.(productData);
+      }
+
       onSave?.();
       router.refresh();
     } catch (error) {
@@ -372,7 +405,7 @@ export function ProductFormDialog({
     }
   };
 
-  const handleInputChange = (field: keyof Product, value: unknown) => {
+  const handleInputChange = (field: keyof ProductFormData, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,

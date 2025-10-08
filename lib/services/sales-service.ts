@@ -148,8 +148,33 @@ export class SalesService {
       .select('id, iva_rate, ica_rate, retencion_rate')
       .in('id', items.map(item => item.product_id));
     
-    // Calcular totales con impuestos
-    const totals = calculateSaleTotals(items, saleInfo.discount_amount || 0, products);
+    // Calcular totales con impuestos - crear objetos Product mínimos para el cálculo
+    const productsForCalculation = (products || []).map(p => ({
+      id: p.id,
+      sku: '',
+      name: '',
+      cost_price: 0,
+      selling_price: 0,
+      iva_rate: p.iva_rate || 0,
+      ica_rate: p.ica_rate || 0,
+      retencion_rate: p.retencion_rate || 0,
+      available_quantity: 0,
+      min_quantity: 0,
+      max_quantity: 0,
+      min_stock: 0,
+      unit: '',
+      fiscal_classification: '',
+      excise_tax: false,
+      category_id: '',
+      warehouse_id: '',
+      cost_center_id: '',
+      is_active: true,
+      created_at: '',
+      updated_at: '',
+      company_id: ''
+    }));
+    
+    const totals = calculateSaleTotals(items, saleInfo.discount_amount || 0, productsForCalculation);
     
     // Generar número de venta
     const saleNumber = await this.generateSaleNumber(companyId);
@@ -200,6 +225,56 @@ export class SalesService {
       throw new Error('Error al crear los items de la venta');
     }
 
+    // Registrar movimiento financiero en cuentas
+    try {
+      // Obtener cuenta por defecto Efectivo POS si no viene account_id
+      let accountId = saleData.account_id as string | undefined;
+      if (!accountId) {
+        const { data: cashAccounts } = await this.supabase
+          .from('accounts')
+          .select('id, account_name')
+          .eq('company_id', companyId)
+          .eq('is_active', true);
+        accountId = cashAccounts?.find(a => a.account_name === 'Efectivo POS')?.id;
+      }
+
+      if (accountId) {
+        // Obtener el saldo actual de la cuenta
+        const { data: account } = await this.supabase
+          .from('accounts')
+          .select('current_balance')
+          .eq('id', accountId)
+          .single();
+
+        const currentBalance = account?.current_balance || 0;
+        const newBalance = currentBalance + totals.total_amount;
+
+        // Insertar la transacción con el balance_after calculado
+        const { error: txError } = await this.supabase
+          .from('account_transactions')
+          .insert({
+            account_id: accountId,
+            company_id: companyId,
+            transaction_type: 'RECEIPT',
+            amount: totals.total_amount,
+            balance_after: newBalance,
+            description: `Venta ${saleNumber}`,
+            related_entity_type: 'sale',
+            related_entity_id: sale.id,
+          });
+
+        if (txError) {
+          console.error('Error insertando transacción de cuenta:', txError);
+          throw txError;
+        }
+      } else {
+        console.warn('No se encontró cuenta Efectivo POS para registrar el ingreso.');
+      }
+    } catch (txError) {
+      console.error('Error registrando transacción de cuenta para la venta:', txError);
+      // No hacer rollback de la venta; se puede registrar manualmente luego
+    }
+
     // Actualizar inventario
     await this.updateInventoryForSale(items, 'decrease');
 
@@ -215,6 +290,16 @@ export class SalesService {
       throw new Error('Venta no encontrada');
     }
 
+    // Verificar si la venta está completada o cancelada
+    if (existingSale.status === 'completed') {
+      throw new Error('No se puede editar una venta que ya está completada');
+    }
+
+    // Verificar si la venta está cancelada (reembolsada)
+    if (existingSale.status === 'cancelled') {
+      throw new Error('No se puede editar una venta cancelada o reembolsada');
+    }
+
     // Si se actualizan los items, recalcular totales
     let updateData: any = { ...saleData };
     if (saleData.items) {
@@ -224,7 +309,33 @@ export class SalesService {
         .select('id, iva_rate, ica_rate, retencion_rate')
         .in('id', saleData.items.map(item => item.product_id));
       
-      const totals = calculateSaleTotals(saleData.items, saleData.discount_amount || 0, products);
+      // Crear objetos Product mínimos para el cálculo
+      const productsForCalculation = (products || []).map(p => ({
+        id: p.id,
+        sku: '',
+        name: '',
+        cost_price: 0,
+        selling_price: 0,
+        iva_rate: p.iva_rate || 0,
+        ica_rate: p.ica_rate || 0,
+        retencion_rate: p.retencion_rate || 0,
+        available_quantity: 0,
+        min_quantity: 0,
+        max_quantity: 0,
+        min_stock: 0,
+        unit: '',
+        fiscal_classification: '',
+        excise_tax: false,
+        category_id: '',
+        warehouse_id: '',
+        cost_center_id: '',
+        is_active: true,
+        created_at: '',
+        updated_at: '',
+        company_id: ''
+      }));
+      
+      const totals = calculateSaleTotals(saleData.items, saleData.discount_amount || 0, productsForCalculation);
       updateData = {
         ...updateData,
         subtotal: totals.subtotal,

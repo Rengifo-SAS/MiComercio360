@@ -82,7 +82,7 @@ export function SalesDeleteDialog({
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
                 <div className="font-medium">
-                  {sale.customer?.name || 'Sin cliente'}
+                  {sale.customer?.business_name || 'Sin cliente'}
                 </div>
               </div>
               <div>
