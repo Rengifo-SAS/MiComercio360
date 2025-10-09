@@ -305,9 +305,9 @@ export class ProductsImportService {
               const costPrice = parseFloat(row[5]) || 0;
               const sellingPrice = parseFloat(row[6]) || 0;
               const availableQuantity = Math.max(0, parseInt(row[7]) || 0);
-              let ivaRate = parseFloat(row[8]) || 0;
-              let icaRate = parseFloat(row[9]) || 0;
-              let retencionRate = parseFloat(row[10]) || 0;
+              const ivaRate = parseFloat(row[8]) || 0;
+              const icaRate = parseFloat(row[9]) || 0;
+              const retencionRate = parseFloat(row[10]) || 0;
               const warehouseName = row[11]?.toString().trim() || '';
 
               // Normalizar impuestos: si no existe el porcentaje configurado, usar 0
@@ -367,16 +367,16 @@ export class ProductsImportService {
     const taxes = taxesResult.data || [];
     const existingProducts = existingProductsResult.data || [];
 
-    const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase(), c.id]));
+    const categoryMap = new Map(categories.map((c: { name: string; id: string }) => [c.name.toLowerCase(), c.id]));
     
     // Crear mapas para búsqueda rápida de duplicados
-    const existingSkus = new Set(existingProducts.map(p => p.sku).filter(Boolean));
-    const existingBarcodes = new Set(existingProducts.map(p => p.barcode).filter(Boolean));
+    const existingSkus = new Set(existingProducts.map((p: { sku: string }) => p.sku).filter(Boolean));
+    const existingBarcodes = new Set(existingProducts.map((p: { barcode: string }) => p.barcode).filter(Boolean));
 
     // Crear mapas de impuestos
-    const vatTaxes = new Map(taxes?.filter(t => t.tax_type === 'VAT').map(t => [t.percentage, t.id]) || []);
-    const industryTaxes = new Map(taxes?.filter(t => t.tax_type === 'INDUSTRY').map(t => [t.percentage, t.id]) || []);
-    const withholdingTaxes = new Map(taxes?.filter(t => t.tax_type === 'WITHHOLDING').map(t => [t.percentage, t.id]) || []);
+    const vatTaxes = new Map(taxes?.filter((t: { tax_type: string }) => t.tax_type === 'VAT').map((t: { percentage: number; id: string }) => [t.percentage, t.id]) || []);
+    const industryTaxes = new Map(taxes?.filter((t: { tax_type: string }) => t.tax_type === 'INDUSTRY').map((t: { percentage: number; id: string }) => [t.percentage, t.id]) || []);
+    const withholdingTaxes = new Map(taxes?.filter((t: { tax_type: string }) => t.tax_type === 'WITHHOLDING').map((t: { percentage: number; id: string }) => [t.percentage, t.id]) || []);
 
     // Validar cada producto
     for (let i = 0; i < products.length; i++) {
@@ -757,16 +757,16 @@ export class ProductsImportService {
 
       // Obtener información de usuarios por separado si es necesario
       if (data && data.length > 0) {
-        const userIds = [...new Set(data.map(item => item.uploaded_by))];
+        const userIds = [...new Set(data.map((item: { uploaded_by: string }) => item.uploaded_by))];
         const { data: profiles } = await this.supabase
           .from('profiles')
           .select('id, first_name, last_name')
           .in('id', userIds);
 
         // Combinar datos
-        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const profilesMap = new Map(profiles?.map((p: { id: string; first_name: string; last_name: string }) => [p.id, p]) || []);
         
-        return data.map(item => ({
+        return data.map((item: ImportHistory & { uploaded_by: string }) => ({
           ...item,
           uploaded_by_user: profilesMap.get(item.uploaded_by) || null
         }));

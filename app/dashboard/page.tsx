@@ -17,18 +17,14 @@ import {
   ShoppingCart,
   TrendingUp,
   DollarSign,
-  Calendar,
   BarChart3,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Eye,
   Plus,
   ArrowUpRight,
-  ArrowDownRight,
   Activity,
   CreditCard,
-  Truck,
   FileText,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -59,7 +55,6 @@ export default async function DashboardPage() {
     salesStats,
     productsStats,
     customersStats,
-    inventoryStats,
     recentSales,
     lowStockProducts,
     recentActivities,
@@ -86,18 +81,6 @@ export default async function DashboardPage() {
       .from('customers')
       .select('id, is_active')
       .eq('company_id', companyId),
-
-    // Estadísticas de inventario
-    supabase
-      .from('warehouse_inventory')
-      .select(
-        `
-        quantity,
-        min_stock,
-        products!inner(id, name, company_id)
-      `
-      )
-      .eq('products.company_id', companyId),
 
     // Ventas recientes
     supabase
@@ -155,40 +138,50 @@ export default async function DashboardPage() {
   // Procesar estadísticas
   const totalSales =
     salesStats.data?.reduce(
-      (sum: number, sale: any) => sum + Number(sale.total_amount),
+      (sum: number, sale: { total_amount: string | number }) =>
+        sum + Number(sale.total_amount),
       0
     ) || 0;
   const salesCount = salesStats.data?.length || 0;
   const pendingSales =
-    salesStats.data?.filter((sale: any) => sale.payment_status === 'PENDING')
-      .length || 0;
+    salesStats.data?.filter(
+      (sale: { payment_status: string }) => sale.payment_status === 'PENDING'
+    ).length || 0;
 
   const totalProducts = productsStats.data?.length || 0;
   const activeProducts =
-    productsStats.data?.filter((p: any) => p.is_active).length || 0;
+    productsStats.data?.filter((p: { is_active: boolean }) => p.is_active)
+      .length || 0;
 
   const totalCustomers = customersStats.data?.length || 0;
   const activeCustomers =
-    customersStats.data?.filter((c: any) => c.is_active).length || 0;
+    customersStats.data?.filter((c: { is_active: boolean }) => c.is_active)
+      .length || 0;
 
-  const totalInventoryValue =
-    inventoryStats.data?.reduce((sum: number, item: any) => {
-      // Necesitaríamos el precio de costo del producto para calcular el valor
-      return sum + item.quantity * 0; // Placeholder - necesitaríamos join con products
-    }, 0) || 0;
+  // Remover variable no utilizada
+  // const totalInventoryValue = inventoryStats.data?.reduce((sum: number, item: any) => {
+  //   // Necesitaríamos el precio de costo del producto para calcular el valor
+  //   return sum + item.quantity * 0; // Placeholder - necesitaríamos join con products
+  // }, 0) || 0;
 
   const lowStockCount = lowStockProducts.data?.length || 0;
 
   const totalCash =
-    accountsStats.data?.reduce((sum: number, account: any) => {
-      if (
-        account.account_type === 'CASH_BOX' ||
-        account.account_type === 'BANK_ACCOUNT'
-      ) {
-        return sum + Number(account.current_balance);
-      }
-      return sum;
-    }, 0) || 0;
+    accountsStats.data?.reduce(
+      (
+        sum: number,
+        account: { account_type: string; current_balance: string | number }
+      ) => {
+        if (
+          account.account_type === 'CASH_BOX' ||
+          account.account_type === 'BANK_ACCOUNT'
+        ) {
+          return sum + Number(account.current_balance);
+        }
+        return sum;
+      },
+      0
+    ) || 0;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6 p-6">
@@ -385,24 +378,36 @@ export default async function DashboardPage() {
                     </Button>
                   </Link>
                 </div>
-                {lowStockProducts.data?.slice(0, 3).map((item: any) => (
-                  <div
-                    key={item.products.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {item.products.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Stock: {item.quantity} / Mín: {item.min_stock}
-                      </p>
-                    </div>
-                    <Badge variant="destructive" {...({} as any)}>
-                      Bajo
-                    </Badge>
-                  </div>
-                ))}
+                {lowStockProducts.data?.slice(0, 3).map(
+                  (item: {
+                    quantity: number;
+                    min_stock: number;
+                    products: {
+                      id: string;
+                      name: string;
+                      sku: string;
+                      company_id: string;
+                    }[];
+                  }) => {
+                    const product = item.products[0]; // Tomar el primer producto del array
+                    return (
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Stock: {item.quantity} / Mín: {item.min_stock}
+                          </p>
+                        </div>
+                        <Badge variant="destructive" className="text-xs">
+                          Bajo
+                        </Badge>
+                      </div>
+                    );
+                  }
+                )}
               </div>
             ) : (
               <div className="text-center py-4 text-muted-foreground">
@@ -425,46 +430,56 @@ export default async function DashboardPage() {
           <CardContent>
             {recentSales.data && recentSales.data.length > 0 ? (
               <div className="space-y-3">
-                {recentSales.data.map((sale: any) => (
-                  <div
-                    key={sale.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-full">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">
-                          {sale.customers?.name || 'Cliente General'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(sale.created_at).toLocaleDateString(
-                            'es-CO'
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">
-                        ${Number(sale.total_amount).toLocaleString('es-CO')}
-                      </p>
-                      <Badge
-                        variant={
-                          sale.payment_status === 'COMPLETED'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        className="text-xs"
-                        {...({} as any)}
+                {recentSales.data.map(
+                  (sale: {
+                    id: string;
+                    total_amount: string | number;
+                    created_at: string;
+                    payment_status: string;
+                    customers: { id: string; name: string }[];
+                  }) => {
+                    const customer = sale.customers[0]; // Tomar el primer cliente del array
+                    return (
+                      <div
+                        key={sale.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                       >
-                        {sale.payment_status === 'COMPLETED'
-                          ? 'Pagado'
-                          : 'Pendiente'}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-full">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {customer?.name || 'Cliente General'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(sale.created_at).toLocaleDateString(
+                                'es-CO'
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">
+                            ${Number(sale.total_amount).toLocaleString('es-CO')}
+                          </p>
+                          <Badge
+                            variant={
+                              sale.payment_status === 'COMPLETED'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {sale.payment_status === 'COMPLETED'
+                              ? 'Pagado'
+                              : 'Pendiente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
                 <div className="pt-2">
                   <Link href="/dashboard/sales">
                     <Button variant="outline" size="sm" className="w-full">
@@ -505,41 +520,54 @@ export default async function DashboardPage() {
         <CardContent>
           {recentActivities.data && recentActivities.data.length > 0 ? (
             <div className="space-y-3">
-              {recentActivities.data.slice(0, 5).map((activity: any) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                >
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                    <Activity className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {activity.action} en {activity.table_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Por{' '}
-                      {activity.profiles?.full_name || activity.profiles?.email}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(activity.created_at).toLocaleDateString(
-                        'es-CO'
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(activity.created_at).toLocaleTimeString(
-                        'es-CO',
-                        {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              {recentActivities.data
+                .slice(0, 5)
+                .map(
+                  (activity: {
+                    id: string;
+                    action: string;
+                    table_name: string;
+                    created_at: string;
+                    profiles: { full_name?: string; email?: string }[];
+                  }) => {
+                    const profile = activity.profiles[0]; // Tomar el primer perfil del array
+                    return (
+                      <div
+                        key={activity.id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      >
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                          <Activity className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {activity.action} en {activity.table_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Por{' '}
+                            {profile?.full_name || profile?.email || 'Usuario'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleDateString(
+                              'es-CO'
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleTimeString(
+                              'es-CO',
+                              {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">

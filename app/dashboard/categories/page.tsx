@@ -16,7 +16,6 @@ import { CategoryViewDialog } from '@/components/category-view-dialog';
 import { CategoryDeleteDialog } from '@/components/category-delete-dialog';
 import {
   Tag,
-  Plus,
   Search,
   Filter,
   Download,

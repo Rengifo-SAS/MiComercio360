@@ -16,7 +16,6 @@ import { SupplierViewDialog } from '@/components/supplier-view-dialog';
 import { SupplierDeleteDialog } from '@/components/supplier-delete-dialog';
 import {
   Building2,
-  Plus,
   Search,
   Filter,
   Download,

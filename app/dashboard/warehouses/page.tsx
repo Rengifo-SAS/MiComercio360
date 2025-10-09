@@ -16,7 +16,6 @@ import { WarehouseViewDialog } from '@/components/warehouse-view-dialog';
 import { WarehouseDeleteDialog } from '@/components/warehouse-delete-dialog';
 import {
   Warehouse,
-  Plus,
   Search,
   Filter,
   Download,
@@ -24,7 +23,6 @@ import {
   Edit,
   Trash2,
   MapPin,
-  Package,
   Building2,
   Phone,
   Mail,
