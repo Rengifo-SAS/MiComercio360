@@ -1,10 +1,16 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Building2,
   LayoutDashboard,
@@ -20,6 +26,12 @@ import {
   Tag,
   FileText,
   Monitor,
+  Wallet,
+  TrendingUp,
+  UserCog,
+  Warehouse,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -29,138 +41,215 @@ interface NavigationItem {
   badge: string | null;
   permission?: string;
   module?: string;
+  category?: string;
 }
 
-const navigationItems: NavigationItem[] = [
+interface NavigationCategory {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavigationItem[];
+}
+
+// Definir categorías de navegación
+const navigationCategories: NavigationCategory[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
     icon: LayoutDashboard,
-    badge: null,
-    permission: 'dashboard.read',
-    module: 'dashboard',
-  },
-  {
-    title: 'Ventas',
-    href: '/dashboard/sales',
-    icon: ShoppingCart,
-    badge: null,
-    permission: 'sales.read',
-    module: 'sales',
+    items: [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        badge: null,
+        permission: 'dashboard.read',
+        module: 'dashboard',
+        category: 'dashboard',
+      },
+    ],
   },
   {
     title: 'POS',
-    href: '/dashboard/pos',
     icon: Monitor,
-    badge: null,
-    permission: 'sales.read',
-    module: 'pos',
+    items: [
+      {
+        title: 'POS',
+        href: '/dashboard/pos',
+        icon: Monitor,
+        badge: null,
+        permission: 'sales.read',
+        module: 'pos',
+        category: 'pos',
+      },
+    ],
   },
   {
-    title: 'Productos',
-    href: '/dashboard/products',
-    icon: Package,
-    badge: null,
-    permission: 'products.read',
-    module: 'products',
+    title: 'Ingresos',
+    icon: TrendingUp,
+    items: [
+      {
+        title: 'Ventas',
+        href: '/dashboard/sales',
+        icon: ShoppingCart,
+        badge: null,
+        permission: 'sales.read',
+        module: 'sales',
+        category: 'ventas',
+      },
+      {
+        title: 'Facturación',
+        href: '/dashboard/billing',
+        icon: FileText,
+        badge: null,
+        permission: 'billing.read',
+        module: 'billing',
+        category: 'ventas',
+      },
+      {
+        title: 'Pagos',
+        href: '/dashboard/payments',
+        icon: CreditCard,
+        badge: null,
+        permission: 'payments.read',
+        module: 'payments',
+        category: 'ventas',
+      },
+    ],
   },
   {
     title: 'Inventario',
-    href: '/dashboard/inventory',
-    icon: Building2,
-    badge: null,
-    permission: 'inventory.read',
-    module: 'inventory',
+    icon: Package,
+    items: [
+      {
+        title: 'Productos',
+        href: '/dashboard/products',
+        icon: Package,
+        badge: null,
+        permission: 'products.read',
+        module: 'products',
+        category: 'inventario',
+      },
+      {
+        title: 'Inventario',
+        href: '/dashboard/inventory',
+        icon: Warehouse,
+        badge: null,
+        permission: 'inventory.read',
+        module: 'inventory',
+        category: 'inventario',
+      },
+      {
+        title: 'Categorías',
+        href: '/dashboard/categories',
+        icon: Tag,
+        badge: null,
+        permission: 'categories.read',
+        module: 'categories',
+        category: 'inventario',
+      },
+      {
+        title: 'Bodegas',
+        href: '/dashboard/warehouses',
+        icon: Building2,
+        badge: null,
+        permission: 'warehouses.read',
+        module: 'warehouses',
+        category: 'inventario',
+      },
+      {
+        title: 'Proveedores',
+        href: '/dashboard/suppliers',
+        icon: Truck,
+        badge: null,
+        permission: 'suppliers.read',
+        module: 'suppliers',
+        category: 'inventario',
+      },
+    ],
   },
   {
-    title: 'Clientes',
-    href: '/dashboard/customers',
-    icon: Users,
-    badge: null,
-    permission: 'customers.read',
-    module: 'customers',
+    title: 'Gestión',
+    icon: UserCog,
+    items: [
+      {
+        title: 'Clientes',
+        href: '/dashboard/customers',
+        icon: Users,
+        badge: null,
+        permission: 'customers.read',
+        module: 'customers',
+        category: 'gestion',
+      },
+      {
+        title: 'Usuarios',
+        href: '/dashboard/settings/users',
+        icon: UserCog,
+        badge: null,
+        permission: 'settings.users',
+        module: 'settings',
+        category: 'gestion',
+      },
+      {
+        title: 'Turnos',
+        href: '/dashboard/shifts',
+        icon: Calendar,
+        badge: null,
+        permission: 'shifts.read',
+        module: 'shifts',
+        category: 'gestion',
+      },
+    ],
   },
   {
-    title: 'Cuentas',
-    href: '/dashboard/accounts',
-    icon: CreditCard,
-    badge: null,
-    permission: 'accounts.read',
-    module: 'accounts',
-  },
-  {
-    title: 'Proveedores',
-    href: '/dashboard/suppliers',
-    icon: Truck,
-    badge: null,
-    permission: 'suppliers.read',
-    module: 'suppliers',
-  },
-  {
-    title: 'Categorías',
-    href: '/dashboard/categories',
-    icon: Tag,
-    badge: null,
-    permission: 'categories.read',
-    module: 'categories',
-  },
-  {
-    title: 'Bodegas',
-    href: '/dashboard/warehouses',
-    icon: Building2,
-    badge: null,
-    permission: 'warehouses.read',
-    module: 'warehouses',
+    title: 'Financiero',
+    icon: Wallet,
+    items: [
+      {
+        title: 'Cuentas',
+        href: '/dashboard/accounts',
+        icon: Wallet,
+        badge: null,
+        permission: 'accounts.read',
+        module: 'accounts',
+        category: 'financiero',
+      },
+    ],
   },
   {
     title: 'Reportes',
-    href: '/dashboard/reports',
     icon: BarChart3,
-    badge: null,
-    permission: 'reports.read',
-    module: 'reports',
-  },
-  {
-    title: 'Facturación',
-    href: '/dashboard/billing',
-    icon: FileText,
-    badge: null,
-    permission: 'billing.read',
-    module: 'billing',
-  },
-  {
-    title: 'Pagos',
-    href: '/dashboard/payments',
-    icon: CreditCard,
-    badge: null,
-    permission: 'payments.read',
-    module: 'payments',
-  },
-  {
-    title: 'Turnos',
-    href: '/dashboard/shifts',
-    icon: Calendar,
-    badge: null,
-    permission: 'shifts.read',
-    module: 'shifts',
-  },
-  {
-    title: 'Usuarios',
-    href: '/dashboard/settings/users',
-    icon: Users,
-    badge: null,
-    permission: 'settings.users',
-    module: 'settings',
+    items: [
+      {
+        title: 'Reportes',
+        href: '/dashboard/reports',
+        icon: BarChart3,
+        badge: null,
+        permission: 'reports.read',
+        module: 'reports',
+        category: 'reportes',
+      },
+    ],
   },
   {
     title: 'Configuración',
-    href: '/dashboard/settings',
     icon: Settings,
-    badge: null,
-    permission: 'settings.company',
-    module: 'settings',
+    items: [
+      {
+        title: 'Configuración',
+        href: '/dashboard/settings',
+        icon: Settings,
+        badge: null,
+        permission: 'settings.company',
+        module: 'settings',
+        category: 'configuracion',
+      },
+    ],
   },
 ];
+
+// Crear array plano para compatibilidad con el código existente
+const navigationItems: NavigationItem[] = navigationCategories.flatMap(
+  (category) => category.items
+);
 
 interface ProtectedNavigationProps {
   isCollapsed?: boolean;
@@ -173,25 +262,40 @@ export function ProtectedNavigation({
 }: ProtectedNavigationProps) {
   const { hasPermission, hasModulePermission, loading } = usePermissions();
   const pathname = usePathname();
+  const [openCategories, setOpenCategories] = React.useState<
+    Record<string, boolean>
+  >({});
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
-  // Filtrar elementos de navegación basado en permisos
-  const filteredItems = navigationItems.filter((item) => {
-    // Si no hay permiso específico, verificar por módulo
-    if (item.permission) {
-      return hasPermission(item.permission);
-    }
+  const toggleCategory = (categoryTitle: string) => {
+    setOpenCategories((prev) => ({
+      ...prev,
+      [categoryTitle]: !prev[categoryTitle],
+    }));
+  };
 
-    if (item.module) {
-      return hasModulePermission(item.module);
-    }
+  // Filtrar categorías basado en permisos
+  const filteredCategories = navigationCategories
+    .map((category) => ({
+      ...category,
+      items: category.items.filter((item) => {
+        // Si no hay permiso específico, verificar por módulo
+        if (item.permission) {
+          return hasPermission(item.permission);
+        }
 
-    // Si no hay restricciones, mostrar el elemento
-    return true;
-  });
+        if (item.module) {
+          return hasModulePermission(item.module);
+        }
+
+        // Si no hay restricciones, mostrar el elemento
+        return true;
+      }),
+    }))
+    .filter((category) => category.items.length > 0);
 
   // Si está cargando, mostrar skeleton o elementos básicos
   if (loading) {
@@ -216,39 +320,126 @@ export function ProtectedNavigation({
   }
 
   return (
-    <nav className="flex-1 p-4 space-y-1">
-      {filteredItems.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item.href);
+    <nav className="flex-1 p-4 space-y-2">
+      {filteredCategories.map((category) => {
+        const CategoryIcon = category.icon;
+        const isOpen = openCategories[category.title] || false;
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onItemClick}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-              'hover:bg-accent hover:text-accent-foreground',
-              active
-                ? 'bg-accent text-accent-foreground'
-                : 'text-muted-foreground',
-              isCollapsed && 'justify-center'
-            )}
-          >
-            <Icon
-              className={cn('h-4 w-4 flex-shrink-0', isCollapsed && 'mx-auto')}
-            />
-            {!isCollapsed && (
-              <>
-                <span className="truncate">{item.title}</span>
-                {item.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {item.badge}
-                  </Badge>
+        // Dashboard, POS y Configuración como elementos normales (sin acordeón)
+        if (
+          category.title === 'Dashboard' ||
+          category.title === 'POS' ||
+          category.title === 'Configuración'
+        ) {
+          const item = category.items[0];
+          const Icon = item.icon;
+          const active = isActive(item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onItemClick}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
+                active
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground',
+                isCollapsed && 'justify-center'
+              )}
+            >
+              <Icon
+                className={cn(
+                  'h-4 w-4 flex-shrink-0',
+                  isCollapsed && 'mx-auto'
                 )}
-              </>
-            )}
-          </Link>
+              />
+              {!isCollapsed && (
+                <>
+                  <span className="truncate">{item.title}</span>
+                  {item.badge && (
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </>
+              )}
+            </Link>
+          );
+        }
+
+        // Resto de categorías como acordeones
+        return (
+          <Collapsible
+            key={category.title}
+            open={isOpen}
+            onOpenChange={() => toggleCategory(category.title)}
+          >
+            <div className="space-y-1">
+              {/* Trigger del acordeón */}
+              <CollapsibleTrigger asChild>
+                <button
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
+                    'hover:bg-accent hover:text-accent-foreground',
+                    'text-muted-foreground',
+                    isCollapsed && 'justify-center'
+                  )}
+                >
+                  <CategoryIcon className="h-4 w-4 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="text-xs font-medium uppercase tracking-wider flex-1 text-left">
+                        {category.title}
+                      </span>
+                      {isOpen ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </>
+                  )}
+                </button>
+              </CollapsibleTrigger>
+
+              {/* Contenido del acordeón */}
+              {!isCollapsed && (
+                <CollapsibleContent className="space-y-1">
+                  {category.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onItemClick}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ml-4',
+                          'hover:bg-accent hover:text-accent-foreground',
+                          active
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-muted-foreground'
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                        {item.badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                          >
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </CollapsibleContent>
+              )}
+            </div>
+          </Collapsible>
         );
       })}
     </nav>
