@@ -82,6 +82,18 @@ export function POSPageClient() {
     };
   }, [setIsCollapsed]);
 
+  // Función para cargar productos
+  const loadProducts = async () => {
+    if (!companyId) return;
+    try {
+      const productsData = await ProductsService.getProducts(companyId);
+      setProducts(productsData.products);
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+      toast.error('Error cargando productos');
+    }
+  };
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -230,12 +242,27 @@ export function POSPageClient() {
   };
 
   const addToCart = (product: Product) => {
+    // Validar que el producto tenga inventario disponible
+    const availableQuantity = product.available_quantity || 0;
+    if (availableQuantity <= 0) {
+      toast.error('Producto sin inventario disponible');
+      return;
+    }
+
     setCart((prev) => {
       const existingItem = prev.find((item) => item.product.id === product.id);
       if (existingItem) {
+        // Validar que no se exceda la cantidad disponible al incrementar
+        const newQuantity = existingItem.quantity + 1;
+        if (newQuantity > availableQuantity) {
+          toast.error(
+            `No hay suficiente inventario. Disponible: ${availableQuantity} unidades`
+          );
+          return prev;
+        }
         return prev.map((item) =>
           item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: newQuantity }
             : item
         );
       } else {
@@ -248,11 +275,25 @@ export function POSPageClient() {
     if (quantity <= 0) {
       removeFromCart(productId);
     } else {
-      setCart((prev) =>
-        prev.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
-        )
-      );
+      // Buscar el producto para obtener la cantidad disponible
+      const product = products.find((p) => p.id === productId);
+      if (product) {
+        const availableQuantity = product.available_quantity || 0;
+
+        // Validar que no se exceda la cantidad disponible
+        if (quantity > availableQuantity) {
+          toast.error(
+            `No hay suficiente inventario. Disponible: ${availableQuantity} unidades`
+          );
+          return;
+        }
+
+        setCart((prev) =>
+          prev.map((item) =>
+            item.product.id === productId ? { ...item, quantity } : item
+          )
+        );
+      }
     }
   };
 
@@ -381,55 +422,101 @@ export function POSPageClient() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Header del POS - Ultra Responsive */}
-      <div className="flex items-center justify-between px-1 xs:px-2 sm:px-4 py-1 xs:py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
-        <div className="flex items-center space-x-1 xs:space-x-2 sm:space-x-3 min-w-0 flex-1">
-          <h3 className="text-[10px] xs:text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-            <span className="hidden xs:inline">POS • </span>
-            {configuration.terminalName}
-          </h3>
-        </div>
-        <div className="flex items-center space-x-1 flex-shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowConfiguration(true)}
-            className="text-[10px] xs:text-xs sm:text-sm h-6 xs:h-8 px-1 xs:px-2 sm:px-3"
-          >
-            <Settings className="h-3 w-3 xs:h-4 xs:w-4 xs:mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Configuración</span>
-          </Button>
+      {/* Header Fijo */}
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+              Punto de Venta
+            </h1>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="text-sm text-gray-500">Terminal:</span>
+              <span className="text-sm font-medium text-teal-600">
+                {configuration.terminalName}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfiguration(true)}
+              className="text-sm"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Configuración
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Layout Principal - Ultra Responsive */}
-      <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-1 xs:gap-2 sm:gap-4 p-1 xs:p-2 sm:p-4">
-        {/* Panel Izquierdo - Grid de Productos */}
-        <div className="flex-1 min-h-0 xl:w-[70%]">
-          <POSProductsGrid
-            products={products}
-            onAddToCart={addToCart}
-            cart={cart}
-            loading={loading}
-          />
+      {/* Layout Principal - Adaptativo como Alegra POS */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+        {/* En móvil/tablet: Una columna */}
+        <div className="lg:hidden flex-1 flex flex-col">
+          {/* Grid de Productos en móvil */}
+          <div className="flex-1 min-h-0">
+            <POSProductsGrid
+              products={products}
+              onAddToCart={addToCart}
+              cart={cart}
+              loading={loading}
+              companyId={companyId}
+              onProductsReload={loadProducts}
+            />
+          </div>
+
+          {/* Carrito en móvil - Fijo en la parte inferior */}
+          <div className="h-96 border-t dark:border-gray-700">
+            <POSCartPanel
+              cart={cart}
+              customers={customers}
+              selectedCustomer={selectedCustomer}
+              onCustomerChange={setSelectedCustomer}
+              onUpdateQuantity={updateCartItemQuantity}
+              onRemoveItem={removeFromCart}
+              onClearCart={clearCart}
+              onProcessSale={processSale}
+              loading={loading}
+              numerations={numerations}
+              selectedNumeration={selectedNumeration}
+              onNumerationChange={setSelectedNumeration}
+            />
+          </div>
         </div>
 
-        {/* Panel Derecho - Facturación/Carrito */}
-        <div className="xl:w-[30%] min-h-0 flex-shrink-0 max-h-[50vh] xl:max-h-full">
-          <POSCartPanel
-            cart={cart}
-            customers={customers}
-            selectedCustomer={selectedCustomer}
-            onCustomerChange={setSelectedCustomer}
-            onUpdateQuantity={updateCartItemQuantity}
-            onRemoveItem={removeFromCart}
-            onClearCart={clearCart}
-            onProcessSale={processSale}
-            loading={loading}
-            numerations={numerations}
-            selectedNumeration={selectedNumeration}
-            onNumerationChange={setSelectedNumeration}
-          />
+        {/* En desktop: Dos columnas */}
+        <div className="hidden lg:flex flex-1">
+          {/* Panel Izquierdo - Grid de Productos (70%) */}
+          <div className="w-[70%] min-h-0">
+            <POSProductsGrid
+              products={products}
+              onAddToCart={addToCart}
+              cart={cart}
+              loading={loading}
+              companyId={companyId}
+              onProductsReload={loadProducts}
+            />
+          </div>
+
+          {/* Panel Derecho - Carrito (30%) */}
+          <div className="w-[30%] min-h-0 border-l dark:border-gray-700">
+            <POSCartPanel
+              cart={cart}
+              customers={customers}
+              selectedCustomer={selectedCustomer}
+              onCustomerChange={setSelectedCustomer}
+              onUpdateQuantity={updateCartItemQuantity}
+              onRemoveItem={removeFromCart}
+              onClearCart={clearCart}
+              onProcessSale={processSale}
+              loading={loading}
+              numerations={numerations}
+              selectedNumeration={selectedNumeration}
+              onNumerationChange={setSelectedNumeration}
+            />
+          </div>
         </div>
       </div>
 

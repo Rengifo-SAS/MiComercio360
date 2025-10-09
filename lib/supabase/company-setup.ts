@@ -78,18 +78,11 @@ export async function checkCompanySetup(userId: string): Promise<CompanySetupSta
     }
 
     // Verificar si la compañía tiene datos básicos completos
+    // Para funcionalidades básicas como inventario, solo necesitamos datos mínimos
     const isCompanyComplete = !!(
       company.name &&
       company.business_name &&
-      company.tax_id &&
-      company.email &&
-      company.phone &&
-      company.address &&
-      company.city &&
-      company.state &&
-      company.postal_code &&
-      company.regimen_tributario &&
-      company.tipo_documento
+      company.tax_id
     );
 
     console.log('Estado de configuración:', {

@@ -31,7 +31,8 @@ export class ProductsService {
         .from('products')
         .select(`
           *,
-          inventory:inventory(quantity)
+          inventory:inventory(quantity, warehouse_id),
+          warehouses!products_warehouse_id_fkey(id, name, code)
         `, { count: 'exact' })
         .eq('company_id', companyId);
 
@@ -187,6 +188,74 @@ export class ProductsService {
       return stats;
     } catch (error) {
       console.error('Error en getProductStats:', error);
+      throw error;
+    }
+  }
+
+  // Crear un nuevo producto
+  static async createProduct(productData: {
+    name: string;
+    sku: string;
+    barcode?: string;
+    description?: string;
+    category_id: string;
+    cost_price?: number;
+    selling_price: number;
+    available_quantity?: number;
+    iva_rate?: number;
+    ica_rate?: number;
+    retencion_rate?: number;
+    company_id: string;
+    is_active?: boolean;
+  }): Promise<Product> {
+    try {
+      // Crear el producto sin available_quantity
+      const { data: product, error } = await this.supabase
+        .from('products')
+        .insert({
+          name: productData.name,
+          sku: productData.sku,
+          barcode: productData.barcode || null,
+          description: productData.description || null,
+          category_id: productData.category_id,
+          cost_price: productData.cost_price || 0,
+          selling_price: productData.selling_price,
+          iva_rate: productData.iva_rate || 0,
+          ica_rate: productData.ica_rate || 0,
+          retencion_rate: productData.retencion_rate || 0,
+          company_id: productData.company_id,
+          is_active: productData.is_active !== undefined ? productData.is_active : true,
+        })
+        .select(`
+          *,
+          inventory:inventory(quantity)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error creando producto:', error);
+        throw new Error('Error al crear el producto');
+      }
+
+      // Si se proporciona una cantidad disponible, crear/actualizar el inventario
+      if (productData.available_quantity && productData.available_quantity > 0) {
+        const { error: inventoryError } = await this.supabase
+          .from('inventory')
+          .upsert({
+            product_id: product.id,
+            quantity: productData.available_quantity,
+            company_id: productData.company_id,
+          });
+
+        if (inventoryError) {
+          console.error('Error creando inventario:', inventoryError);
+          // No lanzamos error aquí para no fallar la creación del producto
+        }
+      }
+
+      return product;
+    } catch (error) {
+      console.error('Error en createProduct:', error);
       throw error;
     }
   }

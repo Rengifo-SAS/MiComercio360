@@ -10,10 +10,20 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ProductFormDialog } from '@/components/product-form-dialog';
 import { ProductViewDialog } from '@/components/product-view-dialog';
 import { ProductDeleteDialog } from '@/components/product-delete-dialog';
 import { InventoryAdjustmentDialog } from '@/components/inventory-adjustment-dialog';
+import { ProductsImportDialog } from '@/components/products-import-dialog';
+import { ProductsService } from '@/lib/services/products-service';
 import {
   Package,
   Search,
@@ -23,6 +33,9 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Product as BaseProduct } from '@/lib/types/sales';
 
@@ -51,15 +64,69 @@ interface Product extends BaseProduct {
 interface ProductsPageClientProps {
   initialProducts: Product[];
   companyId: string;
+  userId: string;
 }
 
 export function ProductsPageClient({
   initialProducts,
   companyId,
+  userId,
 }: ProductsPageClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
+  // Estados para paginación y filtros
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(initialProducts.length);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const itemsPerPage = 20;
+
+  // Función para cargar productos con paginación
+  const loadProducts = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const offset = (page - 1) * itemsPerPage;
+      const result = await ProductsService.getProducts(companyId, {
+        search: searchTerm,
+        categoryId: selectedCategory || undefined,
+        sortBy,
+        sortOrder,
+        limit: itemsPerPage,
+        offset,
+      });
+
+      setProducts(result.products);
+      setTotalProducts(result.total);
+      setTotalPages(Math.ceil(result.total / itemsPerPage));
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar productos iniciales
+  useEffect(() => {
+    loadProducts(1);
+  }, []);
+
+  // Efecto para cargar productos cuando cambian los filtros
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadProducts(1);
+    }, 300); // Debounce para búsqueda
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedCategory, sortBy, sortOrder]);
 
   // Remover la apertura automática del formulario de ajuste
   // El formulario solo debe abrirse cuando el usuario haga clic en "Ajustar"
@@ -76,18 +143,23 @@ export function ProductsPageClient({
   };
 
   const handleProductCreate = (newProduct: Product) => {
-    setProducts((prev) => [newProduct, ...prev]);
-    // No abrir automáticamente el formulario de ajuste
-    // El usuario puede ajustar manualmente si lo desea
+    // Recargar la lista para mantener la paginación correcta
+    loadProducts(currentPage);
   };
 
   const handleProductDelete = (deletedProductId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== deletedProductId));
+    // Recargar la lista para mantener la paginación correcta
+    loadProducts(currentPage);
     // Cerrar el diálogo de ajuste si se eliminó el producto seleccionado
     if (selectedProduct?.id === deletedProductId) {
       setSelectedProduct(null);
       setShowAdjustmentDialog(false);
     }
+  };
+
+  const handleImportComplete = () => {
+    // Recargar la lista para mostrar los nuevos productos
+    loadProducts(1);
   };
 
   return (
@@ -115,7 +187,7 @@ export function ProductsPageClient({
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{products.length}</div>
+            <div className="text-2xl font-bold">{totalProducts}</div>
             <p className="text-xs text-muted-foreground">En catálogo</p>
           </CardContent>
         </Card>
@@ -179,21 +251,86 @@ export function ProductsPageClient({
       </div>
 
       {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Search className="h-4 w-4 mr-2" />
-            Buscar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtrar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar productos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 w-64"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Nombre</SelectItem>
+                <SelectItem value="sku">SKU</SelectItem>
+                <SelectItem value="selling_price">Precio</SelectItem>
+                <SelectItem value="created_at">Fecha</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importar Excel
+            </Button>
+          </div>
         </div>
+
+        {/* Paginación superior */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {(currentPage - 1) * itemsPerPage + 1} -{' '}
+              {Math.min(currentPage * itemsPerPage, totalProducts)} de{' '}
+              {totalProducts} productos
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <span className="text-sm">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Products Table */}
@@ -203,7 +340,14 @@ export function ProductsPageClient({
           <CardDescription>Lista de productos en tu catálogo</CardDescription>
         </CardHeader>
         <CardContent>
-          {products.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-2">
+                Cargando productos...
+              </p>
+            </div>
+          ) : products.length > 0 ? (
             <div className="space-y-4">
               {products.map((product) => {
                 const inventory = product.inventory?.[0];
@@ -242,7 +386,7 @@ export function ProductsPageClient({
                       <div className="text-center">
                         <p className="text-lg font-bold">{currentQuantity}</p>
                         <p className="text-xs text-muted-foreground">
-                          {inventory?.location || 'Sin ubicación'}
+                          {product.warehouses?.name || 'Sin bodega'}
                         </p>
                       </div>
                       <div>
@@ -341,6 +485,65 @@ export function ProductsPageClient({
               <p className="text-sm">Los productos aparecerán aquí</p>
             </div>
           )}
+
+          {/* Paginación inferior */}
+          {totalPages > 1 && !loading && (
+            <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(1)}
+                disabled={currentPage === 1}
+              >
+                Primera
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+
+              {/* Números de página */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const startPage = Math.max(1, currentPage - 2);
+                const pageNum = startPage + i;
+                if (pageNum > totalPages) return null;
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === currentPage ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => loadProducts(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProducts(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                Última
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -353,6 +556,15 @@ export function ProductsPageClient({
           onAdjust={handleAdjustmentClose}
         />
       )}
+
+      {/* Products Import Dialog */}
+      <ProductsImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        companyId={companyId}
+        userId={userId}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }

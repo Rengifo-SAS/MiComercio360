@@ -37,8 +37,8 @@ interface Warehouse {
 // ExportOptions ya está importado desde el servicio
 
 interface InventoryExportDialogProps {
-  warehouses: Warehouse[];
-  inventoryData: InventoryItem[];
+  warehouses?: Warehouse[];
+  inventoryData?: InventoryItem[];
   companyId: string;
   onExport?: (options: ExportOptions) => void;
   trigger?: React.ReactNode;
@@ -151,7 +151,7 @@ export function InventoryExportDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las bodegas</SelectItem>
-                {warehouses.map((warehouse) => (
+                {warehouses?.map((warehouse) => (
                   <SelectItem key={warehouse.id} value={warehouse.id}>
                     {warehouse.name} ({warehouse.code})
                   </SelectItem>

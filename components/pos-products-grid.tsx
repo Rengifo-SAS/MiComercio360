@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, Package, Barcode, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { POSQuickProductDialog } from '@/components/pos-quick-product-dialog';
 
 interface CartItem {
   product: Product;
@@ -20,6 +21,8 @@ interface POSProductsGridProps {
   onAddToCart: (product: Product) => void;
   cart: CartItem[];
   loading: boolean;
+  companyId: string;
+  onProductsReload?: () => void;
 }
 
 export function POSProductsGrid({
@@ -27,9 +30,13 @@ export function POSProductsGrid({
   onAddToCart,
   cart,
   loading,
+  companyId,
+  onProductsReload,
 }: POSProductsGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+  const [showQuickProductDialog, setShowQuickProductDialog] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,6 +70,49 @@ export function POSProductsGrid({
     }
   };
 
+  // Función para activar el escáner
+  const handleScannerToggle = () => {
+    setIsScanning(!isScanning);
+    if (!isScanning) {
+      // Enfocar el input para recibir datos del escáner
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  // Función para manejar la creación de producto
+  const handleProductCreated = () => {
+    setShowQuickProductDialog(false);
+    if (onProductsReload) {
+      onProductsReload();
+    }
+  };
+
+  // Función para manejar la detección de códigos de barras desde el escáner
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Si estamos en modo escáner y se presiona Enter
+      if (isScanning && e.key === 'Enter') {
+        e.preventDefault();
+        const currentValue = searchQuery.trim();
+
+        if (currentValue && /^\d{8,}$/.test(currentValue)) {
+          const product = products.find((p) => p.barcode === currentValue);
+          if (product) {
+            onAddToCart(product);
+            setSearchQuery('');
+          }
+        }
+      }
+    };
+
+    if (isScanning) {
+      document.addEventListener('keydown', handleKeyPress);
+      return () => document.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [isScanning, searchQuery, products, onAddToCart]);
+
   const getCartQuantity = (productId: string) => {
     const cartItem = cart.find((item) => item.product.id === productId);
     return cartItem?.quantity || 0;
@@ -90,70 +140,74 @@ export function POSProductsGrid({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
-      {/* Barra de Búsqueda - Ultra Responsive */}
-      <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1 xs:gap-2 sm:gap-4 p-2 xs:p-3 sm:p-4 border-b dark:border-gray-700 flex-shrink-0">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800">
+      {/* Barra de Búsqueda - Fija */}
+      <div className="flex items-center gap-4 p-4 border-b dark:border-gray-700 flex-shrink-0">
         <div className="relative flex-1">
-          <Search className="absolute left-2 xs:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 xs:h-4 xs:w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             ref={searchInputRef}
             placeholder="Buscar productos..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-6 xs:pl-10 pr-8 xs:pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-xs xs:text-sm h-8 xs:h-10"
+            className="pl-10 pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-10"
           />
           {searchQuery && (
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 xs:h-8 xs:w-8 p-0"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
               onClick={() => setSearchQuery('')}
             >
               ×
             </Button>
           )}
         </div>
-        <div className="flex gap-1 xs:gap-2 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0">
           <Button
-            variant="outline"
+            variant={isScanning ? 'default' : 'outline'}
             size="sm"
-            className="text-[10px] xs:text-xs sm:text-sm h-7 xs:h-8 px-2"
+            className={`text-sm h-10 px-3 ${
+              isScanning ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
+            }`}
+            onClick={handleScannerToggle}
           >
-            <Barcode className="h-3 w-3 xs:h-4 xs:w-4 xs:mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Escanear</span>
+            <Barcode className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">
+              {isScanning ? 'Escaneando...' : 'Escanear'}
+            </span>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="text-[10px] xs:text-xs sm:text-sm h-7 xs:h-8 px-2"
+            className="text-sm h-10 px-3"
+            onClick={() => setShowQuickProductDialog(true)}
           >
-            <Plus className="h-3 w-3 xs:h-4 xs:w-4 xs:mr-1 sm:mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Nuevo</span>
           </Button>
         </div>
       </div>
 
-      {/* Grid de Productos - Ultra Responsive */}
-      <div className="flex-1 overflow-auto">
+      {/* Grid de Productos - Scroll Vertical */}
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32 xs:h-48 sm:h-64">
+          <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-6 w-6 xs:h-8 xs:w-8 border-b-2 border-teal-600 mx-auto mb-2 xs:mb-4"></div>
-              <p className="text-xs xs:text-sm">Cargando productos...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+              <p className="text-sm">Cargando productos...</p>
             </div>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="flex items-center justify-center h-32 xs:h-48 sm:h-64">
+          <div className="flex items-center justify-center h-64">
             <div className="text-center text-gray-500">
-              <Package className="h-8 w-8 xs:h-10 xs:w-10 sm:h-12 sm:w-12 mx-auto mb-2 xs:mb-4 text-gray-300" />
-              <p className="text-xs xs:text-sm">No se encontraron productos</p>
-              <p className="text-[10px] xs:text-xs">
-                Intenta con otros términos de búsqueda
-              </p>
+              <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-sm">No se encontraron productos</p>
+              <p className="text-xs">Intenta con otros términos de búsqueda</p>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-1 xs:gap-2 sm:gap-3 md:gap-4 p-1 xs:p-2 sm:p-3 md:p-4 overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 p-4">
             {filteredProducts.map((product) => {
               const cartQuantity = getCartQuantity(product.id);
               const inventoryStatus = getInventoryStatus(product);
@@ -165,20 +219,20 @@ export function POSProductsGrid({
                   className={cn(
                     'cursor-pointer transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800 border dark:border-gray-700 relative',
                     isOutOfStock && 'opacity-50 cursor-not-allowed',
-                    cartQuantity > 0 && 'ring-1 xs:ring-2 ring-teal-500'
+                    cartQuantity > 0 && 'ring-2 ring-teal-500'
                   )}
                   onClick={() => !isOutOfStock && onAddToCart(product)}
                 >
-                  <CardContent className="p-1 xs:p-2 sm:p-3 md:p-4">
-                    <div className="space-y-1 xs:space-y-2 sm:space-y-3">
+                  <CardContent className="p-3">
+                    <div className="space-y-2">
                       {/* Código del producto */}
-                      <div className="text-[10px] xs:text-xs text-gray-500 dark:text-gray-400 text-left truncate">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 text-left truncate">
                         {product.sku}
                       </div>
 
                       {/* Icono de etiqueta de precio */}
-                      <div className="flex items-center justify-center h-6 xs:h-8 sm:h-10 md:h-12 w-full bg-gray-100 dark:bg-gray-700 rounded">
-                        <span className="text-xs xs:text-sm sm:text-base md:text-lg font-medium text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center justify-center h-12 w-full bg-gray-100 dark:bg-gray-700 rounded">
+                        <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
                           ₡
                         </span>
                       </div>
@@ -189,13 +243,13 @@ export function POSProductsGrid({
                       </div>
 
                       {/* Nombre del producto */}
-                      <div className="text-[10px] xs:text-xs sm:text-sm font-medium text-center leading-tight h-6 xs:h-8 sm:h-10 flex items-center justify-center text-gray-900 dark:text-gray-100">
+                      <div className="text-sm font-medium text-center leading-tight h-10 flex items-center justify-center text-gray-900 dark:text-gray-100">
                         <span className="line-clamp-2">{product.name}</span>
                       </div>
 
                       {/* Precio */}
                       <div className="text-center">
-                        <span className="text-[10px] xs:text-xs sm:text-sm md:text-base font-bold text-gray-800 dark:text-gray-200">
+                        <span className="text-base font-bold text-gray-800 dark:text-gray-200">
                           {formatCurrency(
                             parseFloat(product.selling_price.toString())
                           )}
@@ -204,8 +258,8 @@ export function POSProductsGrid({
 
                       {/* Badge de cantidad en carrito */}
                       {cartQuantity > 0 && (
-                        <div className="absolute -top-0.5 -right-0.5 xs:-top-1 xs:-right-1 sm:-top-2 sm:-right-2">
-                          <Badge className="bg-teal-600 text-white rounded-full h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 flex items-center justify-center p-0 text-[10px] xs:text-xs">
+                        <div className="absolute -top-2 -right-2">
+                          <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs">
                             {cartQuantity}
                           </Badge>
                         </div>
@@ -226,15 +280,13 @@ export function POSProductsGrid({
         )}
       </div>
 
-      {/* Información de productos encontrados */}
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-600">
-          {filteredProducts.length} producto
-          {filteredProducts.length !== 1 ? 's' : ''} encontrado
-          {filteredProducts.length !== 1 ? 's' : ''}
-          {searchQuery && ` para "${searchQuery}"`}
-        </p>
-      </div>
+      {/* Diálogo de Producto Rápido */}
+      <POSQuickProductDialog
+        open={showQuickProductDialog}
+        onOpenChange={setShowQuickProductDialog}
+        companyId={companyId}
+        onProductCreated={handleProductCreated}
+      />
     </div>
   );
 }

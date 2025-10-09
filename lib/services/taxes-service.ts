@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Tax, 
   TaxHistory, 
@@ -9,9 +9,10 @@ import {
 } from '@/lib/types/taxes';
 
 export class TaxesService {
+  private static supabase = createClient();
   // Obtener todos los impuestos de una empresa
   static async getTaxes(companyId: string): Promise<Tax[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .select('*')
       .eq('company_id', companyId)
@@ -24,7 +25,7 @@ export class TaxesService {
 
   // Obtener un impuesto específico
   static async getTax(id: string): Promise<Tax> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .select('*')
       .eq('id', id)
@@ -36,11 +37,11 @@ export class TaxesService {
 
   // Crear un nuevo impuesto
   static async createTax(taxData: CreateTaxData): Promise<Tax> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
     // Obtener company_id del perfil del usuario
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await this.supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
@@ -49,7 +50,7 @@ export class TaxesService {
     if (profileError) throw profileError;
     if (!profile?.company_id) throw new Error('Usuario no asociado a una empresa');
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .insert({
         ...taxData,
@@ -67,13 +68,13 @@ export class TaxesService {
 
   // Actualizar un impuesto
   static async updateTax(id: string, taxData: UpdateTaxData): Promise<Tax> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
     // Obtener el impuesto actual para registrar el cambio en el historial
     const currentTax = await this.getTax(id);
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .update({
         ...taxData,
@@ -97,7 +98,7 @@ export class TaxesService {
   static async isOnlyTaxRemaining(id: string): Promise<boolean> {
     const tax = await this.getTax(id);
     
-    const { data: otherTaxes, error } = await supabase
+    const { data: otherTaxes, error } = await this.supabase
       .from('taxes')
       .select('id')
       .eq('company_id', tax.company_id)
@@ -131,7 +132,7 @@ export class TaxesService {
       }
 
       // Verificar si el impuesto está siendo usado en productos
-      const { data: products, error: productsError } = await supabase
+      const { data: products, error: productsError } = await this.supabase
         .from('products')
         .select('id, name')
         .eq('tax_id', id)
@@ -147,7 +148,7 @@ export class TaxesService {
       }
 
       // Si se puede eliminar, proceder con la eliminación
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('taxes')
         .delete()
         .eq('id', id);
@@ -169,7 +170,7 @@ export class TaxesService {
 
   // Obtener historial de un impuesto
   static async getTaxHistory(taxId: string): Promise<TaxHistory[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('tax_history')
       .select(`
         *,
@@ -192,13 +193,13 @@ export class TaxesService {
     newPercentage: number, 
     reason: string = 'Cambio manual'
   ): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
     // Obtener company_id del impuesto
     const tax = await this.getTax(taxId);
 
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from('tax_history')
       .insert({
         tax_id: taxId,
@@ -272,7 +273,7 @@ export class TaxesService {
     name: string,
     excludeId?: string
   ): Promise<boolean> {
-    let query = supabase
+    let query = this.supabase
       .from('taxes')
       .select('id')
       .eq('company_id', companyId)
@@ -293,7 +294,7 @@ export class TaxesService {
     companyId: string, 
     taxType: TaxType
   ): Promise<Tax[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .select('*')
       .eq('company_id', companyId)
@@ -307,7 +308,7 @@ export class TaxesService {
 
   // Obtener todos los impuestos activos
   static async getActiveTaxes(companyId: string): Promise<Tax[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('taxes')
       .select('*')
       .eq('company_id', companyId)
@@ -355,7 +356,7 @@ export class TaxesService {
       }
 
       // Verificar si está siendo usado
-      const { data: products, error: productsError } = await supabase
+      const { data: products, error: productsError } = await this.supabase
         .from('products')
         .select('id, name')
         .eq('tax_id', id)
@@ -395,7 +396,7 @@ export class TaxesService {
 
   // Crear impuestos por defecto para una empresa
   static async createDefaultTaxes(companyId: string): Promise<void> {
-    const { error } = await supabase.rpc('create_default_taxes_for_company', {
+    const { error } = await this.supabase.rpc('create_default_taxes_for_company', {
       p_company_id: companyId
     });
 
