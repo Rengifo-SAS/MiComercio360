@@ -7,9 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Plus, Package, Barcode, AlertCircle } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Package,
+  Barcode,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { POSQuickProductDialog } from '@/components/pos-quick-product-dialog';
+import { ProductsService } from '@/lib/services/products-service';
 
 interface CartItem {
   product: Product;
@@ -37,17 +45,47 @@ export function POSProductsGrid({
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
   const [showQuickProductDialog, setShowQuickProductDialog] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Actualizar productos filtrados cuando cambien los productos base
   useEffect(() => {
-    const filtered = products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProducts(filtered);
+    if (!searchQuery) {
+      setFilteredProducts(products);
+    }
   }, [products, searchQuery]);
+
+  // Función para buscar productos en la base de datos
+  const searchProductsInDB = async (searchTerm: string) => {
+    if (!searchTerm.trim() || !companyId) {
+      setFilteredProducts(products);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const searchResults = await ProductsService.searchProducts(
+        companyId,
+        searchTerm
+      );
+      setFilteredProducts(searchResults);
+    } catch (error) {
+      console.error('Error buscando productos:', error);
+      // En caso de error, usar búsqueda local como fallback
+      const filtered = products.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Auto-focus en el campo de búsqueda para códigos de barras
   useEffect(() => {
@@ -59,15 +97,45 @@ export function POSProductsGrid({
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
 
+    // Limpiar timeout anterior si existe
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
     // Si es un código de barras (solo números y longitud típica), buscar automáticamente
     if (/^\d{8,}$/.test(value)) {
+      // Buscar primero en productos cargados
       const product = products.find((p) => p.barcode === value);
       if (product) {
         onAddToCart(product);
         setSearchQuery(''); // Limpiar búsqueda
         searchInputRef.current?.focus();
+        return;
       }
+
+      // Si no se encuentra en productos cargados, buscar en la base de datos
+      searchProductsInDB(value).then(() => {
+        // Después de buscar, intentar encontrar el producto en los resultados
+        setTimeout(() => {
+          const foundProduct = filteredProducts.find(
+            (p) => p.barcode === value
+          );
+          if (foundProduct) {
+            onAddToCart(foundProduct);
+            setSearchQuery(''); // Limpiar búsqueda
+            searchInputRef.current?.focus();
+          }
+        }, 100);
+      });
+      return;
     }
+
+    // Para búsquedas normales, usar debounce para evitar demasiadas consultas
+    const timeout = setTimeout(() => {
+      searchProductsInDB(value);
+    }, 300); // 300ms de delay
+
+    setSearchTimeout(timeout);
   };
 
   // Función para activar el escáner
@@ -98,11 +166,26 @@ export function POSProductsGrid({
         const currentValue = searchQuery.trim();
 
         if (currentValue && /^\d{8,}$/.test(currentValue)) {
+          // Buscar primero en productos cargados
           const product = products.find((p) => p.barcode === currentValue);
           if (product) {
             onAddToCart(product);
             setSearchQuery('');
+            return;
           }
+
+          // Si no se encuentra, buscar en la base de datos
+          searchProductsInDB(currentValue).then(() => {
+            setTimeout(() => {
+              const foundProduct = filteredProducts.find(
+                (p) => p.barcode === currentValue
+              );
+              if (foundProduct) {
+                onAddToCart(foundProduct);
+                setSearchQuery('');
+              }
+            }, 100);
+          });
         }
       }
     };
@@ -111,7 +194,16 @@ export function POSProductsGrid({
       document.addEventListener('keydown', handleKeyPress);
       return () => document.removeEventListener('keydown', handleKeyPress);
     }
-  }, [isScanning, searchQuery, products, onAddToCart]);
+  }, [isScanning, searchQuery, products, onAddToCart, filteredProducts]);
+
+  // Limpiar timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
 
   const getCartQuantity = (productId: string) => {
     const cartItem = cart.find((item) => item.product.id === productId);
@@ -152,12 +244,18 @@ export function POSProductsGrid({
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-10"
           />
-          {searchQuery && (
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+          )}
+          {searchQuery && !isSearching && (
             <Button
               variant="ghost"
               size="sm"
               className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setFilteredProducts(products);
+              }}
             >
               ×
             </Button>

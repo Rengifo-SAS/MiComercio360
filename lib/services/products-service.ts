@@ -103,18 +103,19 @@ export class ProductsService {
     }
   }
 
-  // Buscar productos por nombre o SKU
+  // Buscar productos por nombre, SKU o código de barras
   static async searchProducts(companyId: string, searchTerm: string): Promise<Product[]> {
     try {
       const { data, error } = await this.supabase
         .from('products')
         .select(`
           *,
-          inventory:inventory(quantity)
+          inventory:inventory(quantity, warehouse_id),
+          warehouses!products_warehouse_id_fkey(id, name, code)
         `)
         .eq('company_id', companyId)
         .eq('is_active', true)
-        .or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`)
+        .or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,barcode.ilike.%${searchTerm}%`)
         .order('name');
 
       if (error) {

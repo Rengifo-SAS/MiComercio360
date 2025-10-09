@@ -11,6 +11,8 @@ export interface SearchFilters {
   stock_status: string;
   sort_by: string;
   sort_order: string;
+  page: number;
+  limit: number;
 }
 
 export interface InventoryItem {
@@ -45,6 +47,15 @@ export interface SearchStats {
   total_value: number;
 }
 
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export interface SearchSuggestions {
   suggestion: string;
   type: 'product' | 'sku' | 'category';
@@ -54,6 +65,14 @@ export interface SearchSuggestions {
 export function useInventorySearch(companyId: string) {
   const [data, setData] = useState<InventoryItem[]>([]);
   const [stats, setStats] = useState<SearchStats | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [suggestions, setSuggestions] = useState<SearchSuggestions[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +84,8 @@ export function useInventorySearch(companyId: string) {
     stock_status: '',
     sort_by: 'name',
     sort_order: 'asc',
+    page: 1,
+    limit: 20,
   });
 
   const supabase = createClient();
@@ -77,6 +98,9 @@ export function useInventorySearch(companyId: string) {
     setError(null);
 
     try {
+      // Calcular offset basado en la página
+      const offset = (searchFilters.page - 1) * searchFilters.limit;
+
       // Llamar a la función de búsqueda avanzada
       const { data: searchData, error: searchError } = await supabase.rpc(
         'search_products_advanced',
@@ -89,8 +113,8 @@ export function useInventorySearch(companyId: string) {
           p_stock_status: searchFilters.stock_status || '',
           p_sort_by: searchFilters.sort_by || 'name',
           p_sort_order: searchFilters.sort_order || 'asc',
-          p_limit: 100,
-          p_offset: 0,
+          p_limit: searchFilters.limit,
+          p_offset: offset,
         }
       );
 
@@ -100,7 +124,7 @@ export function useInventorySearch(companyId: string) {
 
       setData(searchData || []);
 
-      // Obtener estadísticas
+      // Obtener estadísticas para calcular paginación
       const { data: statsData, error: statsError } = await supabase.rpc(
         'get_search_stats',
         {
@@ -117,6 +141,19 @@ export function useInventorySearch(companyId: string) {
         console.warn('Error obteniendo estadísticas:', statsError);
       } else {
         setStats(statsData?.[0] || null);
+        
+        // Calcular información de paginación
+        const totalItems = statsData?.[0]?.total_products || 0;
+        const totalPages = Math.ceil(totalItems / searchFilters.limit);
+        
+        setPagination({
+          currentPage: searchFilters.page,
+          totalPages,
+          totalItems,
+          itemsPerPage: searchFilters.limit,
+          hasNextPage: searchFilters.page < totalPages,
+          hasPreviousPage: searchFilters.page > 1,
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error en la búsqueda');
@@ -170,6 +207,8 @@ export function useInventorySearch(companyId: string) {
       stock_status: '',
       sort_by: 'name',
       sort_order: 'asc',
+      page: 1,
+      limit: 20,
     };
     setFilters(clearedFilters);
     search(clearedFilters);
@@ -177,7 +216,21 @@ export function useInventorySearch(companyId: string) {
 
   // Función para búsqueda rápida
   const quickSearch = useCallback((searchTerm: string) => {
-    const newFilters = { ...filters, search: searchTerm };
+    const newFilters = { ...filters, search: searchTerm, page: 1 };
+    setFilters(newFilters);
+    search(newFilters);
+  }, [filters, search]);
+
+  // Función para cambiar página
+  const goToPage = useCallback((page: number) => {
+    const newFilters = { ...filters, page };
+    setFilters(newFilters);
+    search(newFilters);
+  }, [filters, search]);
+
+  // Función para cambiar límite de items por página
+  const changeItemsPerPage = useCallback((limit: number) => {
+    const newFilters = { ...filters, limit, page: 1 };
     setFilters(newFilters);
     search(newFilters);
   }, [filters, search]);
@@ -205,6 +258,7 @@ export function useInventorySearch(companyId: string) {
   return {
     data,
     stats,
+    pagination,
     suggestions,
     loading,
     error,
@@ -214,5 +268,7 @@ export function useInventorySearch(companyId: string) {
     clearFilters,
     quickSearch,
     getSuggestions,
+    goToPage,
+    changeItemsPerPage,
   };
 }

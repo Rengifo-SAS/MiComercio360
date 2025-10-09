@@ -24,6 +24,7 @@ import { Search, Filter, X, Loader2 } from 'lucide-react';
 import {
   useInventorySearch,
   SearchFilters,
+  PaginationInfo,
 } from '@/lib/hooks/use-inventory-search';
 
 interface Warehouse {
@@ -44,6 +45,7 @@ interface InventorySearchFilterProps {
   companyId: string;
   onDataChange?: (data: any[]) => void;
   onStatsChange?: (stats: any) => void;
+  onPaginationChange?: (pagination: PaginationInfo) => void;
 }
 
 export function InventorySearchFilter({
@@ -52,6 +54,7 @@ export function InventorySearchFilter({
   companyId,
   onDataChange,
   onStatsChange,
+  onPaginationChange,
 }: InventorySearchFilterProps) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +62,7 @@ export function InventorySearchFilter({
   const {
     data,
     stats,
+    pagination,
     suggestions,
     loading,
     error,
@@ -66,6 +70,8 @@ export function InventorySearchFilter({
     updateFilters,
     clearFilters,
     quickSearch,
+    goToPage,
+    changeItemsPerPage,
   } = useInventorySearch(companyId);
 
   // Notificar cambios de datos a los componentes padre
@@ -80,6 +86,12 @@ export function InventorySearchFilter({
       onStatsChange(stats);
     }
   }, [stats, onStatsChange]);
+
+  useEffect(() => {
+    if (onPaginationChange) {
+      onPaginationChange(pagination);
+    }
+  }, [pagination, onPaginationChange]);
 
   const handleSearch = () => {
     quickSearch(searchTerm);

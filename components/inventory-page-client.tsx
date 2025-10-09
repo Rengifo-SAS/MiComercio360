@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { InventorySearchFilter } from '@/components/inventory-search-filter';
 import { InventoryActionsBar } from '@/components/inventory-actions-bar';
+import { InventoryPagination } from '@/components/inventory-pagination';
+import { useInventorySearch } from '@/lib/hooks/use-inventory-search';
 import {
   Card,
   CardContent,
@@ -16,7 +18,8 @@ import { InventoryAdjustmentDialog } from '@/components/inventory-adjustment-dia
 import { ProductViewDialog } from '@/components/product-view-dialog';
 import { ProductFormDialog } from '@/components/product-form-dialog';
 import { WarehouseTransferDialog } from '@/components/warehouse-transfer-dialog';
-import { WarehouseHistoryDialog } from '@/components/warehouse-history-dialog';
+import { InventoryHistoryDialog } from '@/components/inventory-history-dialog';
+import { PaginationInfo } from '@/lib/hooks/use-inventory-search';
 import {
   Store,
   Plus,
@@ -85,9 +88,6 @@ export function InventoryPageClient({
   initialData,
   initialStats,
 }: InventoryPageClientProps) {
-  const [inventoryData, setInventoryData] =
-    useState<InventoryItem[]>(initialData);
-  const [stats, setStats] = useState<SearchStats>(initialStats);
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
@@ -96,15 +96,20 @@ export function InventoryPageClient({
     null
   );
 
-  const handleDataChange = (data: InventoryItem[]) => {
-    setInventoryData(data);
-  };
+  // Usar el hook de búsqueda de inventario
+  const {
+    data: inventoryData,
+    stats,
+    pagination,
+    goToPage,
+    changeItemsPerPage,
+    search: refreshInventory,
+  } = useInventorySearch(companyId);
 
-  const handleStatsChange = (newStats: SearchStats | null) => {
-    if (newStats) {
-      setStats(newStats);
-    }
-  };
+  // Funciones para manejar cambios (ya no son necesarias porque usamos el hook)
+  const handleDataChange = () => {};
+  const handleStatsChange = () => {};
+  const handlePaginationChange = () => {};
 
   const handleViewProduct = (product: InventoryItem) => {
     setSelectedProduct(product);
@@ -123,6 +128,23 @@ export function InventoryPageClient({
   const handleTransferProduct = (product: InventoryItem) => {
     setSelectedProduct(product);
     setShowTransferDialog(true);
+  };
+
+  const handleTransferComplete = () => {
+    // Refrescar el inventario después de completar una transferencia
+    if (refreshInventory) {
+      refreshInventory({
+        search: '',
+        warehouse_id: '',
+        category_id: '',
+        supplier_id: '',
+        stock_status: '',
+        sort_by: 'name',
+        sort_order: 'asc',
+        page: 1,
+        limit: 20,
+      });
+    }
   };
 
   return (
@@ -147,7 +169,9 @@ export function InventoryPageClient({
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total_products}</div>
+            <div className="text-2xl font-bold">
+              {stats?.total_products || 0}
+            </div>
             <p className="text-xs text-muted-foreground">En inventario</p>
           </CardContent>
         </Card>
@@ -159,7 +183,7 @@ export function InventoryPageClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stats.in_stock_count}
+              {stats?.in_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
@@ -172,7 +196,7 @@ export function InventoryPageClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {stats.low_stock_count}
+              {stats?.low_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Necesitan reposición
@@ -187,7 +211,7 @@ export function InventoryPageClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {stats.out_of_stock_count}
+              {stats?.out_of_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Agotados</p>
           </CardContent>
@@ -200,7 +224,7 @@ export function InventoryPageClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${stats.total_value.toLocaleString('es-CO')}
+              ${(stats?.total_value || 0).toLocaleString('es-CO')}
             </div>
             <p className="text-xs text-muted-foreground">En inventario</p>
           </CardContent>
@@ -226,15 +250,14 @@ export function InventoryPageClient({
           companyId={companyId}
           onDataChange={handleDataChange}
           onStatsChange={handleStatsChange}
+          onPaginationChange={handlePaginationChange}
         />
 
         <InventoryActionsBar
           warehouses={warehouses}
-          categories={categories}
           inventoryData={inventoryData}
           companyId={companyId}
-          onDataChange={handleDataChange}
-          onStatsChange={handleStatsChange}
+          onTransferComplete={handleTransferComplete}
         />
       </div>
 
@@ -249,13 +272,17 @@ export function InventoryPageClient({
         <CardContent>
           {inventoryData && inventoryData.length > 0 ? (
             <div className="space-y-4">
-              {inventoryData.map((item) => {
+              {inventoryData.map((item, index) => {
                 const isLowStock = item.quantity <= item.min_stock;
                 const isOutOfStock = item.quantity === 0;
+                // Crear una clave única combinando ID del producto, bodega e índice
+                const uniqueKey = `${item.id}-${
+                  item.warehouse_id || 'default'
+                }-${index}`;
 
                 return (
                   <div
-                    key={item.id}
+                    key={uniqueKey}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center gap-4">
@@ -366,6 +393,17 @@ export function InventoryPageClient({
             </div>
           )}
         </CardContent>
+
+        {/* Paginación */}
+        {inventoryData && inventoryData.length > 0 && (
+          <div className="px-6 pb-6">
+            <InventoryPagination
+              pagination={pagination}
+              onPageChange={goToPage}
+              onItemsPerPageChange={changeItemsPerPage}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Dialogs */}
@@ -396,7 +434,9 @@ export function InventoryPageClient({
         />
       )}
 
-      {showHistoryDialog && <WarehouseHistoryDialog />}
+      {showHistoryDialog && (
+        <InventoryHistoryDialog onTransferComplete={handleTransferComplete} />
+      )}
     </div>
   );
 }

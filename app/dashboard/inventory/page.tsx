@@ -34,39 +34,7 @@ export default async function InventoryPage() {
     .eq('company_id', setupStatus.company!.id)
     .order('name');
 
-  // Obtener datos iniciales para el componente cliente
-  const { data: initialInventoryData } = await supabase.rpc(
-    'search_products_advanced',
-    {
-      p_company_id: setupStatus.company!.id,
-      p_search_term: '',
-      p_category_id: null,
-      p_supplier_id: null,
-      p_warehouse_id: null,
-      p_stock_status: '',
-      p_sort_by: 'name',
-      p_sort_order: 'asc',
-      p_limit: 100,
-      p_offset: 0,
-    }
-  );
-
-  const { data: initialStatsData } = await supabase.rpc('get_search_stats', {
-    p_company_id: setupStatus.company!.id,
-    p_search_term: '',
-    p_category_id: null,
-    p_supplier_id: null,
-    p_warehouse_id: null,
-    p_stock_status: '',
-  });
-
-  const initialStats = initialStatsData?.[0] || {
-    total_products: 0,
-    in_stock_count: 0,
-    low_stock_count: 0,
-    out_of_stock_count: 0,
-    total_value: 0,
-  };
+  // Los datos iniciales ahora los maneja el hook useInventorySearch
 
   return (
 
@@ -76,8 +44,14 @@ export default async function InventoryPage() {
       warehouses={warehouses || []}
       categories={categories || []}
       companyId={setupStatus.company!.id}
-      initialData={initialInventoryData || []}
-      initialStats={initialStats}
+      initialData={[]}
+      initialStats={{
+        total_products: 0,
+        in_stock_count: 0,
+        low_stock_count: 0,
+        out_of_stock_count: 0,
+        total_value: 0,
+      }}
     />
     </RouteGuard>
 

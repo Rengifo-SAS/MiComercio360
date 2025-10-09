@@ -53,33 +53,6 @@ export default async function DashboardPage() {
     stats?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
   const salesCount = stats?.length || 0;
 
-  // Obtener estadísticas de productos
-  const { data: productStatsData } = await supabase.rpc('get_search_stats', {
-    p_company_id: setupStatus.company!.id,
-    p_search_term: '',
-    p_category_id: null,
-    p_supplier_id: null,
-    p_warehouse_id: null,
-    p_stock_status: '',
-  });
-
-  const productStats = productStatsData?.[0] || {
-    total_products: 0,
-    in_stock_count: 0,
-    low_stock_count: 0,
-    out_of_stock_count: 0,
-    total_value: 0,
-  };
-
-  // Obtener estadísticas de clientes
-  const { data: customersData } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('company_id', setupStatus.company!.id)
-    .eq('is_active', true);
-
-  const customersCount = customersData?.length || 0;
-
   return (
     <div className="flex-1 w-full flex flex-col gap-6 p-6">
       {/* Header */}
@@ -98,7 +71,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -122,12 +95,8 @@ export default async function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {productStats.total_products}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {productStats.in_stock_count} disponibles
-            </p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">En inventario</p>
           </CardContent>
         </Card>
 
@@ -137,36 +106,19 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{customersCount}</div>
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">Registrados</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bajo Stock</CardTitle>
-            <Package className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">Turno Actual</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {productStats.low_stock_count}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Necesitan reposición
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sin Stock</CardTitle>
-            <Package className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {productStats.out_of_stock_count}
-            </div>
-            <p className="text-xs text-muted-foreground">Agotados</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Abierto</p>
           </CardContent>
         </Card>
       </div>
