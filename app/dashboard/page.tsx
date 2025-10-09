@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Building2,
   Users,
@@ -18,7 +19,19 @@ import {
   DollarSign,
   Calendar,
   BarChart3,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Eye,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity,
+  CreditCard,
+  Truck,
+  FileText,
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -39,19 +52,143 @@ export default async function DashboardPage() {
     redirect('/protected');
   }
 
-  // Obtener estadísticas básicas
-  const { data: stats } = await supabase
-    .from('sales')
-    .select('total_amount, created_at')
-    .eq('company_id', setupStatus.company!.id)
-    .gte(
-      'created_at',
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    );
+  const companyId = setupStatus.company!.id;
 
+  // Obtener estadísticas completas del dashboard
+  const [
+    salesStats,
+    productsStats,
+    customersStats,
+    inventoryStats,
+    recentSales,
+    lowStockProducts,
+    recentActivities,
+    accountsStats,
+  ] = await Promise.all([
+    // Estadísticas de ventas
+    supabase
+      .from('sales')
+      .select('total_amount, created_at, payment_status')
+      .eq('company_id', companyId)
+      .gte(
+        'created_at',
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      ),
+
+    // Estadísticas de productos
+    supabase
+      .from('products')
+      .select('id, is_active')
+      .eq('company_id', companyId),
+
+    // Estadísticas de clientes
+    supabase
+      .from('customers')
+      .select('id, is_active')
+      .eq('company_id', companyId),
+
+    // Estadísticas de inventario
+    supabase
+      .from('warehouse_inventory')
+      .select(
+        `
+        quantity,
+        min_stock,
+        products!inner(id, name, company_id)
+      `
+      )
+      .eq('products.company_id', companyId),
+
+    // Ventas recientes
+    supabase
+      .from('sales')
+      .select(
+        `
+        id,
+        total_amount,
+        created_at,
+        payment_status,
+        customers(id, name)
+      `
+      )
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(5),
+
+    // Productos con stock bajo
+    supabase
+      .from('warehouse_inventory')
+      .select(
+        `
+        quantity,
+        min_stock,
+        products!inner(id, name, sku, company_id)
+      `
+      )
+      .eq('products.company_id', companyId)
+      .lt('quantity', 'min_stock')
+      .limit(5),
+
+    // Actividades recientes (audit_log)
+    supabase
+      .from('audit_log')
+      .select(
+        `
+        id,
+        table_name,
+        action,
+        created_at,
+        profiles!inner(full_name, email)
+      `
+      )
+      .order('created_at', { ascending: false })
+      .limit(10),
+
+    // Estadísticas de cuentas
+    supabase
+      .from('accounts')
+      .select('current_balance, account_type, is_active')
+      .eq('company_id', companyId)
+      .eq('is_active', true),
+  ]);
+
+  // Procesar estadísticas
   const totalSales =
-    stats?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
-  const salesCount = stats?.length || 0;
+    salesStats.data?.reduce(
+      (sum: number, sale: any) => sum + Number(sale.total_amount),
+      0
+    ) || 0;
+  const salesCount = salesStats.data?.length || 0;
+  const pendingSales =
+    salesStats.data?.filter((sale: any) => sale.payment_status === 'PENDING')
+      .length || 0;
+
+  const totalProducts = productsStats.data?.length || 0;
+  const activeProducts =
+    productsStats.data?.filter((p: any) => p.is_active).length || 0;
+
+  const totalCustomers = customersStats.data?.length || 0;
+  const activeCustomers =
+    customersStats.data?.filter((c: any) => c.is_active).length || 0;
+
+  const totalInventoryValue =
+    inventoryStats.data?.reduce((sum: number, item: any) => {
+      // Necesitaríamos el precio de costo del producto para calcular el valor
+      return sum + item.quantity * 0; // Placeholder - necesitaríamos join con products
+    }, 0) || 0;
+
+  const lowStockCount = lowStockProducts.data?.length || 0;
+
+  const totalCash =
+    accountsStats.data?.reduce((sum: number, account: any) => {
+      if (
+        account.account_type === 'CASH_BOX' ||
+        account.account_type === 'BANK_ACCOUNT'
+      ) {
+        return sum + Number(account.current_balance);
+      }
+      return sum;
+    }, 0) || 0;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6 p-6">
@@ -85,6 +222,11 @@ export default async function DashboardPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {salesCount} transacciones
+              {pendingSales > 0 && (
+                <span className="text-orange-600 ml-1">
+                  ({pendingSales} pendientes)
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -95,8 +237,15 @@ export default async function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">En inventario</p>
+            <div className="text-2xl font-bold">{totalProducts}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeProducts} activos
+              {lowStockCount > 0 && (
+                <span className="text-red-600 ml-1">
+                  ({lowStockCount} con stock bajo)
+                </span>
+              )}
+            </p>
           </CardContent>
         </Card>
 
@@ -106,67 +255,238 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Registrados</p>
+            <div className="text-2xl font-bold">{totalCustomers}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeCustomers} activos
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Turno Actual</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Efectivo Total
+            </CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Abierto</p>
+            <div className="text-2xl font-bold">
+              ${totalCash.toLocaleString('es-CO')}
+            </div>
+            <p className="text-xs text-muted-foreground">En cuentas activas</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/dashboard/pos">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Punto de Venta
+              </CardTitle>
+              <CardDescription>
+                Iniciar una nueva transacción de venta
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Venta
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/inventory">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Inventario
+              </CardTitle>
+              <CardDescription>Gestionar productos y stock</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="w-full">
+                <Eye className="h-4 w-4 mr-2" />
+                Ver Inventario
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/sales">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Ventas
+              </CardTitle>
+              <CardDescription>Ver historial de ventas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="w-full">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Ver Ventas
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/customers">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Clientes
+              </CardTitle>
+              <CardDescription>Gestionar base de clientes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="w-full">
+                <Users className="h-4 w-4 mr-2" />
+                Ver Clientes
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Alerts and Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Alerts */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Nueva Venta
+              <AlertTriangle className="h-5 w-5" />
+              Alertas
             </CardTitle>
-            <CardDescription>
-              Iniciar una nueva transacción de venta
-            </CardDescription>
+            <CardDescription>Elementos que requieren atención</CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant="secondary">Próximamente</Badge>
+            {lowStockCount > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                      Stock Bajo
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-300">
+                      {lowStockCount} productos con stock bajo
+                    </p>
+                  </div>
+                  <Link href="/dashboard/inventory">
+                    <Button size="sm" variant="outline">
+                      Ver
+                    </Button>
+                  </Link>
+                </div>
+                {lowStockProducts.data?.slice(0, 3).map((item: any) => (
+                  <div
+                    key={item.products.id}
+                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {item.products.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stock: {item.quantity} / Mín: {item.min_stock}
+                      </p>
+                    </div>
+                    <Badge variant="destructive" {...({} as any)}>
+                      Bajo
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                <p className="text-sm">No hay alertas pendientes</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        {/* Recent Sales */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Gestionar Inventario
+              <TrendingUp className="h-5 w-5" />
+              Ventas Recientes
             </CardTitle>
-            <CardDescription>
-              Agregar, editar o consultar productos
-            </CardDescription>
+            <CardDescription>Últimas transacciones realizadas</CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant="secondary">Próximamente</Badge>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Reportes
-            </CardTitle>
-            <CardDescription>
-              Ver reportes de ventas y estadísticas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="secondary">Próximamente</Badge>
+            {recentSales.data && recentSales.data.length > 0 ? (
+              <div className="space-y-3">
+                {recentSales.data.map((sale: any) => (
+                  <div
+                    key={sale.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-full">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {sale.customers?.name || 'Cliente General'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(sale.created_at).toLocaleDateString(
+                            'es-CO'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">
+                        ${Number(sale.total_amount).toLocaleString('es-CO')}
+                      </p>
+                      <Badge
+                        variant={
+                          sale.payment_status === 'COMPLETED'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className="text-xs"
+                        {...({} as any)}
+                      >
+                        {sale.payment_status === 'COMPLETED'
+                          ? 'Pagado'
+                          : 'Pendiente'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-2">
+                  <Link href="/dashboard/sales">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Ver todas las ventas
+                      <ArrowUpRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay ventas recientes</p>
+                <p className="text-sm">Las transacciones aparecerán aquí</p>
+                <Link href="/dashboard/pos" className="mt-4 inline-block">
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Realizar Primera Venta
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -175,17 +495,61 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+            <Activity className="h-5 w-5" />
             Actividad Reciente
           </CardTitle>
-          <CardDescription>Últimas transacciones y movimientos</CardDescription>
+          <CardDescription>
+            Últimas acciones realizadas en el sistema
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No hay actividad reciente</p>
-            <p className="text-sm">Las transacciones aparecerán aquí</p>
-          </div>
+          {recentActivities.data && recentActivities.data.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivities.data.slice(0, 5).map((activity: any) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                    <Activity className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {activity.action} en {activity.table_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Por{' '}
+                      {activity.profiles?.full_name || activity.profiles?.email}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(activity.created_at).toLocaleDateString(
+                        'es-CO'
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(activity.created_at).toLocaleTimeString(
+                        'es-CO',
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay actividad reciente</p>
+              <p className="text-sm">
+                Las acciones del sistema aparecerán aquí
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
