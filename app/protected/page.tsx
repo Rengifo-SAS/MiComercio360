@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { CompanySetupForm } from '@/components/company-setup-form';
-import { InfoIcon, Building2, CheckCircle } from 'lucide-react';
+import { SetupProgress } from '@/components/setup-progress';
+import { Building2 } from 'lucide-react';
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
@@ -25,61 +26,34 @@ export default async function ProtectedPage() {
   }
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
-      <div className="w-full">
-        <div className="bg-blue-50 dark:bg-blue-950 text-sm p-4 rounded-md text-blue-900 dark:text-blue-100 flex gap-3 items-center">
-          <InfoIcon size="16" strokeWidth={2} />
-          <div>
-            <p className="font-medium">¡Bienvenido al Sistema POS!</p>
-            <p className="text-sm">
-              Para comenzar, necesitas configurar los datos de tu empresa.
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-lg">
+            <Building2 className="w-8 h-8 text-white" />
           </div>
-        </div>
-      </div>
-
-      {/* Estado de configuración */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex items-center gap-3 p-4 border rounded-lg">
-          <div
-            className={`p-2 rounded-full ${
-              setupStatus.hasProfile
-                ? 'bg-green-100 text-green-600'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            <CheckCircle size="20" />
-          </div>
-          <div>
-            <p className="font-medium">Perfil de Usuario</p>
-            <p className="text-sm text-muted-foreground">
-              {setupStatus.hasProfile ? 'Configurado' : 'Pendiente'}
-            </p>
-          </div>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+            Configuración Inicial
+          </h1>
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            ¡Bienvenido! Configuremos tu empresa para comenzar a usar el sistema
+            POS
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 p-4 border rounded-lg">
-          <div
-            className={`p-2 rounded-full ${
-              setupStatus.hasCompany
-                ? 'bg-green-100 text-green-600'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            <Building2 size="20" />
-          </div>
-          <div>
-            <p className="font-medium">Datos de Empresa</p>
-            <p className="text-sm text-muted-foreground">
-              {setupStatus.hasCompany ? 'Configurado' : 'Pendiente'}
-            </p>
-          </div>
+        {/* Progress Section */}
+        <div className="mb-12">
+          <SetupProgress
+            hasProfile={setupStatus.hasProfile}
+            hasCompany={setupStatus.hasCompany}
+          />
         </div>
-      </div>
 
-      {/* Formulario de configuración */}
-      <div className="max-w-4xl mx-auto w-full">
-        <CompanySetupForm userEmail={userEmail} userName={userName} />
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto">
+          <CompanySetupForm userEmail={userEmail} userName={userName} />
+        </div>
       </div>
     </div>
   );

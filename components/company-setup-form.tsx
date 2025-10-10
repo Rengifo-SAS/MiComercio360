@@ -16,14 +16,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { CIIU_CODES, TAX_REGIMES, DEPARTMENTS } from '@/lib/data/colombia-data';
 import { getMunicipalitiesByDepartment } from '@/lib/data/municipalities-data';
-import {
-  Wallet,
-  Building2,
-  CreditCard,
-  FileText,
-  Receipt,
-  Calculator,
-} from 'lucide-react';
+import { COUNTRIES } from '@/lib/data/countries-data';
+import { Building2, FileText } from 'lucide-react';
 
 interface CompanySetupFormProps {
   className?: string;
@@ -52,6 +46,8 @@ export function CompanySetupForm({
     codigo_ciiu: '',
     tipo_documento: 'NIT',
   });
+  const [selectedCountry, setSelectedCountry] = useState('CO');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [municipalities, setMunicipalities] = useState<
@@ -65,6 +61,36 @@ export function CompanySetupForm({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    const country = COUNTRIES.find((c) => c.code === countryCode);
+    if (country) {
+      setFormData((prev) => ({
+        ...prev,
+        country: country.name,
+      }));
+    }
+    // Actualizar el teléfono completo
+    updateFullPhone(countryCode, phoneNumber);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPhoneNumber(value);
+    updateFullPhone(selectedCountry, value);
+  };
+
+  const updateFullPhone = (countryCode: string, phone: string) => {
+    const country = COUNTRIES.find((c) => c.code === countryCode);
+    if (country) {
+      const fullPhone = `${country.phoneCode} ${phone}`;
+      setFormData((prev) => ({
+        ...prev,
+        phone: fullPhone,
+      }));
+    }
   };
 
   const loadMunicipalities = (departmentName: string) => {
@@ -179,23 +205,34 @@ export function CompanySetupForm({
   };
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Configuración Inicial</CardTitle>
-          <CardDescription>
-            Configura los datos de tu empresa para comenzar a usar el sistema
-            POS
-          </CardDescription>
+    <div className={cn('flex flex-col gap-8', className)} {...props}>
+      <Card className="shadow-xl border-0 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
+        <CardHeader className="pb-6">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mb-4">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
+              Información de la Empresa
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-300 mt-2">
+              Complete los datos básicos de su empresa para continuar
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-8">
               {/* Información básica de la empresa */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">
-                  Información de la Empresa
-                </h3>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Información Básica
+                  </h3>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -252,20 +289,41 @@ export function CompanySetupForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="+57 300 123 4567"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => handleCountryChange(e.target.value)}
+                      className="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.phoneCode}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="300 123 4567"
+                      className="flex-1"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Información fiscal */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Información Fiscal</h3>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Información Fiscal
+                  </h3>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -341,8 +399,33 @@ export function CompanySetupForm({
               </div>
 
               {/* Información de ubicación */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Ubicación</h3>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-purple-600 dark:text-purple-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Ubicación
+                  </h3>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="address">Dirección *</Label>
@@ -357,6 +440,31 @@ export function CompanySetupForm({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Departamento *</Label>
+                    <select
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          state: e.target.value,
+                          city: '', // Limpiar ciudad cuando cambie el departamento
+                        }))
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      required
+                    >
+                      <option value="">Seleccione un departamento</option>
+                      {DEPARTMENTS.map((dept) => (
+                        <option key={dept.code} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="city">Ciudad *</Label>
                     <select
@@ -379,31 +487,6 @@ export function CompanySetupForm({
                           value={municipality.name}
                         >
                           {municipality.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="state">Departamento *</Label>
-                    <select
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          state: e.target.value,
-                          city: '', // Limpiar ciudad cuando cambie el departamento
-                        }))
-                      }
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      required
-                    >
-                      <option value="">Seleccione un departamento</option>
-                      {DEPARTMENTS.map((dept) => (
-                        <option key={dept.code} value={dept.name}>
-                          {dept.name}
                         </option>
                       ))}
                     </select>
@@ -434,157 +517,48 @@ export function CompanySetupForm({
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
-
-              {/* Sección de cuentas por defecto */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Cuentas por Defecto</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Se crearán automáticamente las siguientes cuentas para tu
-                    empresa:
-                  </p>
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-3 h-3 text-red-600 dark:text-red-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                      {error}
+                    </p>
+                  </div>
                 </div>
+              )}
 
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Card className="border-green-200 bg-green-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <Wallet className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-green-900">
-                            Caja Chica
-                          </h4>
-                          <p className="text-sm text-green-700">
-                            Gastos menores y cambio
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-blue-200 bg-blue-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Building2 className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-blue-900">
-                            Caja General
-                          </h4>
-                          <p className="text-sm text-blue-700">
-                            Operaciones diarias
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-purple-200 bg-purple-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <CreditCard className="h-5 w-5 text-purple-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-purple-900">
-                            Efectivo POS
-                          </h4>
-                          <p className="text-sm text-purple-700">
-                            Transacciones del punto de venta
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+              <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Configurando...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="w-5 h-5" />
+                      <span>Configurar Empresa</span>
+                    </div>
+                  )}
+                </Button>
               </div>
-
-              {/* Sección de numeraciones por defecto */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">
-                    Numeraciones por Defecto
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Se crearán automáticamente las siguientes numeraciones para
-                    tu empresa:
-                  </p>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  <Card className="border-green-200 bg-green-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <FileText className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-green-900">
-                            Facturas de Venta
-                          </h4>
-                          <p className="text-sm text-green-700">
-                            FAC000001 - FAC999999
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-blue-200 bg-blue-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Receipt className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-blue-900">
-                            Recibos de Caja
-                          </h4>
-                          <p className="text-sm text-blue-700">
-                            REC000001 - REC999999
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-purple-200 bg-purple-50/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Calculator className="h-5 w-5 text-purple-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-purple-900">
-                            Cotizaciones
-                          </h4>
-                          <p className="text-sm text-purple-700">
-                            COT000001 - COT999999
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  <p>
-                    <strong>Nota:</strong> También se crearán numeraciones para
-                    Comprobantes de Egreso, Notas Crédito, Notas Débito, Órdenes
-                    de Compra, Remisiones, Comprobantes de Pago y Notas de
-                    Ajuste. Todas iniciarán en 1 y podrás personalizarlas
-                    después.
-                  </p>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Configurando...' : 'Configurar Empresa'}
-              </Button>
             </div>
           </form>
         </CardContent>

@@ -10,35 +10,42 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={'/'}>Sistema POS</Link>
+    <main className="min-h-screen">
+      {/* Minimalist Navigation */}
+      <nav className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-16 flex justify-between items-center max-w-6xl">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">P</span>
             </div>
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          {children}
-        </div>
-
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{' '}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
+            <Link
+              href={'/'}
+              className="font-bold text-slate-900 dark:text-white text-lg hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
+              Sistema POS
+            </Link>
+          </div>
+          <div className="flex items-center space-x-4">
+            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+            <ThemeSwitcher />
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="relative">{children}</div>
+
+      {/* Minimalist Footer */}
+      <footer className="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200/50 dark:border-slate-700/50 mt-16">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="flex items-center justify-center">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              © {new Date().getFullYear()} Sistema POS. Todos los derechos
+              reservados.
+            </p>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
