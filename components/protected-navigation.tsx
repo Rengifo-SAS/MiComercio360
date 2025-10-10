@@ -21,7 +21,6 @@ import {
   Settings,
   Home,
   Calendar,
-  CreditCard,
   Truck,
   Tag,
   FileText,
@@ -61,7 +60,7 @@ const navigationCategories: NavigationCategory[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         badge: null,
-        permission: 'dashboard.read',
+        permission: 'dashboard.view',
         module: 'dashboard',
         category: 'dashboard',
       },
@@ -102,15 +101,6 @@ const navigationCategories: NavigationCategory[] = [
         badge: null,
         permission: 'billing.read',
         module: 'billing',
-        category: 'ventas',
-      },
-      {
-        title: 'Pagos',
-        href: '/dashboard/payments',
-        icon: CreditCard,
-        badge: null,
-        permission: 'payments.read',
-        module: 'payments',
         category: 'ventas',
       },
     ],
@@ -266,15 +256,54 @@ export function ProtectedNavigation({
     Record<string, boolean>
   >({});
 
+  // Abrir automáticamente la categoría que contiene la página actual
+  React.useEffect(() => {
+    const currentCategory = navigationCategories.find((category) =>
+      category.items.some((item) => isActive(item.href))
+    );
+
+    if (currentCategory) {
+      setOpenCategories((prev) => {
+        // Solo abrir si no hay ninguna categoría abierta actualmente
+        const hasOpenCategory = Object.values(prev).some(Boolean);
+        if (!hasOpenCategory) {
+          const newState: Record<string, boolean> = {};
+          navigationCategories.forEach((category) => {
+            newState[category.title] = false;
+          });
+          newState[currentCategory.title] = true;
+          return newState;
+        }
+        return prev;
+      });
+    }
+  }, [pathname]);
+
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
   const toggleCategory = (categoryTitle: string) => {
-    setOpenCategories((prev) => ({
-      ...prev,
-      [categoryTitle]: !prev[categoryTitle],
-    }));
+    setOpenCategories((prev) => {
+      const isCurrentlyOpen = prev[categoryTitle];
+
+      // Si la categoría está abierta, cerrarla
+      if (isCurrentlyOpen) {
+        return {
+          ...prev,
+          [categoryTitle]: false,
+        };
+      }
+
+      // Si está cerrada, cerrar todas las demás y abrir solo esta
+      const newState: Record<string, boolean> = {};
+      navigationCategories.forEach((category) => {
+        newState[category.title] = false;
+      });
+      newState[categoryTitle] = true;
+
+      return newState;
+    });
   };
 
   // Filtrar categorías basado en permisos

@@ -7,7 +7,6 @@ import {
   ProtectedNavigation,
   HomeLink,
 } from '@/components/protected-navigation';
-import { UserPermissionsInfo } from '@/components/user-permissions-info';
 import { Building2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DashboardSidebarProps {
@@ -100,9 +99,6 @@ export function DashboardSidebar({
           isCollapsed={isCollapsed}
           onItemClick={() => setIsMobileOpen(false)}
         />
-
-        {/* User Permissions Info */}
-        <UserPermissionsInfo isCollapsed={isCollapsed} />
 
         {/* Footer */}
         <div className="p-4 border-t">

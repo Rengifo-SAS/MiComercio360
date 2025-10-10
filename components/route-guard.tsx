@@ -18,12 +18,21 @@ export function RouteGuard({
   requiredModule,
   fallbackPath = '/access-denied',
 }: RouteGuardProps) {
-  const { hasPermission, hasModulePermission, loading } = usePermissions();
+  const { hasPermission, hasModulePermission, loading, permissions } =
+    usePermissions();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (loading) return;
+    // Esperar a que termine de cargar y que haya permisos
+    if (loading) {
+      return;
+    }
+
+    // Si no hay permisos cargados aún, esperar un poco más
+    if (permissions.length === 0) {
+      return;
+    }
 
     let authorized = false;
 
@@ -40,6 +49,7 @@ export function RouteGuard({
 
     if (!authorized) {
       router.push(fallbackPath);
+    } else {
     }
   }, [
     loading,
@@ -49,6 +59,7 @@ export function RouteGuard({
     requiredModule,
     router,
     fallbackPath,
+    permissions.length,
   ]);
 
   // Mostrar loading mientras se verifican los permisos
@@ -79,7 +90,8 @@ export function useRoutePermission(
   requiredPermission?: string,
   requiredModule?: string
 ) {
-  const { hasPermission, hasModulePermission, loading } = usePermissions();
+  const { hasPermission, hasModulePermission, loading, permissions } =
+    usePermissions();
   const router = useRouter();
 
   const checkPermission = () => {
@@ -108,4 +120,3 @@ export function useRoutePermission(
     redirectIfUnauthorized,
   };
 }
-
