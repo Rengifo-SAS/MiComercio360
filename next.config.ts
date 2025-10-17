@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // Configuración para páginas de error
   experimental: {
     // Habilitar el manejo mejorado de errores
-    errorOverlay: true,
+    // errorOverlay: true, // Removido porque no existe en esta versión
   },
   // Configuración de redirecciones y páginas de error personalizadas
   async redirects() {

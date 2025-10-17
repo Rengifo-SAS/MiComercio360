@@ -21,7 +21,7 @@ CREATE TYPE user_status AS ENUM (
 
 -- Crear tabla de permisos del sistema
 CREATE TABLE public.permissions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     module VARCHAR(50) NOT NULL, -- Módulo al que pertenece el permiso
@@ -36,7 +36,7 @@ UNIQUE(module, action, resource) );
 
 -- Crear tabla de roles
 CREATE TABLE public.roles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
@@ -52,7 +52,7 @@ UNIQUE(company_id, name) );
 
 -- Crear tabla de asignación de permisos a roles
 CREATE TABLE public.role_permissions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES public.permissions(id) ON DELETE CASCADE,
     granted_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -63,7 +63,7 @@ UNIQUE(role_id, permission_id) );
 
 -- Crear tabla de asignación de roles a usuarios
 CREATE TABLE public.user_roles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -76,7 +76,7 @@ UNIQUE(user_id, role_id) );
 
 -- Crear tabla de sesiones de usuario
 CREATE TABLE public.user_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
     session_token VARCHAR(255) NOT NULL UNIQUE,
     ip_address INET,
@@ -96,7 +96,7 @@ CREATE TABLE public.user_sessions (
 
 -- Crear tabla de auditoría de usuarios
 CREATE TABLE public.user_audit_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
     action VARCHAR(50) NOT NULL, -- LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
     resource VARCHAR(100), -- Recurso afectado

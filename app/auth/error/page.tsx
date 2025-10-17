@@ -11,12 +11,12 @@ import {
 } from '@/components/ui/card';
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from 'lucide-react';
 
-export default function AuthErrorPage({
+export default async function AuthErrorPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const params = searchParams;
+  const params = await searchParams;
 
   const getErrorMessage = (errorCode?: string) => {
     switch (errorCode) {

@@ -1,9 +1,7 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create companies table first (no dependencies)
+-- Note: uuid-ossp extension is enabled in migration 000_enable_extensions.sql
 CREATE TABLE public.companies (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   business_name text,
   tax_id text,
@@ -39,7 +37,7 @@ CREATE TABLE public.profiles (
 
 -- Create suppliers table (depends on companies)
 CREATE TABLE public.suppliers (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   contact_person text,
   email text,
@@ -60,7 +58,7 @@ CREATE TABLE public.suppliers (
 
 -- Create categories table (depends on companies)
 CREATE TABLE public.categories (
-    id uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    id uuid NOT NULL DEFAULT gen_random_uuid (),
     name text NOT NULL,
     description text,
     color text,
@@ -78,7 +76,7 @@ CREATE TABLE public.categories (
 
 -- Create products table (depends on categories, suppliers, companies)
 CREATE TABLE public.products (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   sku text NOT NULL,
   name text NOT NULL,
   description text,
@@ -103,7 +101,7 @@ CREATE TABLE public.products (
 
 -- Create customers table (depends on companies)
 CREATE TABLE public.customers (
-    id uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    id uuid NOT NULL DEFAULT gen_random_uuid (),
     name text NOT NULL,
     email text,
     phone text,
@@ -127,7 +125,7 @@ CREATE TABLE public.customers (
 
 -- Create shifts table (depends on profiles, companies)
 CREATE TABLE public.shifts (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   cashier_id uuid,
   start_time timestamp with time zone NOT NULL,
   end_time timestamp with time zone,
@@ -146,7 +144,7 @@ CREATE TABLE public.shifts (
 
 -- Create sales table (depends on shifts, customers, profiles, companies)
 CREATE TABLE public.sales (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   shift_id uuid,
   customer_id uuid,
   cashier_id uuid,
@@ -171,7 +169,7 @@ CREATE TABLE public.sales (
 
 -- Create sale_items table (depends on sales, products)
 CREATE TABLE public.sale_items (
-    id uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    id uuid NOT NULL DEFAULT gen_random_uuid (),
     sale_id uuid,
     product_id uuid,
     quantity integer NOT NULL,
@@ -189,7 +187,7 @@ CREATE TABLE public.sale_items (
 
 -- Create purchases table (depends on suppliers, profiles, companies)
 CREATE TABLE public.purchases (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   supplier_id uuid,
   purchase_number text NOT NULL,
   subtotal numeric NOT NULL,
@@ -209,7 +207,7 @@ CREATE TABLE public.purchases (
 
 -- Create purchase_items table (depends on purchases, products)
 CREATE TABLE public.purchase_items (
-    id uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    id uuid NOT NULL DEFAULT gen_random_uuid (),
     purchase_id uuid,
     product_id uuid,
     quantity integer NOT NULL,
@@ -225,7 +223,7 @@ CREATE TABLE public.purchase_items (
 
 -- Create inventory table (depends on products, profiles, companies)
 CREATE TABLE public.inventory (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   product_id uuid,
   quantity integer NOT NULL DEFAULT 0,
   reserved_quantity integer DEFAULT 0,
@@ -241,7 +239,7 @@ CREATE TABLE public.inventory (
 
 -- Create inventory_movements table (depends on products, profiles, companies)
 CREATE TABLE public.inventory_movements (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   product_id uuid,
   movement_type text NOT NULL CHECK (movement_type = ANY (ARRAY['in'::text, 'out'::text, 'adjustment'::text, 'transfer'::text])),
   quantity integer NOT NULL,
@@ -261,7 +259,7 @@ CREATE TABLE public.inventory_movements (
 
 -- Create settings table (depends on profiles, companies)
 CREATE TABLE public.settings (
-    id uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    id uuid NOT NULL DEFAULT gen_random_uuid (),
     key text NOT NULL,
     value text NOT NULL,
     description text,
@@ -277,7 +275,7 @@ CREATE TABLE public.settings (
 
 -- Create audit_log table (depends on profiles)
 CREATE TABLE public.audit_log (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   table_name text NOT NULL,
   record_id uuid NOT NULL,
   action text NOT NULL CHECK (action = ANY (ARRAY['INSERT'::text, 'UPDATE'::text, 'DELETE'::text])),

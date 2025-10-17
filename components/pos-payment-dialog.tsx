@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -234,6 +235,9 @@ export function POSPaymentDialog({
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Pagar factura
           </DialogTitle>
+          <DialogDescription>
+            Selecciona el método de pago y completa la transacción
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

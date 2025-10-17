@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -81,6 +82,9 @@ export function POSSaleCompleteDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="sr-only">Venta Finalizada</DialogTitle>
+          <DialogDescription className="sr-only">
+            La venta se ha completado exitosamente
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

@@ -81,7 +81,8 @@ export function SettingsPageClient() {
         'Diseño y configuración de plantillas para facturas, recibos y reportes',
       icon: Printer,
       color: 'bg-purple-500',
-      status: 'active',
+      status: 'coming-soon',
+      badge: 'Próximamente',
       route: '/dashboard/settings/templates',
     },
     {

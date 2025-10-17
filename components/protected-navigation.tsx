@@ -31,6 +31,7 @@ import {
   Warehouse,
   ChevronDown,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 
 interface NavigationItem {

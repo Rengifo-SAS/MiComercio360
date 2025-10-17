@@ -22,6 +22,8 @@ import { POSCartPanel } from './pos-cart-panel';
 import { POSConfigurationDialog } from './pos-configuration-dialog';
 import { POSPaymentDialog } from './pos-payment-dialog';
 import { POSSaleCompleteDialog } from './pos-sale-complete-dialog';
+import { POSShiftIndicator } from './pos-shift-indicator';
+import { POSTerminalSummary } from './pos-terminal-summary';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -67,6 +69,7 @@ export function POSPageClient() {
     printPaperSize: 'thermal-80mm',
   });
   const [companyId, setCompanyId] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
 
   const supabase = createClient();
   const { setIsCollapsed } = useSidebar();
@@ -102,6 +105,7 @@ export function POSPageClient() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -113,6 +117,7 @@ export function POSPageClient() {
       if (!profile?.company_id) return;
 
       setCompanyId(profile.company_id);
+      setUserId(user.id);
 
       // Cargar datos en paralelo
       const [
@@ -437,7 +442,13 @@ export function POSPageClient() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {companyId && userId && (
+              <POSShiftIndicator companyId={companyId} userId={userId} />
+            )}
+            {companyId && userId && (
+              <POSTerminalSummary companyId={companyId} userId={userId} />
+            )}
             <Button
               variant="outline"
               size="sm"

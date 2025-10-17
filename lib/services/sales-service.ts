@@ -12,6 +12,7 @@ import {
   calculateSaleTotals
 } from '@/lib/types/sales';
 import { NumerationsService } from '@/lib/services/numerations-service';
+import { ShiftsService } from '@/lib/services/shifts-service';
 
 export class SalesService {
   private static supabase = createClient();
@@ -142,6 +143,14 @@ export class SalesService {
   static async createSale(companyId: string, saleData: CreateSaleData): Promise<Sale> {
     const { items, ...saleInfo } = saleData;
     
+    // Obtener el turno activo para asociar la venta
+    const { data: activeShift } = await this.supabase
+      .from('shifts')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('status', 'open')
+      .single();
+    
     // Obtener productos para cálculo de impuestos
     const { data: products } = await this.supabase
       .from('products')
@@ -194,6 +203,7 @@ export class SalesService {
     // Preparar datos de venta con payment_method mapeado
     const saleInsertData = {
       company_id: companyId,
+      shift_id: activeShift?.id, // Asociar con el turno activo
       sale_number: saleNumber,
       subtotal: totals.subtotal,
       tax_amount: totals.tax_amount,
@@ -297,6 +307,11 @@ export class SalesService {
 
     // Actualizar inventario
     await this.updateInventoryForSale(items, 'decrease');
+
+    // Actualizar estadísticas del turno si hay un turno activo
+    if (activeShift?.id) {
+      await ShiftsService.updateShiftStats(activeShift.id);
+    }
 
     // Obtener la venta completa
     const completeSale = await this.getSaleById(sale.id);

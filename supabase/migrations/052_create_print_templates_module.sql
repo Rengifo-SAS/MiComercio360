@@ -35,7 +35,7 @@ CREATE TYPE page_orientation AS ENUM (
 
 -- Crear tabla de plantillas de impresión
 CREATE TABLE public.print_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -94,7 +94,7 @@ UNIQUE (company_id, name),
 
 -- Crear tabla de historial de plantillas
 CREATE TABLE public.print_template_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     template_id UUID NOT NULL REFERENCES public.print_templates (id) ON DELETE CASCADE,
     company_id UUID NOT NULL REFERENCES public.companies (id) ON DELETE CASCADE,
     change_type VARCHAR(50) NOT NULL, -- 'CREATED', 'UPDATED', 'ACTIVATED', 'DEACTIVATED', 'DELETED'
