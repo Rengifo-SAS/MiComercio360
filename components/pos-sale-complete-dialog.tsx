@@ -61,12 +61,35 @@ export function POSSaleCompleteDialog({
 
     setIsSending(true);
     try {
-      // TODO: Implementar envío de factura por email
-      toast.success(`Factura enviada a ${email}`);
+      // Enviar factura por correo usando API route
+      const response = await fetch('/api/send-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saleId: sale.id,
+          companyId,
+          email,
+          paperSize: 'letter', // Siempre usar tamaño carta para correos
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al enviar la factura');
+      }
+
+      toast.success(
+        result.message || `Factura enviada exitosamente a ${email}`
+      );
       setEmail('');
     } catch (error) {
       console.error('Error enviando factura:', error);
-      toast.error('Error al enviar la factura');
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al enviar la factura';
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }

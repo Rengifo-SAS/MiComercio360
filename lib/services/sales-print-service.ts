@@ -21,13 +21,13 @@ export class SalesPrintService {
 
       // Si no hay plantilla por defecto, obtener la primera activa
       const activeTemplates = await PrintTemplatesService.getActiveTemplates(companyId);
-      
+
       // Verificar que activeTemplates sea un array válido
       if (Array.isArray(activeTemplates)) {
         const invoiceTemplate = activeTemplates.find(t => t.document_type === 'INVOICE');
         return invoiceTemplate || null;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error obteniendo plantilla de factura:', error);
@@ -39,11 +39,11 @@ export class SalesPrintService {
   static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
     try {
       console.log('Generando HTML de impresión para venta:', sale.sale_number);
-      
+
       // Obtener plantilla de impresión
       const template = await this.getInvoiceTemplate(companyId);
       console.log('Plantilla encontrada:', template ? 'Sí' : 'No');
-      
+
       if (!template) {
         console.log('Usando plantilla por defecto');
         // Plantilla por defecto si no hay configuración
@@ -101,7 +101,7 @@ export class SalesPrintService {
     html = html.replace(/\{\{sale\.tax_amount\}\}/g, this.formatCurrency(sale.tax_amount || 0));
     html = html.replace(/\{\{sale\.discount_amount\}\}/g, this.formatCurrency(sale.discount_amount || 0));
     html = html.replace(/\{\{sale\.total_amount\}\}/g, this.formatCurrency(sale.total_amount || 0));
-    
+
     // Agregar variables de impuestos específicos
     html = html.replace(/\{\{sale\.iva_amount\}\}/g, this.formatCurrency(sale.iva_amount || 0));
     html = html.replace(/\{\{sale\.ica_amount\}\}/g, this.formatCurrency(sale.ica_amount || 0));
@@ -165,11 +165,11 @@ export class SalesPrintService {
       const itemSubtotal = item.quantity * item.unit_price;
       const discount = item.discount_amount || 0;
       const itemTotal = itemSubtotal - discount;
-      
+
       // Obtener información del producto
       let productName = 'Producto/Servicio';
       let productSku = '';
-      
+
       if (item.product && item.product.name) {
         productName = item.product.name;
         if (item.product.sku) {
@@ -178,9 +178,9 @@ export class SalesPrintService {
       } else if (item.product_name) {
         productName = item.product_name;
       }
-      
+
       const productDisplay = productSku ? `${productName}\n${productSku}` : productName;
-      
+
       table += `
         <tr>
           <td style="border: 1px solid #ddd; padding: 8px; white-space: pre-line;">${productDisplay}</td>
@@ -483,33 +483,33 @@ export class SalesPrintService {
           </thead>
           <tbody>
             ${(sale.items || []).map(item => {
-              const itemSubtotal = item.quantity * item.unit_price;
-              const discount = item.discount_amount || 0;
-              const itemTotal = itemSubtotal - discount;
-              
-              // Obtener información del producto
-              let productName = 'Producto/Servicio';
-              let productSku = '';
-              
-              if (item.product && item.product.name) {
-                productName = item.product.name;
-                if (item.product.sku) {
-                  productSku = `SKU: ${item.product.sku}`;
-                }
-              } else if (item.product_name) {
-                productName = item.product_name;
-              }
-              
-              const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
-              
-              return `
+      const itemSubtotal = item.quantity * item.unit_price;
+      const discount = item.discount_amount || 0;
+      const itemTotal = itemSubtotal - discount;
+
+      // Obtener información del producto
+      let productName = 'Producto/Servicio';
+      let productSku = '';
+
+      if (item.product && item.product.name) {
+        productName = item.product.name;
+        if (item.product.sku) {
+          productSku = `SKU: ${item.product.sku}`;
+        }
+      } else if (item.product_name) {
+        productName = item.product_name;
+      }
+
+      const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
+
+      return `
                 <tr>
                   <td class="description">${productDisplay}</td>
                   <td class="number">${item.quantity}</td>
                   <td class="number">${this.formatCurrency(itemTotal)}</td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
         </table>
         ` : `
@@ -526,26 +526,26 @@ export class SalesPrintService {
           </thead>
           <tbody>
             ${(sale.items || []).map(item => {
-              const itemSubtotal = item.quantity * item.unit_price;
-              const discount = item.discount_amount || 0;
-              const itemTotal = itemSubtotal - discount;
-              
-              // Obtener información del producto
-              let productName = 'Producto/Servicio';
-              let productSku = '';
-              
-              if (item.product && item.product.name) {
-                productName = item.product.name;
-                if (item.product.sku) {
-                  productSku = `SKU: ${item.product.sku}`;
-                }
-              } else if (item.product_name) {
-                productName = item.product_name;
-              }
-              
-              const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
-              
-              return `
+      const itemSubtotal = item.quantity * item.unit_price;
+      const discount = item.discount_amount || 0;
+      const itemTotal = itemSubtotal - discount;
+
+      // Obtener información del producto
+      let productName = 'Producto/Servicio';
+      let productSku = '';
+
+      if (item.product && item.product.name) {
+        productName = item.product.name;
+        if (item.product.sku) {
+          productSku = `SKU: ${item.product.sku}`;
+        }
+      } else if (item.product_name) {
+        productName = item.product_name;
+      }
+
+      const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
+
+      return `
                 <tr>
                   <td>${productDisplay}</td>
                   <td class="number">${item.quantity}</td>
@@ -554,7 +554,7 @@ export class SalesPrintService {
                   <td class="number">${this.formatCurrency(itemTotal)}</td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
         </table>
         `}
@@ -619,12 +619,12 @@ export class SalesPrintService {
   // Obtener nombre del método de pago
   private static getPaymentMethodName(paymentMethod: any): string {
     if (!paymentMethod) return 'No especificado';
-    
+
     // Si es un objeto PaymentMethod, usar el name
     if (typeof paymentMethod === 'object' && paymentMethod.name) {
       return paymentMethod.name;
     }
-    
+
     // Si es un string, mapear a nombres legibles
     if (typeof paymentMethod === 'string') {
       const methodNames: { [key: string]: string } = {
@@ -641,7 +641,7 @@ export class SalesPrintService {
       };
       return methodNames[paymentMethod] || paymentMethod;
     }
-    
+
     return 'No especificado';
   }
 
@@ -649,7 +649,7 @@ export class SalesPrintService {
   static async printSale(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
     try {
       const html = await this.generatePrintHTML(sale, companyId, paperSize);
-      
+
       // Crear ventana de impresión
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
@@ -658,12 +658,12 @@ export class SalesPrintService {
 
       printWindow.document.write(html);
       printWindow.document.close();
-      
+
       // Esperar a que se cargue el contenido y luego imprimir
       printWindow.onload = () => {
         printWindow.focus();
         printWindow.print();
-        
+
         // Cerrar la ventana después de imprimir
         printWindow.onafterprint = () => {
           printWindow.close();
@@ -679,7 +679,7 @@ export class SalesPrintService {
   static async generatePDF(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
     try {
       console.log('Generando PDF para venta:', sale.sale_number);
-      
+
       // Validar datos de la venta
       if (!sale) {
         throw new Error('No se proporcionaron datos de la venta');
@@ -706,9 +706,9 @@ export class SalesPrintService {
       }
 
       console.log('Datos de empresa obtenidos:', company.name);
-      
+
       const filename = `factura-${sale.sale_number || '0000'}.pdf`;
-      
+
       // Configurar formato según el tamaño de papel
       const pdfOptions = paperSize === 'thermal-80mm' ? {
         format: 'custom' as const,
@@ -721,20 +721,84 @@ export class SalesPrintService {
         orientation: 'portrait' as const,
         margin: 20
       };
-      
+
       await PDFService.generateSalePDF(sale, company, filename, pdfOptions);
-      
+
       console.log('PDF generado exitosamente:', filename);
     } catch (error) {
       console.error('Error generando PDF:', error);
-      
+
       // Proporcionar información más específica del error
       let errorMessage = 'No se pudo generar el PDF de la factura';
-      
+
       if (error instanceof Error) {
         errorMessage += `: ${error.message}`;
       }
-      
+
+      throw new Error(errorMessage);
+    }
+  }
+
+
+  // Generar PDF como buffer para envío por correo (versión para cliente)
+  static async generatePDFBuffer(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<Buffer> {
+    try {
+      console.log('Generando PDF buffer para venta:', sale.sale_number);
+
+      // Validar datos de la venta
+      if (!sale) {
+        throw new Error('No se proporcionaron datos de la venta');
+      }
+
+      if (!companyId) {
+        throw new Error('No se proporcionó el ID de la empresa');
+      }
+
+      // Obtener datos de la empresa usando el cliente del lado del cliente
+      const { data: company, error: companyError } = await this.supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError) {
+        console.error('Error obteniendo datos de empresa:', companyError);
+        throw new Error('No se encontró la información de la empresa');
+      }
+
+      if (!company) {
+        throw new Error('No se encontró la información de la empresa');
+      }
+
+      console.log('Datos de empresa obtenidos:', company.name);
+
+      // Configurar formato según el tamaño de papel
+      const pdfOptions = paperSize === 'thermal-80mm' ? {
+        format: 'custom' as const,
+        orientation: 'portrait' as const,
+        margin: 5,
+        customWidth: 80,
+        customHeight: 200
+      } : {
+        format: 'a4' as const,
+        orientation: 'portrait' as const,
+        margin: 20
+      };
+
+      const pdfBuffer = await PDFService.generateSalePDFBuffer(sale, company, pdfOptions);
+
+      console.log('PDF buffer generado exitosamente');
+      return pdfBuffer;
+    } catch (error) {
+      console.error('Error generando PDF buffer:', error);
+
+      // Proporcionar información más específica del error
+      let errorMessage = 'No se pudo generar el PDF de la factura';
+
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+
       throw new Error(errorMessage);
     }
   }

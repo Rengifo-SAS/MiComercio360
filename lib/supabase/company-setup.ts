@@ -38,16 +38,12 @@ export async function checkCompanySetup(userId: string): Promise<CompanySetupSta
   const supabase = await createClient();
 
   try {
-    console.log('Verificando configuración para usuario:', userId);
-    
     // Verificar si el usuario tiene un perfil
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-
-    console.log('Resultado de perfil:', { profile, profileError });
 
     if (profileError || !profile) {
       console.log('No se encontró perfil');
@@ -64,8 +60,6 @@ export async function checkCompanySetup(userId: string): Promise<CompanySetupSta
       .select('*')
       .eq('id', profile.company_id)
       .single();
-
-    console.log('Resultado de compañía:', { company, companyError });
 
     if (companyError || !company) {
       console.log('No se encontró compañía');
@@ -85,24 +79,6 @@ export async function checkCompanySetup(userId: string): Promise<CompanySetupSta
       company.tax_id
     );
 
-    console.log('Estado de configuración:', {
-      hasProfile: true,
-      hasCompany: true,
-      isSetupComplete: isCompanyComplete,
-      companyFields: {
-        name: !!company.name,
-        business_name: !!company.business_name,
-        tax_id: !!company.tax_id,
-        email: !!company.email,
-        phone: !!company.phone,
-        address: !!company.address,
-        city: !!company.city,
-        state: !!company.state,
-        postal_code: !!company.postal_code,
-        regimen_tributario: !!company.regimen_tributario,
-        tipo_documento: !!company.tipo_documento,
-      }
-    });
 
     return {
       hasProfile: true,

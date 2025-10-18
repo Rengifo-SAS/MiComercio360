@@ -394,10 +394,6 @@ export function POSPageClient() {
         payment_change: paymentData.change,
       };
 
-      // Debug: Log de datos de venta
-      console.log('Datos de venta:', saleData);
-      console.log('Método de pago:', paymentData.method);
-
       // Crear la venta
       const createdSale = await SalesService.createSale(companyId, saleData);
 
