@@ -569,6 +569,9 @@ export class ProductsImportService {
           warehouseId = await this.createWarehouse(product.warehouse_name, config.companyId);
           warehouseMap.set(product.warehouse_name.toLowerCase(), warehouseId);
         }
+      } else {
+        // Si no se especifica bodega, usar la bodega principal del usuario
+        warehouseId = await this.getMainWarehouse(config.companyId);
       }
 
       let productId: string;
@@ -628,7 +631,7 @@ export class ProductsImportService {
       }
 
       // Actualizar inventario si es necesario
-      if (product.available_quantity > 0 && warehouseId) {
+      if (product.available_quantity > 0) {
         await this.updateInventory(productId, product.available_quantity, warehouseId, config.companyId);
       }
 
@@ -693,6 +696,44 @@ export class ProductsImportService {
   }
 
   /**
+   * Obtiene la bodega principal de la empresa
+   */
+  private static async getMainWarehouse(companyId: string): Promise<string> {
+    // Primero intentar obtener la bodega principal existente
+    const { data: existingWarehouse, error: fetchError } = await this.supabase
+      .from('warehouses')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('is_main', true)
+      .eq('is_active', true)
+      .single();
+
+    if (existingWarehouse && !fetchError) {
+      return existingWarehouse.id;
+    }
+
+    // Si no existe, crear la bodega principal
+    const { data, error } = await this.supabase
+      .from('warehouses')
+      .insert({
+        name: 'Bodega Principal',
+        code: 'MAIN',
+        description: 'Bodega principal de la empresa',
+        is_main: true,
+        company_id: companyId,
+        is_active: true
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`Error obteniendo/creando bodega principal: ${error.message}`);
+    }
+
+    return data.id;
+  }
+
+  /**
    * Actualiza el inventario de un producto
    */
   private static async updateInventory(
@@ -702,13 +743,19 @@ export class ProductsImportService {
     companyId: string
   ): Promise<void> {
     try {
-      // Buscar inventario existente
+      // Si no se especifica bodega, usar la bodega principal
+      let targetWarehouseId = warehouseId;
+      if (!targetWarehouseId) {
+        targetWarehouseId = await this.getMainWarehouse(companyId);
+      }
+
+      // Buscar inventario existente en la tabla inventory (sistema tradicional)
       const { data: existingInventory } = await this.supabase
         .from('inventory')
         .select('id')
         .eq('product_id', productId)
         .eq('company_id', companyId)
-        .eq('warehouse_id', warehouseId || null)
+        .eq('warehouse_id', targetWarehouseId)
         .maybeSingle();
 
       if (existingInventory) {
@@ -728,7 +775,38 @@ export class ProductsImportService {
             product_id: productId,
             quantity,
             company_id: companyId,
-            warehouse_id: warehouseId,
+            warehouse_id: targetWarehouseId,
+            last_updated: new Date().toISOString()
+          });
+      }
+
+      // También actualizar warehouse_inventory (sistema de bodegas)
+      const { data: existingWarehouseInventory } = await this.supabase
+        .from('warehouse_inventory')
+        .select('id')
+        .eq('product_id', productId)
+        .eq('warehouse_id', targetWarehouseId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (existingWarehouseInventory) {
+        // Actualizar inventario existente en warehouse_inventory
+        await this.supabase
+          .from('warehouse_inventory')
+          .update({
+            quantity,
+            last_updated: new Date().toISOString()
+          })
+          .eq('id', existingWarehouseInventory.id);
+      } else {
+        // Crear nuevo inventario en warehouse_inventory
+        await this.supabase
+          .from('warehouse_inventory')
+          .insert({
+            product_id: productId,
+            warehouse_id: targetWarehouseId,
+            quantity,
+            company_id: companyId,
             last_updated: new Date().toISOString()
           });
       }

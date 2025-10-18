@@ -31,7 +31,7 @@ function DashboardContent({
   companyName,
   userRole,
 }: DashboardLayoutClientProps) {
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, isHovered } = useSidebar();
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,7 +42,9 @@ function DashboardContent({
       <div
         className={cn(
           'transition-all duration-300 ease-in-out',
-          isCollapsed ? 'lg:pl-16' : 'lg:pl-64'
+          // En desktop, si está colapsada pero se hace hover, se expande el contenido
+          // Si no está colapsada, siempre se mantiene expandido
+          isCollapsed && !isHovered ? 'lg:pl-16' : 'lg:pl-64'
         )}
       >
         {/* Top Bar */}

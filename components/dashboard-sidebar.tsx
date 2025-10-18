@@ -23,6 +23,8 @@ export function DashboardSidebar({
   const {
     isCollapsed,
     isMobileOpen,
+    isHovered,
+    setIsHovered,
     toggleSidebar,
     toggleMobileSidebar,
     setIsMobileOpen,
@@ -44,13 +46,17 @@ export function DashboardSidebar({
           'fixed left-0 top-0 z-50 h-full bg-background border-r transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
-          isCollapsed ? 'w-16' : 'w-64',
+          // En desktop, si está colapsada pero se hace hover, se expande
+          // Si no está colapsada, siempre se mantiene expandida
+          isCollapsed && !isHovered ? 'w-16' : 'w-64',
           className
         )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          {!isCollapsed && (
+          {(!isCollapsed || isHovered) && (
             <div className="flex items-center gap-2">
               <Building2 className="h-6 w-6 text-primary" />
               <div className="flex flex-col">
@@ -64,7 +70,7 @@ export function DashboardSidebar({
             </div>
           )}
 
-          {isCollapsed && (
+          {isCollapsed && !isHovered && (
             <Building2 className="h-6 w-6 text-primary mx-auto" />
           )}
 
@@ -96,13 +102,13 @@ export function DashboardSidebar({
 
         {/* Navigation */}
         <ProtectedNavigation
-          isCollapsed={isCollapsed}
+          isCollapsed={isCollapsed && !isHovered}
           onItemClick={() => setIsMobileOpen(false)}
         />
 
         {/* Footer */}
         <div className="p-4 border-t">
-          <HomeLink isCollapsed={isCollapsed} />
+          <HomeLink isCollapsed={isCollapsed && !isHovered} />
         </div>
       </div>
 

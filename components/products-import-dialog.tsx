@@ -520,8 +520,8 @@ export function ProductsImportDialog({
               habilitada
             </li>
             <li>
-              • Si no se especifica bodega, se usará la bodega principal por
-              defecto
+              • Si no se especifica bodega, se asignará automáticamente a la
+              bodega principal del usuario
             </li>
             <li>
               • El archivo se guardará en el historial para futuras consultas
