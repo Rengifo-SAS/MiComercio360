@@ -73,6 +73,7 @@ export function SalesFormDialog({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateSaleData>({
     customer_id: undefined,
+    total_amount: 0,
     items: [],
     payment_method: 'cash',
     notes: '',
@@ -109,6 +110,7 @@ export function SalesFormDialog({
           payment_method: sale.payment_method,
           notes: sale.notes || '',
           discount_amount: sale.discount_amount,
+          total_amount: sale.total_amount,
         });
       } else {
         setFormData({

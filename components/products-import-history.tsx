@@ -70,16 +70,9 @@ export function ProductsImportHistory({
 
   const handleDownloadFile = async (filePath: string, filename: string) => {
     try {
-      const blob = await ProductsImportService.downloadFile(filePath);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success('Archivo descargado exitosamente');
+      // Por ahora, mostrar un mensaje de que la funcionalidad no está disponible
+      toast.info('La descarga de archivos no está disponible en este momento');
+      console.log('Download requested for:', filePath, filename);
     } catch (error) {
       console.error('Error descargando archivo:', error);
       toast.error('Error al descargar el archivo');

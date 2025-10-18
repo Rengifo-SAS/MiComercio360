@@ -123,7 +123,7 @@ export function WarehouseTransferDialog({
         .select('quantity')
         .eq('warehouse_id', formData.from_warehouse_id)
         .eq('product_id', formData.product_id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;

@@ -357,7 +357,7 @@ export class RefundsService {
             .select('quantity')
             .eq('product_id', item.product_id)
             .eq('company_id', refundRequest.company_id)
-            .single();
+            .maybeSingle();
 
           if (currentInventory) {
             const newQuantity = currentInventory.quantity + item.quantity;

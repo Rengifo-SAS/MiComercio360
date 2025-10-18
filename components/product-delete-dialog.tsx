@@ -50,7 +50,7 @@ export function ProductDeleteDialog({
         .from('inventory')
         .select('quantity')
         .eq('product_id', product.id)
-        .single();
+        .maybeSingle();
 
       if (inventoryError && inventoryError.code !== 'PGRST116') {
         throw new Error('Error verificando inventario');

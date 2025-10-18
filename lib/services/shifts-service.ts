@@ -135,7 +135,7 @@ export class ShiftsService {
       .eq('status', 'open')
       .order('start_time', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error obteniendo turno activo:', error);

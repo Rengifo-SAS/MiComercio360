@@ -149,7 +149,7 @@ export class SalesService {
       .select('id')
       .eq('company_id', companyId)
       .eq('status', 'open')
-      .single();
+      .maybeSingle();
     
     // Obtener productos para cálculo de impuestos
     const { data: products } = await this.supabase
@@ -632,7 +632,7 @@ export class SalesService {
         .from('inventory')
         .select('quantity')
         .eq('product_id', item.product_id)
-        .single();
+        .maybeSingle();
 
       if (inventory) {
         const newQuantity = operation === 'decrease' 

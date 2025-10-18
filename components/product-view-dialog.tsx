@@ -70,7 +70,7 @@ export function ProductViewDialog({
               .from('categories')
               .select('id, name, color')
               .eq('id', product.category_id)
-              .single();
+              .maybeSingle();
             setCategory(categoryData);
           }
 
@@ -80,7 +80,7 @@ export function ProductViewDialog({
               .from('suppliers')
               .select('id, name')
               .eq('id', product.supplier_id)
-              .single();
+              .maybeSingle();
             setSupplier(supplierData);
           }
 
@@ -89,7 +89,7 @@ export function ProductViewDialog({
             .from('inventory')
             .select('quantity')
             .eq('product_id', product.id)
-            .single();
+            .maybeSingle();
 
           setInventoryQuantity(inventoryData?.quantity || 0);
         } catch (error) {

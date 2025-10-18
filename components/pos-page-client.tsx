@@ -372,9 +372,13 @@ export function POSPageClient() {
         throw new Error('Tipo de pago no definido en el método seleccionado');
       }
 
+      // Calcular total de la venta
+      const totals = calculateSaleTotals(saleItems, 0, cart.map((item) => item.product));
+
       // Crear datos de venta
       const saleData: CreateSaleData = {
         customer_id: selectedCustomer!.id,
+        total_amount: totals.total_amount,
         payment_method: paymentData.method.payment_type,
         notes: `Venta POS - ${configuration.terminalName}`,
         account_id: configuration.defaultAccountId,

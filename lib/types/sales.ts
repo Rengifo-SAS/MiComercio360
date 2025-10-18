@@ -176,14 +176,20 @@ export type ShiftStatus = 'open' | 'closed';
 // Tipos para formularios
 export interface CreateSaleData {
   customer_id?: string;
-  items: CreateSaleItemData[];
-  payment_method: string;
-  notes?: string;
+  cashier_id?: string;
+  shift_id?: string;
+  sale_number?: string;
+  total_amount: number;
   discount_amount?: number;
-  // Cuenta bancaria/caja donde se recibirá el dinero de la venta
+  tax_amount?: number;
+  payment_method: string;
+  payment_status?: string;
+  status?: string;
+  notes?: string;
   account_id?: string;
-  // Numeración a usar para la venta
   numeration_id?: string;
+  items: CreateSaleItemData[];
+  created_at?: string;
   // Información de pago
   payment_reference?: string;
   payment_amount_received?: number;

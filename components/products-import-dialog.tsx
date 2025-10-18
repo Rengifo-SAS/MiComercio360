@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ import {
   ProductsImportService,
   ProductImportData,
   ImportResult,
+  ImportConfig,
 } from '@/lib/services/products-import-service';
 import { ProductsImportHistory } from './products-import-history';
 
@@ -59,6 +61,13 @@ export function ProductsImportDialog({
   const [importProgress, setImportProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [importConfig, setImportConfig] = useState<ImportConfig>({
+    companyId,
+    userId,
+    updateExistingProducts: false,
+    createMissingCategories: true,
+    createMissingWarehouses: true,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetDialog = () => {
@@ -117,10 +126,7 @@ export function ProductsImportDialog({
 
     try {
       // Procesar archivo Excel
-      const data = await ProductsImportService.processExcelFile(
-        file,
-        companyId
-      );
+      const data = await ProductsImportService.parseExcelFile(file);
       setImportData(data);
 
       if (data.length === 0) {
@@ -130,10 +136,13 @@ export function ProductsImportDialog({
       }
 
       // Validar datos
-      const validation = await ProductsImportService.validateImportData(
-        data,
-        companyId
-      );
+      const validation = await ProductsImportService.validateImportData(data, {
+        companyId,
+        userId,
+        updateExistingProducts: importConfig.updateExistingProducts,
+        createMissingCategories: importConfig.createMissingCategories,
+        createMissingWarehouses: importConfig.createMissingWarehouses,
+      });
       setValidationResult(validation);
 
       setCurrentStep('preview');
@@ -163,46 +172,54 @@ export function ProductsImportDialog({
     setImportProgress(0);
 
     try {
-      // Subir archivo a Storage
-      const filePath = await ProductsImportService.uploadFile(
-        selectedFile,
-        companyId,
-        userId
-      );
-
-      // Simular progreso
-      setImportProgress(25);
-
-      // Importar productos
+      // Importar productos con callback de progreso
       const result = await ProductsImportService.importProducts(
         importData,
-        companyId,
-        userId,
-        selectedFile.name,
-        filePath
+        {
+          companyId,
+          userId,
+          updateExistingProducts: importConfig.updateExistingProducts,
+          createMissingCategories: importConfig.createMissingCategories,
+          createMissingWarehouses: importConfig.createMissingWarehouses,
+        },
+        (progress) => {
+          setImportProgress(progress);
+        }
       );
 
-      setImportProgress(100);
       setCurrentStep('completed');
 
       if (result.success) {
-        toast.success(
-          `Importación completada: ${result.imported} productos importados exitosamente`
-        );
+        const newProducts = result.imported - (result.updated || 0);
+        const message =
+          result.updated && result.updated > 0
+            ? `Importación completada: ${newProducts} productos nuevos, ${result.updated} productos actualizados`
+            : `Importación completada: ${result.imported} productos importados exitosamente`;
+
+        toast.success(message);
         if (onImportComplete) {
           onImportComplete();
         }
       } else {
-        toast.error(
-          `Importación completada con errores: ${result.imported} productos importados, ${result.errors.length} errores`
-        );
+        const newProducts = result.imported - (result.updated || 0);
+        const message =
+          result.updated && result.updated > 0
+            ? `Importación completada con errores: ${newProducts} productos nuevos, ${result.updated} productos actualizados, ${result.errors.length} errores`
+            : `Importación completada con errores: ${result.imported} productos importados, ${result.errors.length} errores`;
+
+        toast.error(message);
       }
 
       setIsProcessing(false);
     } catch (error) {
       console.error('Error en importación:', error);
-      toast.error('Error durante la importación');
+      toast.error(
+        `Error durante la importación: ${
+          error instanceof Error ? error.message : 'Error desconocido'
+        }`
+      );
       setIsProcessing(false);
+      setCurrentStep('preview');
     }
   };
 
@@ -332,6 +349,77 @@ export function ProductsImportDialog({
           </Card>
         </div>
 
+        {/* Configuración de Importación */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Configuración de Importación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="update-existing"
+                checked={importConfig.updateExistingProducts}
+                onCheckedChange={(checked) =>
+                  setImportConfig((prev) => ({
+                    ...prev,
+                    updateExistingProducts: !!checked,
+                  }))
+                }
+              />
+              <Label htmlFor="update-existing" className="text-sm">
+                Actualizar productos existentes
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground ml-6">
+              Si está marcado, los productos que ya existen serán actualizados
+              con los nuevos datos. Si no está marcado, los productos existentes
+              serán omitidos.
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="create-categories"
+                checked={importConfig.createMissingCategories}
+                onCheckedChange={(checked) =>
+                  setImportConfig((prev) => ({
+                    ...prev,
+                    createMissingCategories: !!checked,
+                  }))
+                }
+              />
+              <Label htmlFor="create-categories" className="text-sm">
+                Crear categorías que no existen
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground ml-6">
+              Si está marcado, se crearán automáticamente las categorías que no
+              existen en el sistema.
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="create-warehouses"
+                checked={importConfig.createMissingWarehouses}
+                onCheckedChange={(checked) =>
+                  setImportConfig((prev) => ({
+                    ...prev,
+                    createMissingWarehouses: !!checked,
+                  }))
+                }
+              />
+              <Label htmlFor="create-warehouses" className="text-sm">
+                Crear bodegas que no existen
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground ml-6">
+              Si está marcado, se crearán automáticamente las bodegas que no
+              existen en el sistema.
+            </p>
+          </CardContent>
+        </Card>
+
         {validationResult.errors.length > 0 && (
           <Card>
             <CardHeader>
@@ -402,9 +490,21 @@ export function ProductsImportDialog({
               vacíos
             </li>
             <li>
-              • Los productos con SKU/Código de barras duplicado serán omitidos
+              • Los productos existentes se detectan por nombre, SKU o código de
+              barras
             </li>
-            <li>• Las categorías se crearán automáticamente si no existen</li>
+            <li>
+              • Si "Actualizar productos existentes" está marcado, se
+              actualizarán los productos que ya existen
+            </li>
+            <li>
+              • Si "Actualizar productos existentes" no está marcado, los
+              productos existentes serán omitidos
+            </li>
+            <li>
+              • Las categorías se crearán automáticamente si la opción está
+              habilitada
+            </li>
             <li>
               • Si la categoría está vacía, se usará "General" por defecto
             </li>
@@ -415,7 +515,10 @@ export function ProductsImportDialog({
             <li>
               • Las cantidades negativas se convertirán automáticamente a 0
             </li>
-            <li>• Las bodegas se crearán automáticamente si no existen</li>
+            <li>
+              • Las bodegas se crearán automáticamente si la opción está
+              habilitada
+            </li>
             <li>
               • Si no se especifica bodega, se usará la bodega principal por
               defecto
@@ -463,17 +566,28 @@ export function ProductsImportDialog({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6 text-center">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {validationResult.imported}
+                {validationResult.imported - (validationResult.updated || 0)}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Productos importados
-              </p>
+              <p className="text-sm text-muted-foreground">Productos nuevos</p>
             </CardContent>
           </Card>
+
+          {validationResult.updated && validationResult.updated > 0 && (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {validationResult.updated}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Productos actualizados
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardContent className="pt-6 text-center">

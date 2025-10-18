@@ -79,6 +79,7 @@ import { SalesDeleteDialog } from './sales-delete-dialog';
 import { SalesPrintDialog } from './sales-print-dialog';
 import { RefundRequestDialog } from './refund-request-dialog';
 import { RefundsManagementDialog } from './refunds-management-dialog';
+import { SalesPagination } from './sales-pagination';
 
 interface SalesPageClientProps {
   companyId: string;
@@ -215,6 +216,15 @@ export function SalesPageClient({
     setSearchParams((prev) => ({
       ...prev,
       page,
+    }));
+  };
+
+  // Manejar cambio de elementos por página
+  const handleItemsPerPageChange = (limit: number) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      limit,
+      page: 1, // Resetear a la primera página
     }));
   };
 
@@ -669,6 +679,24 @@ export function SalesPageClient({
           )}
         </CardContent>
       </Card>
+
+      {/* Paginación */}
+      {sales && sales.length > 0 && (
+        <SalesPagination
+          pagination={{
+            currentPage: searchParams.page || 1,
+            totalPages: Math.ceil(totalSales / (searchParams.limit || 20)),
+            totalItems: totalSales,
+            itemsPerPage: searchParams.limit || 20,
+            hasNextPage:
+              (searchParams.page || 1) <
+              Math.ceil(totalSales / (searchParams.limit || 20)),
+            hasPreviousPage: (searchParams.page || 1) > 1,
+          }}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
+      )}
 
       {/* Dialogs */}
       <SalesFormDialog

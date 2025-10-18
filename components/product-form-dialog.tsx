@@ -160,6 +160,7 @@ export function ProductFormDialog({
         const { data: categoriesData } = await supabase
           .from('categories')
           .select('id, name, color')
+          .eq('company_id', profile.company_id)
           .eq('is_active', true)
           .order('name');
 
@@ -167,6 +168,7 @@ export function ProductFormDialog({
         const { data: suppliersData } = await supabase
           .from('suppliers')
           .select('id, name')
+          .eq('company_id', profile.company_id)
           .eq('is_active', true)
           .order('name');
 
@@ -174,6 +176,7 @@ export function ProductFormDialog({
         const { data: warehousesData } = await supabase
           .from('warehouses')
           .select('id, name, code')
+          .eq('company_id', profile.company_id)
           .eq('is_active', true)
           .order('name');
 
