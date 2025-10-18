@@ -160,11 +160,11 @@ export function ShiftOpenDialog({ onOpen, companyId }: ShiftOpenDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 {loadingAccounts ? (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="loading" disabled>
                     Cargando cuentas...
                   </SelectItem>
                 ) : accounts.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="no-accounts" disabled>
                     No hay cuentas disponibles
                   </SelectItem>
                 ) : (

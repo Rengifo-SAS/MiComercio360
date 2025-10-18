@@ -118,10 +118,10 @@ export function POSShiftIndicator({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          Cargando turno...
+      <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-teal-600"></div>
+        <span className="text-xs text-gray-600 dark:text-gray-400">
+          Cargando...
         </span>
       </div>
     );
@@ -129,10 +129,10 @@ export function POSShiftIndicator({
 
   if (!activeShift) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-          <span className="text-sm font-medium text-red-700 dark:text-red-300">
+      <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+          <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+          <span className="text-xs font-medium text-red-700 dark:text-red-300">
             Sin turno activo
           </span>
         </div>
@@ -142,23 +142,18 @@ export function POSShiftIndicator({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-        <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="default"
-              className="bg-green-100 text-green-800 text-xs"
-            >
-              Turno Activo
-            </Badge>
-            <span className="text-sm font-medium text-green-700 dark:text-green-300">
-              {shiftDuration}
-            </span>
-          </div>
-          <span className="text-xs text-green-600 dark:text-green-400">
-            Efectivo inicial: ${activeShift.initial_cash.toLocaleString()}
+    <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+        <Clock className="h-3 w-3 text-green-600 dark:text-green-400" />
+        <div className="flex items-center gap-1">
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-800 text-xs px-1 py-0"
+          >
+            Activo
+          </Badge>
+          <span className="text-xs font-medium text-green-700 dark:text-green-300">
+            {shiftDuration}
           </span>
         </div>
       </div>

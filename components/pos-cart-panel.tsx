@@ -100,30 +100,34 @@ export function POSCartPanel({
   });
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-800">
-      {/* Header - Fijo */}
-      <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 flex-shrink-0">
-        <h2 className="flex items-center text-lg font-semibold text-gray-900 dark:text-gray-100">
-          <Receipt className="h-5 w-5 mr-2" />
-          Factura de Venta
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800 overflow-hidden">
+      {/* Header - Responsivo */}
+      <div className="flex items-center justify-between p-2 sm:p-3 border-b dark:border-gray-700 flex-shrink-0">
+        <h2 className="flex items-center text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <Receipt className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+          Factura
         </h2>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <CreditCard className="h-4 w-4" />
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 sm:h-7 sm:w-7 p-0"
+          >
+            <CreditCard className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
-      {/* Configuración - Fija */}
-      <div className="p-4 border-b dark:border-gray-700 space-y-3 flex-shrink-0">
+      {/* Configuración - Responsiva */}
+      <div className="p-2 border-b dark:border-gray-700 space-y-1.5 flex-shrink-0">
         {/* Primera línea: Tipo Factura y Numeración */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="invoice-type" className="text-sm">
+            <Label htmlFor="invoice-type" className="text-xs">
               Lista de precio
             </Label>
             <Select value={invoiceType} onValueChange={setInvoiceType}>
-              <SelectTrigger className="h-10 text-sm bg-white dark:bg-gray-700">
+              <SelectTrigger className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700">
                 <SelectValue placeholder="General" />
               </SelectTrigger>
               <SelectContent>
@@ -132,17 +136,17 @@ export function POSCartPanel({
             </Select>
           </div>
           <div>
-            <Label htmlFor="numeration" className="text-sm">
+            <Label htmlFor="numeration" className="text-xs">
               Numeración
             </Label>
             <Select
-              value={selectedNumeration?.id || ''}
+              value={selectedNumeration?.id || undefined}
               onValueChange={(value) => {
                 const numeration = numerations.find((n) => n.id === value);
                 onNumerationChange(numeration || null);
               }}
             >
-              <SelectTrigger className="h-10 text-sm bg-white dark:bg-gray-700">
+              <SelectTrigger className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700">
                 <SelectValue placeholder="Principal" />
               </SelectTrigger>
               <SelectContent>
@@ -158,28 +162,28 @@ export function POSCartPanel({
 
         {/* Segunda línea: Cliente */}
         <div>
-          <Label htmlFor="customer" className="text-sm">
+          <Label htmlFor="customer" className="text-xs">
             Cliente
           </Label>
           <div className="flex gap-2">
             <Select
-              value={selectedCustomer?.id || ''}
+              value={selectedCustomer?.id || undefined}
               onValueChange={(value) => {
                 const customer = customers.find((c) => c.id === value);
                 onCustomerChange(customer || null);
               }}
             >
-              <SelectTrigger className="h-10 text-sm bg-white dark:bg-gray-700 flex-1">
+              <SelectTrigger className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700 flex-1">
                 <SelectValue placeholder="Consumidor final" />
               </SelectTrigger>
               <SelectContent>
                 {customers.map((customer) => (
                   <SelectItem key={customer.id} value={customer.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm">
+                      <span className="font-medium text-xs">
                         {customer.business_name}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-xs text-gray-500">
                         {customer.identification_type}{' '}
                         {customer.identification_number}
                       </span>
@@ -188,27 +192,31 @@ export function POSCartPanel({
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-              <Plus className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+            >
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Contenido del Carrito - Scroll */}
-      <div className="flex-1 flex flex-col min-h-0 p-4">
+      {/* Contenido del Carrito - Scroll optimizado */}
+      <div className="flex-1 flex flex-col min-h-0 p-2 overflow-hidden">
         {/* Lista de Productos - Scroll */}
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {cart.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center text-gray-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-sm">Aquí verás los productos que elijas</p>
-                <p className="text-xs">en tu próxima venta</p>
+                <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-xs">Aquí verás los productos</p>
+                <p className="text-xs">que elijas</p>
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2">
               {cart.map((item) => {
                 const availableQuantity = item.product.available_quantity || 0;
                 const isNearLimit = item.quantity >= availableQuantity * 0.8; // 80% del inventario
@@ -217,7 +225,7 @@ export function POSCartPanel({
                 return (
                   <div
                     key={item.product.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                    className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg ${
                       isAtLimit
                         ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
                         : isNearLimit
@@ -226,10 +234,10 @@ export function POSCartPanel({
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                         {item.product.name}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <p className="text-xs text-gray-500">
                           {formatCurrency(
                             parseFloat(item.product.selling_price.toString())
@@ -237,7 +245,7 @@ export function POSCartPanel({
                           × {item.quantity}
                         </p>
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
+                          className={`text-xs px-1 py-0.5 rounded-full ${
                             isAtLimit
                               ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
                               : isNearLimit
@@ -251,18 +259,18 @@ export function POSCartPanel({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
                           onUpdateQuantity(item.product.id, item.quantity - 1)
                         }
-                        className="h-8 w-8 p-0"
+                        className="h-5 w-5 sm:h-6 sm:w-6 p-0"
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </Button>
-                      <span className="text-sm font-medium w-8 text-center">
+                      <span className="text-xs font-medium w-5 sm:w-6 text-center">
                         {item.quantity}
                       </span>
                       <Button
@@ -272,19 +280,19 @@ export function POSCartPanel({
                           onUpdateQuantity(item.product.id, item.quantity + 1)
                         }
                         disabled={isAtLimit}
-                        className={`h-8 w-8 p-0 ${
+                        className={`h-5 w-5 sm:h-6 sm:w-6 p-0 ${
                           isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onRemoveItem(item.product.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </Button>
                     </div>
                   </div>
@@ -295,19 +303,19 @@ export function POSCartPanel({
         </div>
       </div>
 
-      {/* Footer - Fijo */}
-      <div className="border-t dark:border-gray-700 p-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
+      {/* Footer - Siempre visible con altura fija */}
+      <div className="border-t dark:border-gray-700 p-2 flex-shrink-0 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
               {totalItems} Productos
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               Subtotal: {formatCurrency(totals.subtotal)}
             </p>
-            <p className="text-lg font-bold text-teal-600">
+            <p className="text-sm font-bold text-teal-600">
               {formatCurrency(totals.total_amount)}
             </p>
           </div>
@@ -316,14 +324,14 @@ export function POSCartPanel({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 h-12 text-sm"
+            className="flex-1 h-8 sm:h-10 text-xs"
             onClick={onClearCart}
             disabled={cart.length === 0 || loading}
           >
             Cancelar
           </Button>
           <Button
-            className={`flex-1 h-12 text-sm ${
+            className={`flex-1 h-8 sm:h-10 text-xs ${
               hasInsufficientInventory || hasOutOfStockItems
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-teal-600 hover:bg-teal-700'

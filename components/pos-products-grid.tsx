@@ -233,25 +233,25 @@ export function POSProductsGrid({
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800">
-      {/* Barra de Búsqueda - Fija */}
-      <div className="flex items-center gap-4 p-4 border-b dark:border-gray-700 flex-shrink-0">
+      {/* Barra de Búsqueda - Responsiva */}
+      <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border-b dark:border-gray-700 flex-shrink-0">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
           <Input
             ref={searchInputRef}
             placeholder="Buscar productos..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-10"
+            className="pl-8 sm:pl-10 pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-xs sm:text-sm h-8 sm:h-9"
           />
           {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+            <Loader2 className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-400" />
           )}
           {searchQuery && !isSearching && (
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7 p-0"
               onClick={() => {
                 setSearchQuery('');
                 setFilteredProducts(products);
@@ -261,16 +261,16 @@ export function POSProductsGrid({
             </Button>
           )}
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-1 sm:gap-2 flex-shrink-0">
           <Button
             variant={isScanning ? 'default' : 'outline'}
             size="sm"
-            className={`text-sm h-10 px-3 ${
+            className={`text-xs h-8 sm:h-9 px-1 sm:px-2 ${
               isScanning ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
             }`}
             onClick={handleScannerToggle}
           >
-            <Barcode className="h-4 w-4 mr-2" />
+            <Barcode className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
             <span className="hidden sm:inline">
               {isScanning ? 'Escaneando...' : 'Escanear'}
             </span>
@@ -278,17 +278,17 @@ export function POSProductsGrid({
           <Button
             variant="outline"
             size="sm"
-            className="text-sm h-10 px-3"
+            className="text-xs h-8 sm:h-9 px-1 sm:px-2"
             onClick={() => setShowQuickProductDialog(true)}
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
             <span className="hidden sm:inline">Nuevo</span>
           </Button>
         </div>
       </div>
 
-      {/* Grid de Productos - Scroll Vertical */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Grid de Productos - Solo scroll vertical */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -305,7 +305,7 @@ export function POSProductsGrid({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 3xl:grid-cols-10 gap-2 p-3">
             {filteredProducts.map((product) => {
               const cartQuantity = getCartQuantity(product.id);
               const inventoryStatus = getInventoryStatus(product);
@@ -321,16 +321,16 @@ export function POSProductsGrid({
                   )}
                   onClick={() => !isOutOfStock && onAddToCart(product)}
                 >
-                  <CardContent className="p-3">
-                    <div className="space-y-2">
+                  <CardContent className="p-1.5 sm:p-2">
+                    <div className="space-y-0.5 sm:space-y-1">
                       {/* Código del producto */}
                       <div className="text-xs text-gray-500 dark:text-gray-400 text-left truncate">
                         {product.sku}
                       </div>
 
                       {/* Icono de etiqueta de precio */}
-                      <div className="flex items-center justify-center h-12 w-full bg-gray-100 dark:bg-gray-700 rounded">
-                        <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center justify-center h-8 sm:h-10 w-full bg-gray-100 dark:bg-gray-700 rounded">
+                        <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">
                           ₡
                         </span>
                       </div>
@@ -341,13 +341,13 @@ export function POSProductsGrid({
                       </div>
 
                       {/* Nombre del producto */}
-                      <div className="text-sm font-medium text-center leading-tight h-10 flex items-center justify-center text-gray-900 dark:text-gray-100">
+                      <div className="text-xs font-medium text-center leading-tight h-6 sm:h-8 flex items-center justify-center text-gray-900 dark:text-gray-100">
                         <span className="line-clamp-2">{product.name}</span>
                       </div>
 
                       {/* Precio */}
                       <div className="text-center">
-                        <span className="text-base font-bold text-gray-800 dark:text-gray-200">
+                        <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200">
                           {formatCurrency(
                             parseFloat(product.selling_price.toString())
                           )}
@@ -356,8 +356,8 @@ export function POSProductsGrid({
 
                       {/* Badge de cantidad en carrito */}
                       {cartQuantity > 0 && (
-                        <div className="absolute -top-2 -right-2">
-                          <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs">
+                        <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1">
+                          <Badge className="bg-teal-600 text-white rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs">
                             {cartQuantity}
                           </Badge>
                         </div>
@@ -366,7 +366,7 @@ export function POSProductsGrid({
                       {/* Indicador de sin stock */}
                       {isOutOfStock && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded">
-                          <AlertCircle className="h-8 w-8 text-red-500" />
+                          <AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 text-red-500" />
                         </div>
                       )}
                     </div>

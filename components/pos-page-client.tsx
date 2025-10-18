@@ -373,7 +373,11 @@ export function POSPageClient() {
       }
 
       // Calcular total de la venta
-      const totals = calculateSaleTotals(saleItems, 0, cart.map((item) => item.product));
+      const totals = calculateSaleTotals(
+        saleItems,
+        0,
+        cart.map((item) => item.product)
+      );
 
       // Crear datos de venta
       const saleData: CreateSaleData = {
@@ -430,23 +434,23 @@ export function POSPageClient() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Header Fijo */}
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header Ultra Compacto */}
       <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              Punto de Venta
+        <div className="flex items-center justify-between px-2 py-1">
+          <div className="flex items-center gap-1">
+            <h1 className="text-xs font-bold text-gray-900 dark:text-white">
+              POS
             </h1>
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm text-gray-500">Terminal:</span>
-              <span className="text-sm font-medium text-teal-600">
+            <div className="hidden xl:flex items-center gap-1">
+              <span className="text-xs text-gray-500">Terminal:</span>
+              <span className="text-xs font-medium text-teal-600">
                 {configuration.terminalName}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             {companyId && userId && (
               <POSShiftIndicator companyId={companyId} userId={userId} />
             )}
@@ -457,20 +461,20 @@ export function POSPageClient() {
               variant="outline"
               size="sm"
               onClick={() => setShowConfiguration(true)}
-              className="text-sm"
+              className="text-xs h-6 px-1"
             >
-              <Settings className="h-4 w-4 mr-2" />
-              Configuración
+              <Settings className="h-3 w-3" />
+              <span className="hidden xl:inline ml-1">Config</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Layout Principal - Adaptativo como Alegra POS */}
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+      {/* Layout Principal - Responsivo sin scroll global */}
+      <div className="flex-1 flex flex-col xl:flex-row min-h-0">
         {/* En móvil/tablet: Una columna */}
-        <div className="lg:hidden flex-1 flex flex-col">
-          {/* Grid de Productos en móvil */}
+        <div className="xl:hidden flex-1 flex flex-col min-h-0">
+          {/* Grid de Productos en móvil/tablet - Con scroll propio */}
           <div className="flex-1 min-h-0">
             <POSProductsGrid
               products={products}
@@ -482,8 +486,8 @@ export function POSPageClient() {
             />
           </div>
 
-          {/* Carrito en móvil - Fijo en la parte inferior */}
-          <div className="h-96 border-t dark:border-gray-700">
+          {/* Carrito en móvil/tablet - Altura fija optimizada */}
+          <div className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0">
             <POSCartPanel
               cart={cart}
               customers={customers}
@@ -501,8 +505,8 @@ export function POSPageClient() {
           </div>
         </div>
 
-        {/* En desktop: Dos columnas */}
-        <div className="hidden lg:flex flex-1">
+        {/* En desktop: Dos columnas - Sin scroll global */}
+        <div className="hidden xl:flex flex-1 min-h-0">
           {/* Panel Izquierdo - Grid de Productos (70%) */}
           <div className="w-[70%] min-h-0">
             <POSProductsGrid

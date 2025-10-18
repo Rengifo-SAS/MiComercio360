@@ -223,9 +223,9 @@ export function POSTerminalSummary({
 
   if (loading) {
     return (
-      <Button variant="outline" size="sm" disabled>
-        <List className="w-4 h-4 mr-2" />
-        Cargando...
+      <Button variant="outline" size="sm" disabled className="h-6 px-2">
+        <List className="w-3 h-3 mr-1" />
+        <span className="text-xs">Cargando...</span>
       </Button>
     );
   }
@@ -233,9 +233,9 @@ export function POSTerminalSummary({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          <List className="w-4 h-4 mr-2" />
-          Resumen
+        <Button variant="outline" size="sm" className="h-6 px-2">
+          <List className="w-3 h-3 mr-1" />
+          <span className="text-xs">Resumen</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
