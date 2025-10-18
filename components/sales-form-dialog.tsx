@@ -119,6 +119,7 @@ export function SalesFormDialog({
           payment_method: 'cash',
           notes: '',
           discount_amount: 0,
+          total_amount: 0,
         });
       }
     }

@@ -184,7 +184,7 @@ export interface CreateSaleData {
   tax_amount?: number;
   payment_method: string;
   payment_status?: string;
-  status?: string;
+  status?: SaleStatus;
   notes?: string;
   account_id?: string;
   numeration_id?: string;

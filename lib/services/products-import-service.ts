@@ -632,7 +632,7 @@ export class ProductsImportService {
 
       // Actualizar inventario si es necesario
       if (product.available_quantity > 0) {
-        await this.updateInventory(productId, product.available_quantity, warehouseId, config.companyId);
+        await this.updateInventory(productId, product.available_quantity, warehouseId || null, config.companyId);
       }
 
       return {

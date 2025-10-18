@@ -208,7 +208,6 @@ export class SalesService {
       subtotal: totals.subtotal,
       tax_amount: totals.tax_amount,
       discount_amount: totals.discount_amount,
-      total_amount: totals.total_amount,
       ...saleInfo,
       payment_method: mapPaymentMethod(saleInfo.payment_method),
       // Incluir información de pago si está disponible
