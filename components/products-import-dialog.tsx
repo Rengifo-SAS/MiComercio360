@@ -61,6 +61,7 @@ export function ProductsImportDialog({
   const [importProgress, setImportProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isFixingProducts, setIsFixingProducts] = useState(false);
   const [importConfig, setImportConfig] = useState<ImportConfig>({
     companyId,
     userId,
@@ -78,6 +79,7 @@ export function ProductsImportDialog({
     setImportProgress(0);
     setIsProcessing(false);
     setShowHistory(false);
+    setIsFixingProducts(false);
   };
 
   const handleClose = () => {
@@ -100,6 +102,34 @@ export function ProductsImportDialog({
     } catch (error) {
       console.error('Error descargando plantilla:', error);
       toast.error('Error al descargar la plantilla');
+    }
+  };
+
+  const handleFixExistingProducts = async () => {
+    setIsFixingProducts(true);
+    try {
+      const result =
+        await ProductsImportService.fixExistingProductsBarcodeFormat(companyId);
+
+      if (result.success) {
+        if (result.fixed > 0) {
+          toast.success(`${result.fixed} productos corregidos exitosamente`);
+          if (onImportComplete) {
+            onImportComplete();
+          }
+        } else {
+          toast.info(
+            'No se encontraron productos con códigos de barras en formato científico'
+          );
+        }
+      } else {
+        toast.error(`Error corrigiendo productos: ${result.errors.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('Error corrigiendo productos:', error);
+      toast.error('Error al corregir productos existentes');
+    } finally {
+      setIsFixingProducts(false);
     }
   };
 
@@ -256,6 +286,22 @@ export function ProductsImportDialog({
             <History className="h-4 w-4" />
             Ver Historial
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleFixExistingProducts}
+            disabled={isFixingProducts}
+            className="flex items-center gap-2"
+          >
+            {isFixingProducts ? (
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            {isFixingProducts
+              ? 'Corrigiendo...'
+              : 'Corregir Productos Existentes'}
+          </Button>
         </div>
 
         <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
@@ -306,12 +352,7 @@ export function ProductsImportDialog({
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h3 className="text-lg font-semibold mb-2">
-            Vista Previa de Importación
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Revisa los datos antes de proceder con la importación
-          </p>
+          <h3 className="text-lg font-semibold mb-2">Vista Previa</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -352,11 +393,9 @@ export function ProductsImportDialog({
         {/* Configuración de Importación */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">
-              Configuración de Importación
-            </CardTitle>
+            <CardTitle className="text-lg">Configuración</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="update-existing"
@@ -372,11 +411,6 @@ export function ProductsImportDialog({
                 Actualizar productos existentes
               </Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-6">
-              Si está marcado, los productos que ya existen serán actualizados
-              con los nuevos datos. Si no está marcado, los productos existentes
-              serán omitidos.
-            </p>
 
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -390,13 +424,9 @@ export function ProductsImportDialog({
                 }
               />
               <Label htmlFor="create-categories" className="text-sm">
-                Crear categorías que no existen
+                Crear categorías automáticamente
               </Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-6">
-              Si está marcado, se crearán automáticamente las categorías que no
-              existen en el sistema.
-            </p>
 
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -410,128 +440,59 @@ export function ProductsImportDialog({
                 }
               />
               <Label htmlFor="create-warehouses" className="text-sm">
-                Crear bodegas que no existen
+                Crear bodegas automáticamente
               </Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-6">
-              Si está marcado, se crearán automáticamente las bodegas que no
-              existen en el sistema.
-            </p>
           </CardContent>
         </Card>
 
         {validationResult.errors.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
-                <XCircle className="h-5 w-5" />
-                Errores encontrados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {validationResult.errors.slice(0, 10).map((error, index) => (
-                  <div
-                    key={index}
-                    className="text-sm p-2 bg-red-50 dark:bg-red-950/30 rounded border-l-4 border-red-400 dark:border-red-500"
-                  >
-                    <span className="font-medium">Fila {error.row}:</span>{' '}
-                    {error.message}
-                  </div>
-                ))}
-                {validationResult.errors.length > 10 && (
-                  <p className="text-sm text-muted-foreground">
-                    ... y {validationResult.errors.length - 10} errores más
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 mb-2">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <span className="text-sm font-medium text-red-800 dark:text-red-200">
+                {validationResult.errors.length} errores encontrados
+              </span>
+            </div>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {validationResult.errors.slice(0, 3).map((error, index) => (
+                <p
+                  key={index}
+                  className="text-xs text-red-700 dark:text-red-300"
+                >
+                  Fila {error.row}: {error.message}
+                </p>
+              ))}
+              {validationResult.errors.length > 3 && (
+                <p className="text-xs text-red-700 dark:text-red-300">
+                  ... y {validationResult.errors.length - 3} errores más
+                </p>
+              )}
+            </div>
+          </div>
         )}
 
         {validationResult.warnings.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-yellow-600 dark:text-yellow-400 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Advertencias
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {validationResult.warnings.slice(0, 5).map((warning, index) => (
-                  <div
-                    key={index}
-                    className="text-sm p-2 bg-yellow-50 dark:bg-yellow-950/30 rounded border-l-4 border-yellow-400 dark:border-yellow-500"
-                  >
-                    <span className="font-medium">Fila {warning.row}:</span>{' '}
-                    {warning.message}
-                  </div>
-                ))}
-                {validationResult.warnings.length > 5 && (
-                  <p className="text-sm text-muted-foreground">
-                    ... y {validationResult.warnings.length - 5} advertencias
-                    más
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                {validationResult.warnings.length} productos serán actualizados
+              </span>
+            </div>
+            <p className="text-xs text-yellow-700 dark:text-yellow-300">
+              Los productos existentes se actualizarán con los nuevos datos del
+              archivo.
+            </p>
+          </div>
         )}
 
-        <div className="bg-muted/50 p-4 rounded-lg border">
-          <h4 className="font-medium text-foreground mb-2">
-            Información importante:
-          </h4>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Solo se importarán los productos sin errores</li>
-            <li>
-              • SKU y Código de Barras se generarán automáticamente si están
-              vacíos
-            </li>
-            <li>
-              • Los productos existentes se detectan por nombre, SKU o código de
-              barras
-            </li>
-            <li>
-              • Si "Actualizar productos existentes" está marcado, se
-              actualizarán los productos que ya existen
-            </li>
-            <li>
-              • Si "Actualizar productos existentes" no está marcado, los
-              productos existentes serán omitidos
-            </li>
-            <li>
-              • Las categorías se crearán automáticamente si la opción está
-              habilitada
-            </li>
-            <li>
-              • Si la categoría está vacía, se usará "General" por defecto
-            </li>
-            <li>
-              • Los impuestos se validan contra los configurados en el sistema
-            </li>
-            <li>• Si un impuesto no existe, se usará 0% automáticamente</li>
-            <li>
-              • Las cantidades negativas se convertirán automáticamente a 0
-            </li>
-            <li>
-              • Las bodegas se crearán automáticamente si la opción está
-              habilitada
-            </li>
-            <li>
-              • Si no se especifica bodega, se asignará automáticamente a la
-              bodega principal del usuario
-            </li>
-            <li>
-              • El archivo se guardará en el historial para futuras consultas
-            </li>
-            <li>
-              • <strong>Formatos de precios soportados:</strong> 3500,00
-              (formato colombiano), 3.500,00 (con separadores de miles), 3500.00
-              (formato internacional)
-            </li>
-          </ul>
+        <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Importante:</strong> El código de barras se usará como SKU
+            principal. Los productos existentes se actualizarán con los nuevos
+            datos.
+          </p>
         </div>
       </div>
     );
@@ -624,11 +585,8 @@ export function ProductsImportDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Importación Masiva de Productos
+              Importar Productos
             </DialogTitle>
-            <DialogDescription>
-              Importa múltiples productos desde un archivo Excel
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">

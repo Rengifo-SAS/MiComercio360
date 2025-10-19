@@ -103,6 +103,30 @@ export class ProductsImportService {
   }
 
   /**
+   * Convierte códigos de barras de notación científica a formato numérico completo
+   */
+  private static parseBarcodeValue(value: string | number): string {
+    if (!value && value !== 0) return '';
+
+    let cleaned = value.toString().trim();
+
+    // Si está en notación científica (ej: 7,70629E+12), convertir a número completo
+    if (cleaned.includes('E+') || cleaned.includes('e+')) {
+      const numericValue = parseFloat(cleaned);
+      if (!isNaN(numericValue)) {
+        // Convertir a entero sin decimales para códigos de barras
+        cleaned = Math.floor(numericValue).toString();
+      }
+    } else {
+      // Si no está en notación científica, solo limpiar espacios y caracteres no deseados
+      // pero mantener el valor numérico tal como está
+      cleaned = cleaned.replace(/[^\d]/g, '');
+    }
+
+    return cleaned;
+  }
+
+  /**
    * Parsea un archivo Excel y extrae los datos de productos
    */
   static parseExcelFile(file: File): Promise<ProductImportData[]> {
@@ -135,9 +159,9 @@ export class ProductsImportService {
 
           // Validar que tenemos los campos requeridos (en español o inglés)
           const requiredFieldMappings = {
-            'name': ['nombre', 'nombre del producto', 'producto'],
-            'cost_price': ['precio costo', 'precio de costo', 'costo', 'cost_price'],
-            'selling_price': ['precio venta', 'precio de venta', 'venta', 'selling_price']
+            'name': ['nombre del producto *', 'nombre del producto', 'nombre', 'producto'],
+            'cost_price': ['precio de costo', 'precio costo', 'costo', 'cost_price'],
+            'selling_price': ['precio de venta *', 'precio de venta', 'venta', 'selling_price']
           };
 
           const missingFields = [];
@@ -194,6 +218,7 @@ export class ProductsImportService {
 
     headers.forEach((header, index) => {
       if (header) {
+        // Normalizar header sin quitar paréntesis ni espacios
         const normalizedHeader = header.toLowerCase()
           .replace(/[áéíóúñ]/g, (match) => {
             const map: { [key: string]: string } = {
@@ -201,10 +226,11 @@ export class ProductsImportService {
             };
             return map[match] || match;
           })
-          .replace(/[^\w\s]/g, '')
           .trim();
 
+        // Agregar tanto la versión original como sin paréntesis
         map[normalizedHeader] = index;
+        map[normalizedHeader.replace(/[()]/g, '').trim()] = index;
       }
     });
 
@@ -231,28 +257,49 @@ export class ProductsImportService {
         return this.parseNumericValue(value, defaultValue);
       };
 
-      const name = getValue(['nombre', 'nombre del producto', 'producto', 'name']);
+      const name = getValue(['nombre del producto *', 'nombre del producto', 'nombre', 'producto', 'name']);
       if (!name) {
         console.warn(`Fila ${rowNumber}: Nombre del producto es requerido`);
         return null;
       }
 
-      // Generar SKU único si no se proporciona
-      const skuValue = getValue(['sku', 'codigo', 'código', 'sku (opcional)']);
-      const sku = skuValue || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Obtener código de barras y procesarlo correctamente
+      const barcodeValue = getValue([
+        'código de barras (opcional)', 'codigo de barras (opcional)', 'código de barras', 'codigo de barras',
+        'barcode', 'barcode (opcional)', 'codigo', 'código', 'codigo interno', 'código interno'
+      ]);
+      const barcode = this.parseBarcodeValue(barcodeValue);
+
+      // Usar código de barras como SKU principal, si no hay código de barras, usar SKU proporcionado
+      const skuValue = getValue([
+        'sku (opcional)', 'sku', 'codigo', 'código', 'codigo interno', 'código interno',
+        'codigo producto', 'código producto'
+      ]);
+      let sku: string;
+
+      if (barcode && barcode.trim() !== '') {
+        // El código de barras es el SKU principal
+        sku = barcode;
+      } else if (skuValue && skuValue.trim() !== '') {
+        // Si no hay código de barras pero sí SKU, usar el SKU
+        sku = skuValue;
+      } else {
+        // Solo generar SKU automático si no hay ni código de barras ni SKU
+        sku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
 
       return {
         name,
         sku,
-        barcode: getValue(['codigo de barras', 'código de barras', 'barcode', 'codigo de barras (opcional)']),
-        description: getValue(['descripcion', 'descripción', 'description', 'descripción (opcional)']),
-        category_name: getValue(['categoria', 'categoría', 'category']) || 'General',
-        cost_price: getNumber(['precio costo', 'precio de costo', 'costo', 'cost_price', 'precio de costo']),
-        selling_price: getNumber(['precio venta', 'precio de venta', 'venta', 'selling_price', 'precio de venta']),
+        barcode,
+        description: getValue(['descripción (opcional)', 'descripcion (opcional)', 'descripción', 'descripcion', 'description']),
+        category_name: getValue(['categoría *', 'categoria *', 'categoría', 'categoria', 'category']) || 'General',
+        cost_price: getNumber(['precio de costo', 'precio costo', 'costo', 'cost_price']),
+        selling_price: getNumber(['precio de venta *', 'precio de venta', 'precio venta', 'venta', 'selling_price']),
         available_quantity: getNumber(['cantidad disponible', 'cantidad', 'stock', 'available_quantity', 'cantidad disponible']),
-        iva_rate: getNumber(['iva', 'iva (%)', 'iva_rate']) || 19,
-        ica_rate: getNumber(['ica', 'ica (%)', 'ica_rate']) || 0,
-        retencion_rate: getNumber(['retencion', 'retención', 'retencion (%)', 'retencion_rate']) || 0,
+        iva_rate: getNumber(['iva (%)', 'iva', 'iva_rate']),
+        ica_rate: getNumber(['ica (%)', 'ica', 'ica_rate']),
+        retencion_rate: getNumber(['retencion (%)', 'retención (%)', 'retencion', 'retención', 'retencion_rate']),
         warehouse_name: getValue(['bodega', 'warehouse', 'almacen', 'almacén'])
       };
     } catch (error) {
@@ -297,29 +344,35 @@ export class ProductsImportService {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(templateData);
 
-    // Configurar formato de celdas para que los precios se mantengan como texto
+    // Configurar formato de celdas para que los precios y códigos de barras se mantengan como texto
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
 
-    // Aplicar formato de texto a las columnas de precios
+    // Aplicar formato de texto a las columnas de precios y códigos de barras
     for (let row = range.s.r; row <= range.e.r; row++) {
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
         const cell = worksheet[cellAddress];
 
         if (cell && cell.v) {
-          // Si es una columna de precio, forzar formato de texto
           const headerCell = worksheet[XLSX.utils.encode_cell({ r: 0, c: col })];
-          if (headerCell && (
-            headerCell.v.includes('Precio') ||
-            headerCell.v.includes('Costo') ||
-            headerCell.v.includes('Venta')
-          )) {
-            // Convertir a texto con formato colombiano simple
-            const numericValue = parseFloat(cell.v);
-            if (!isNaN(numericValue)) {
-              // Formato simple: 3500 -> "3500,00"
-              cell.v = numericValue.toFixed(2).replace('.', ',');
+          if (headerCell) {
+            // Si es una columna de precio, forzar formato de texto
+            if (headerCell.v.includes('Precio') ||
+              headerCell.v.includes('Costo') ||
+              headerCell.v.includes('Venta')) {
+              const numericValue = parseFloat(cell.v);
+              if (!isNaN(numericValue)) {
+                // Formato simple: 3500 -> "3500,00"
+                cell.v = numericValue.toFixed(2).replace('.', ',');
+                cell.t = 's'; // Tipo string
+              }
+            }
+            // Si es una columna de código de barras o SKU, forzar formato de texto
+            else if (headerCell.v.includes('Código de Barras') ||
+              headerCell.v.includes('SKU')) {
+              // Asegurar que se mantenga como texto para evitar notación científica
               cell.t = 's'; // Tipo string
+              cell.v = String(cell.v);
             }
           }
         }
@@ -418,7 +471,10 @@ export class ProductsImportService {
         }
 
         // Verificar productos duplicados
+        let productExists = false;
+
         if (product.sku && existingSkus.has(product.sku)) {
+          productExists = true;
           if (config.updateExistingProducts) {
             warnings.push({
               row: rowNumber,
@@ -436,6 +492,7 @@ export class ProductsImportService {
         }
 
         if (product.barcode && existingBarcodes.has(product.barcode)) {
+          productExists = true;
           if (config.updateExistingProducts) {
             warnings.push({
               row: rowNumber,
@@ -453,6 +510,7 @@ export class ProductsImportService {
         }
 
         if (existingNames.has(product.name.toLowerCase())) {
+          productExists = true;
           if (config.updateExistingProducts) {
             warnings.push({
               row: rowNumber,
@@ -936,6 +994,93 @@ export class ProductsImportService {
 
     if (error) {
       console.error('Error guardando historial de importación:', error);
+    }
+  }
+
+
+  /**
+   * Corrige productos existentes que tengan códigos de barras en formato científico
+   */
+  static async fixExistingProductsBarcodeFormat(companyId: string): Promise<{
+    success: boolean;
+    fixed: number;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let fixed = 0;
+
+    try {
+      // Buscar productos con códigos de barras que contengan notación científica
+      const { data: products, error: fetchError } = await this.supabase
+        .from('products')
+        .select('id, sku, barcode, name')
+        .eq('company_id', companyId)
+        .or('barcode.ilike.*E+*,sku.ilike.*E+*');
+
+      if (fetchError) {
+        throw new Error(`Error obteniendo productos: ${fetchError.message}`);
+      }
+
+      if (!products || products.length === 0) {
+        return { success: true, fixed: 0, errors: [] };
+      }
+
+      // Procesar cada producto
+      for (const product of products) {
+        try {
+          let needsUpdate = false;
+          const updateData: any = {};
+
+          // Corregir código de barras si está en notación científica
+          if (product.barcode && (product.barcode.includes('E+') || product.barcode.includes('e+'))) {
+            const correctedBarcode = this.parseBarcodeValue(product.barcode);
+            if (correctedBarcode && correctedBarcode !== product.barcode) {
+              updateData.barcode = correctedBarcode;
+              needsUpdate = true;
+            }
+          }
+
+          // Corregir SKU si está en notación científica
+          if (product.sku && (product.sku.includes('E+') || product.sku.includes('e+'))) {
+            const correctedSku = this.parseBarcodeValue(product.sku);
+            if (correctedSku && correctedSku !== product.sku) {
+              updateData.sku = correctedSku;
+              needsUpdate = true;
+            }
+          }
+
+          // Actualizar producto si es necesario
+          if (needsUpdate) {
+            const { error: updateError } = await this.supabase
+              .from('products')
+              .update({
+                ...updateData,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+
+            if (updateError) {
+              errors.push(`Error actualizando producto ${product.name}: ${updateError.message}`);
+            } else {
+              fixed++;
+            }
+          }
+        } catch (error) {
+          errors.push(`Error procesando producto ${product.name}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        fixed,
+        errors
+      };
+    } catch (error) {
+      return {
+        success: false,
+        fixed: 0,
+        errors: [`Error general: ${error instanceof Error ? error.message : 'Error desconocido'}`]
+      };
     }
   }
 }
