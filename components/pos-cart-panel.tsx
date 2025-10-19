@@ -216,86 +216,125 @@ export function POSCartPanel({
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-3">
               {cart.map((item) => {
                 const availableQuantity = item.product.available_quantity || 0;
                 const isNearLimit = item.quantity >= availableQuantity * 0.8; // 80% del inventario
                 const isAtLimit = item.quantity >= availableQuantity;
+                const totalPrice =
+                  parseFloat(item.product.selling_price.toString()) *
+                  item.quantity;
 
                 return (
-                  <div
+                  <Card
                     key={item.product.id}
-                    className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg ${
+                    className={`transition-all duration-200 hover:shadow-md ${
                       isAtLimit
-                        ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                         : isNearLimit
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
-                        : 'bg-gray-50 dark:bg-gray-700'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {item.product.name}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-xs text-gray-500">
-                          {formatCurrency(
-                            parseFloat(item.product.selling_price.toString())
-                          )}{' '}
-                          × {item.quantity}
-                        </p>
-                        <span
-                          className={`text-xs px-1 py-0.5 rounded-full ${
-                            isAtLimit
-                              ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                              : isNearLimit
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
-                              : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          }`}
+                    <CardContent className="p-3">
+                      {/* Información del producto */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {item.product.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {item.product.sku && `SKU: ${item.product.sku}`}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRemoveItem(item.product.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
-                          {isAtLimit
-                            ? 'Sin stock'
-                            : `Disponible: ${availableQuantity}`}
-                        </span>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          onUpdateQuantity(item.product.id, item.quantity - 1)
-                        }
-                        className="h-5 w-5 sm:h-6 sm:w-6 p-0"
-                      >
-                        <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      </Button>
-                      <span className="text-xs font-medium w-5 sm:w-6 text-center">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          onUpdateQuantity(item.product.id, item.quantity + 1)
-                        }
-                        disabled={isAtLimit}
-                        className={`h-5 w-5 sm:h-6 sm:w-6 p-0 ${
-                          isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onRemoveItem(item.product.id)}
-                        className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      </Button>
-                    </div>
-                  </div>
+
+                      {/* Precio y cantidad */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {formatCurrency(
+                              parseFloat(item.product.selling_price.toString())
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Precio unitario
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {formatCurrency(totalPrice)}
+                          </span>
+                          <p className="text-xs text-gray-500">Total</p>
+                        </div>
+                      </div>
+
+                      {/* Controles de cantidad */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              onUpdateQuantity(
+                                item.product.id,
+                                item.quantity - 1
+                              )
+                            }
+                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <div className="flex items-center justify-center min-w-[3rem] h-8 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {item.quantity}
+                            </span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              onUpdateQuantity(
+                                item.product.id,
+                                item.quantity + 1
+                              )
+                            }
+                            disabled={isAtLimit}
+                            className={`h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Estado del inventario */}
+                        <div className="text-right">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              isAtLimit
+                                ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                                : isNearLimit
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                                : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                            }`}
+                          >
+                            {isAtLimit
+                              ? 'Sin stock'
+                              : `Stock: ${availableQuantity}`}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>

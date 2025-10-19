@@ -59,43 +59,87 @@ export class ProductsImportService {
   private static supabase = createClient();
 
   /**
+   * Parsea un valor numérico manejando formatos colombianos/latinoamericanos
+   */
+  private static parseNumericValue(value: string | number, defaultValue: number = 0): number {
+    if (!value && value !== 0) return defaultValue;
+
+    let cleaned = value.toString().trim();
+
+    // Si contiene punto y coma, es formato colombiano (ej: 3500,00)
+    if (cleaned.includes(',') && !cleaned.includes('.')) {
+      // Formato colombiano: 3500,00 -> 3500.00
+      cleaned = cleaned.replace(',', '.');
+    } else if (cleaned.includes(',') && cleaned.includes('.')) {
+      // Formato con separadores de miles y decimales: 3.500,00 -> 3500.00
+      // Buscar el último punto o coma para determinar cuál es el separador decimal
+      const lastComma = cleaned.lastIndexOf(',');
+      const lastDot = cleaned.lastIndexOf('.');
+
+      if (lastComma > lastDot) {
+        // La coma es el separador decimal: 3.500,00 -> 3500.00
+        cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+      } else {
+        // El punto es el separador decimal: 3,500.00 -> 3500.00
+        cleaned = cleaned.replace(/,/g, '');
+      }
+    } else if (cleaned.includes(',')) {
+      // Solo hay comas, verificar si es separador decimal o de miles
+      const parts = cleaned.split(',');
+      if (parts.length === 2 && parts[1].length <= 2) {
+        // Es separador decimal: 3500,00 -> 3500.00
+        cleaned = cleaned.replace(',', '.');
+      } else {
+        // Es separador de miles: 3,500 -> 3500
+        cleaned = cleaned.replace(/,/g, '');
+      }
+    }
+
+    // Limpiar cualquier carácter no numérico excepto punto
+    cleaned = cleaned.replace(/[^\d.]/g, '');
+
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? defaultValue : parsed;
+  }
+
+  /**
    * Parsea un archivo Excel y extrae los datos de productos
    */
   static parseExcelFile(file: File): Promise<ProductImportData[]> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
-          
+
           // Obtener la primera hoja
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          
+
           // Convertir a JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          
+
           if (jsonData.length < 2) {
             reject(new Error('El archivo debe tener al menos una fila de encabezados y una fila de datos'));
             return;
           }
-          
+
           // Obtener encabezados (primera fila)
           const headers = jsonData[0] as string[];
           const dataRows = jsonData.slice(1) as any[][];
-          
+
           // Mapear encabezados a índices
           const headerMap = this.createHeaderMap(headers);
-          
+
           // Validar que tenemos los campos requeridos (en español o inglés)
           const requiredFieldMappings = {
             'name': ['nombre', 'nombre del producto', 'producto'],
             'cost_price': ['precio costo', 'precio de costo', 'costo', 'cost_price'],
             'selling_price': ['precio venta', 'precio de venta', 'venta', 'selling_price']
           };
-          
+
           const missingFields = [];
           for (const [requiredField, possibleNames] of Object.entries(requiredFieldMappings)) {
             const found = possibleNames.some(name => headerMap[name] !== undefined);
@@ -103,20 +147,20 @@ export class ProductsImportService {
               missingFields.push(requiredField);
             }
           }
-          
+
           if (missingFields.length > 0) {
             reject(new Error(`Faltan los siguientes campos requeridos: ${missingFields.join(', ')}`));
             return;
           }
-          
+
           // Convertir filas a objetos ProductImportData
           const products: ProductImportData[] = [];
-          
+
           for (let i = 0; i < dataRows.length; i++) {
             const row = dataRows[i];
-            
+
             if (!row || row.length === 0) continue;
-            
+
             try {
               const product = this.mapRowToProduct(row, headerMap, i + 2); // +2 porque empezamos desde la fila 2
               if (product) {
@@ -147,7 +191,7 @@ export class ProductsImportService {
    */
   private static createHeaderMap(headers: string[]): { [key: string]: number } {
     const map: { [key: string]: number } = {};
-    
+
     headers.forEach((header, index) => {
       if (header) {
         const normalizedHeader = header.toLowerCase()
@@ -159,11 +203,11 @@ export class ProductsImportService {
           })
           .replace(/[^\w\s]/g, '')
           .trim();
-        
+
         map[normalizedHeader] = index;
       }
     });
-    
+
     return map;
   }
 
@@ -181,27 +225,22 @@ export class ProductsImportService {
         }
         return '';
       };
-      
+
       const getNumber = (possibleFields: string[], defaultValue: number = 0): number => {
         const value = getValue(possibleFields);
-        if (!value) return defaultValue;
-        
-        // Limpiar el valor numérico
-        const cleaned = value.replace(/[^\d.-]/g, '').replace(',', '.');
-        const parsed = parseFloat(cleaned);
-        return isNaN(parsed) ? defaultValue : parsed;
+        return this.parseNumericValue(value, defaultValue);
       };
-      
+
       const name = getValue(['nombre', 'nombre del producto', 'producto', 'name']);
       if (!name) {
         console.warn(`Fila ${rowNumber}: Nombre del producto es requerido`);
         return null;
       }
-      
+
       // Generar SKU único si no se proporciona
       const skuValue = getValue(['sku', 'codigo', 'código', 'sku (opcional)']);
       const sku = skuValue || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       return {
         name,
         sku,
@@ -233,10 +272,23 @@ export class ProductsImportService {
         'Código de Barras (Opcional)': '7706286001870',
         'Descripción (Opcional)': 'COCO RALLADO X 60 G',
         'Categoría *': 'CONDIMENTOS GUISASON',
-        'Precio de Costo': 3500.00,
-        'Precio de Venta *': 3500.00,
+        'Precio de Costo': '3500,00',
+        'Precio de Venta *': '3500,00',
         'Cantidad Disponible': 8,
         'IVA (%)': 0,
+        'ICA (%)': 0,
+        'Retención (%)': 0
+      },
+      {
+        'Nombre del Producto *': 'ARROZ INTEGRAL 500G',
+        'SKU (Opcional)': '7701234567890',
+        'Código de Barras (Opcional)': '7701234567890',
+        'Descripción (Opcional)': 'ARROZ INTEGRAL 500G',
+        'Categoría *': 'GRANOS',
+        'Precio de Costo': '46000,00',
+        'Precio de Venta *': '46000,00',
+        'Cantidad Disponible': 15,
+        'IVA (%)': 19,
         'ICA (%)': 0,
         'Retención (%)': 0
       }
@@ -244,8 +296,38 @@ export class ProductsImportService {
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(templateData);
+
+    // Configurar formato de celdas para que los precios se mantengan como texto
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+
+    // Aplicar formato de texto a las columnas de precios
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[cellAddress];
+
+        if (cell && cell.v) {
+          // Si es una columna de precio, forzar formato de texto
+          const headerCell = worksheet[XLSX.utils.encode_cell({ r: 0, c: col })];
+          if (headerCell && (
+            headerCell.v.includes('Precio') ||
+            headerCell.v.includes('Costo') ||
+            headerCell.v.includes('Venta')
+          )) {
+            // Convertir a texto con formato colombiano simple
+            const numericValue = parseFloat(cell.v);
+            if (!isNaN(numericValue)) {
+              // Formato simple: 3500 -> "3500,00"
+              cell.v = numericValue.toFixed(2).replace('.', ',');
+              cell.t = 's'; // Tipo string
+            }
+          }
+        }
+      }
+    }
+
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-    
+
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
@@ -254,12 +336,12 @@ export class ProductsImportService {
    * Valida los datos de importación
    */
   static async validateImportData(
-    products: ProductImportData[], 
+    products: ProductImportData[],
     config: ImportConfig
   ): Promise<ImportResult> {
     const errors: ImportResult['errors'] = [];
     const warnings: ImportResult['warnings'] = [];
-    
+
     try {
       // Obtener datos existentes en paralelo
       const [categoriesResult, existingProductsResult] = await Promise.all([
@@ -282,37 +364,37 @@ export class ProductsImportService {
         throw new Error(`Error obteniendo productos existentes: ${existingProductsResult.error.message}`);
       }
 
-    const categories = categoriesResult.data || [];
-    const existingProducts = existingProductsResult.data || [];
+      const categories = categoriesResult.data || [];
+      const existingProducts = existingProductsResult.data || [];
 
       const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase(), c.id]));
       const existingSkus = new Set(existingProducts.map((p: any) => p.sku).filter(Boolean));
       const existingBarcodes = new Set(existingProducts.map((p: any) => p.barcode).filter(Boolean));
       const existingNames = new Set(existingProducts.map((p: any) => p.name.toLowerCase()));
 
-    // Validar cada producto
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      const rowNumber = i + 2; // +2 porque empezamos desde la fila 2
+      // Validar cada producto
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        const rowNumber = i + 2; // +2 porque empezamos desde la fila 2
 
         // Validaciones básicas
-      if (!product.name.trim()) {
+        if (!product.name.trim()) {
           errors.push({
-          row: rowNumber,
-          field: 'name',
-          message: 'El nombre del producto es requerido',
+            row: rowNumber,
+            field: 'name',
+            message: 'El nombre del producto es requerido',
             data: product
           });
           continue;
-      }
+        }
 
-      if (product.cost_price < 0) {
+        if (product.cost_price < 0) {
           errors.push({
-          row: rowNumber,
-          field: 'cost_price',
-          message: 'El precio de costo no puede ser negativo',
-          data: product
-        });
+            row: rowNumber,
+            field: 'cost_price',
+            message: 'El precio de costo no puede ser negativo',
+            data: product
+          });
         }
 
         if (product.selling_price < 0) {
@@ -339,52 +421,52 @@ export class ProductsImportService {
         if (product.sku && existingSkus.has(product.sku)) {
           if (config.updateExistingProducts) {
             warnings.push({
-            row: rowNumber,
+              row: rowNumber,
               message: `El producto con SKU "${product.sku}" será actualizado`,
-            data: product
-          });
+              data: product
+            });
           } else {
             errors.push({
-          row: rowNumber,
-          field: 'sku',
+              row: rowNumber,
+              field: 'sku',
               message: `Ya existe un producto con SKU "${product.sku}"`,
-          data: product
-        });
+              data: product
+            });
           }
         }
 
         if (product.barcode && existingBarcodes.has(product.barcode)) {
           if (config.updateExistingProducts) {
             warnings.push({
-          row: rowNumber,
+              row: rowNumber,
               message: `El producto con código de barras "${product.barcode}" será actualizado`,
-          data: product
-        });
+              data: product
+            });
           } else {
             errors.push({
-          row: rowNumber,
-          field: 'barcode',
+              row: rowNumber,
+              field: 'barcode',
               message: `Ya existe un producto con código de barras "${product.barcode}"`,
-          data: product
-        });
+              data: product
+            });
           }
         }
 
         if (existingNames.has(product.name.toLowerCase())) {
           if (config.updateExistingProducts) {
             warnings.push({
-          row: rowNumber,
+              row: rowNumber,
               message: `El producto con nombre "${product.name}" será actualizado`,
-          data: product
-        });
+              data: product
+            });
           } else {
             errors.push({
-          row: rowNumber,
+              row: rowNumber,
               field: 'name',
               message: `Ya existe un producto con nombre "${product.name}"`,
-          data: product
-        });
-      }
+              data: product
+            });
+          }
         }
       }
 
@@ -453,7 +535,7 @@ export class ProductsImportService {
       const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase(), c.id]));
       const warehouseMap = new Map(warehouses.map((w: any) => [w.name.toLowerCase(), w.id]));
       const existingProductMap = new Map();
-      
+
       existingProducts.forEach((p: any) => {
         if (p.sku) existingProductMap.set(`sku:${p.sku}`, p);
         if (p.barcode) existingProductMap.set(`barcode:${p.barcode}`, p);
@@ -472,7 +554,7 @@ export class ProductsImportService {
         // Procesar lote en paralelo
         const batchPromises = batch.map(async (product, index) => {
           const globalIndex = startIndex + index;
-          
+
           try {
             return await this.processProduct(
               product,
@@ -551,8 +633,8 @@ export class ProductsImportService {
     try {
       // Buscar producto existente
       const existingProduct = existingProductMap.get(`sku:${product.sku}`) ||
-                            existingProductMap.get(`barcode:${product.barcode}`) ||
-                            existingProductMap.get(`name:${product.name.toLowerCase()}`);
+        existingProductMap.get(`barcode:${product.barcode}`) ||
+        existingProductMap.get(`name:${product.name.toLowerCase()}`);
 
       // Obtener o crear categoría
       let categoryId = categoryMap.get(product.category_name.toLowerCase());
@@ -604,24 +686,24 @@ export class ProductsImportService {
       } else {
         // Crear nuevo producto
         const { data: newProduct, error: insertError } = await this.supabase
-            .from('products')
-            .insert({
-              name: product.name,
-              sku: product.sku,
-              barcode: product.barcode,
-              description: product.description,
-              category_id: categoryId,
-              cost_price: product.cost_price,
-              selling_price: product.selling_price,
-              iva_rate: product.iva_rate,
-              ica_rate: product.ica_rate,
-              retencion_rate: product.retencion_rate,
+          .from('products')
+          .insert({
+            name: product.name,
+            sku: product.sku,
+            barcode: product.barcode,
+            description: product.description,
+            category_id: categoryId,
+            cost_price: product.cost_price,
+            selling_price: product.selling_price,
+            iva_rate: product.iva_rate,
+            ica_rate: product.ica_rate,
+            retencion_rate: product.retencion_rate,
             warehouse_id: warehouseId,
             company_id: config.companyId,
-              is_active: true
-            })
+            is_active: true
+          })
           .select('id')
-            .single();
+          .single();
 
         if (insertError) {
           throw new Error(`Error creando producto: ${insertError.message}`);
@@ -639,14 +721,14 @@ export class ProductsImportService {
         success: true,
         updated: !!existingProduct && config.updateExistingProducts
       };
-        } catch (error) {
+    } catch (error) {
       return {
         success: false,
         error: {
           row: rowNumber,
-            field: 'import',
+          field: 'import',
           message: error instanceof Error ? error.message : 'Error desconocido',
-            data: product
+          data: product
         }
       };
     }
@@ -820,18 +902,18 @@ export class ProductsImportService {
    * Obtiene el historial de importaciones
    */
   static async getImportHistory(companyId: string): Promise<ImportHistory[]> {
-      const { data, error } = await this.supabase
-        .from('product_import_history')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('uploaded_at', { ascending: false });
+    const { data, error } = await this.supabase
+      .from('product_import_history')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('uploaded_at', { ascending: false });
 
-      if (error) {
+    if (error) {
       console.error('Error obteniendo historial de importaciones:', error);
       return [];
-      }
+    }
 
-      return data || [];
+    return data || [];
   }
 
   /**

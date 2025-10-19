@@ -526,6 +526,11 @@ export function ProductsImportDialog({
             <li>
               • El archivo se guardará en el historial para futuras consultas
             </li>
+            <li>
+              • <strong>Formatos de precios soportados:</strong> 3500,00
+              (formato colombiano), 3.500,00 (con separadores de miles), 3500.00
+              (formato internacional)
+            </li>
           </ul>
         </div>
       </div>
