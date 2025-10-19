@@ -1,6 +1,11 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -15,6 +20,7 @@ interface POSPrintDialogProps {
   onOpenChange: (open: boolean) => void;
   saleId: string | null;
   companyId: string;
+  defaultPaperSize?: 'letter' | 'thermal-80mm';
 }
 
 export function POSPrintDialog({
@@ -22,8 +28,11 @@ export function POSPrintDialog({
   onOpenChange,
   saleId,
   companyId,
+  defaultPaperSize = 'thermal-80mm',
 }: POSPrintDialogProps) {
-  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm'>('thermal-80mm');
+  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm'>(
+    defaultPaperSize
+  );
   const [loading, setLoading] = useState(false);
 
   const handlePrint = async () => {
@@ -36,7 +45,7 @@ export function POSPrintDialog({
       if (!sale) {
         throw new Error('No se pudo encontrar la venta');
       }
-      
+
       await SalesPrintService.printSale(sale, companyId, paperSize);
       toast.success('Impresión iniciada');
       onOpenChange(false);
@@ -58,15 +67,21 @@ export function POSPrintDialog({
       if (!sale) {
         throw new Error('No se pudo encontrar la venta');
       }
-      
+
       // Generar HTML y abrir en nueva ventana para vista previa
-      const html = await SalesPrintService.generatePrintHTML(sale, companyId, paperSize);
+      const html = await SalesPrintService.generatePrintHTML(
+        sale,
+        companyId,
+        paperSize
+      );
       const previewWindow = window.open('', '_blank');
       if (previewWindow) {
         previewWindow.document.write(html);
         previewWindow.document.close();
       } else {
-        throw new Error('No se pudo abrir la ventana de vista previa. Verifique que los pop-ups estén habilitados.');
+        throw new Error(
+          'No se pudo abrir la ventana de vista previa. Verifique que los pop-ups estén habilitados.'
+        );
       }
     } catch (error) {
       console.error('Error en vista previa:', error);
@@ -86,7 +101,7 @@ export function POSPrintDialog({
       if (!sale) {
         throw new Error('No se pudo encontrar la venta');
       }
-      
+
       await SalesPrintService.generatePDF(sale, companyId, paperSize);
       toast.success('PDF generado');
       onOpenChange(false);
@@ -100,65 +115,61 @@ export function POSPrintDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xs">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Printer className="h-5 w-5" />
-            Imprimir Factura
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Printer className="h-4 w-4" />
+            Impresión Rápida
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Selección de tamaño de papel */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Tamaño de Papel</Label>
-            <RadioGroup value={paperSize} onValueChange={(value: 'letter' | 'thermal-80mm') => setPaperSize(value)}>
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="thermal-80mm" id="thermal-80mm" />
-                <Label htmlFor="thermal-80mm" className="cursor-pointer flex-1">
-                  <div className="font-medium">Impresora de 80mm</div>
-                  <div className="text-sm text-gray-500">Ideal para POS y terminales</div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="letter" id="letter" />
-                <Label htmlFor="letter" className="cursor-pointer flex-1">
-                  <div className="font-medium">Tamaño Carta</div>
-                  <div className="text-sm text-gray-500">Para impresoras estándar</div>
-                </Label>
-              </div>
-            </RadioGroup>
+        <div className="space-y-4">
+          {/* Información de configuración */}
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Printer className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Configuración POS
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+              Tamaño: {paperSize === 'thermal-80mm' ? '80mm Térmica' : 'Carta'}
+            </div>
           </div>
 
-          {/* Botones de acción */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Botones de acción - Compactos */}
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant="outline"
               onClick={handlePreview}
               disabled={loading}
-              className="flex flex-col items-center gap-2 h-16"
+              className="flex flex-col items-center gap-1 h-12 text-xs"
             >
-              <Eye className="h-4 w-4" />
-              <span className="text-xs">Vista Previa</span>
+              <Eye className="h-3 w-3" />
+              <span>Vista</span>
             </Button>
-            
+
             <Button
               onClick={handlePrint}
               disabled={loading}
-              className="flex flex-col items-center gap-2 h-16 bg-teal-600 hover:bg-teal-700"
+              className="flex flex-col items-center gap-1 h-12 bg-teal-600 hover:bg-teal-700 text-xs"
             >
-              <Printer className="h-4 w-4" />
-              <span className="text-xs">Imprimir</span>
+              {loading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Printer className="h-3 w-3" />
+              )}
+              <span>Imprimir</span>
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={handleDownload}
               disabled={loading}
-              className="flex flex-col items-center gap-2 h-16"
+              className="flex flex-col items-center gap-1 h-12 text-xs"
             >
-              <Download className="h-4 w-4" />
-              <span className="text-xs">Descargar PDF</span>
+              <Download className="h-3 w-3" />
+              <span>PDF</span>
             </Button>
           </div>
 

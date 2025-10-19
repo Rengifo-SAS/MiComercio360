@@ -216,87 +216,92 @@ export class SalesPrintService {
         console.warn('No se pudieron obtener los datos de la empresa:', error);
       }
     }
-    // Estilos CSS según el tamaño de papel
+    // Estilos CSS optimizados para impresora térmica 80mm con letras MUY grandes y legibles
     const styles = paperSize === 'thermal-80mm' ? `
       body {
         font-family: 'Courier New', monospace;
-        margin: 2px;
+        margin: 0;
+        padding: 2px;
         color: #000;
         font-size: 16px;
-        line-height: 1.3;
+        line-height: 1.4;
         max-width: 80mm;
         margin: 0 auto;
-        padding: 5px;
       }
+      
+      /* Header optimizado */
       .header {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
       }
-      .header h1 {
-        font-size: 22px;
-        font-weight: bold;
-        margin: 10px 0;
-        text-transform: uppercase;
-      }
-      .header h2 {
-        font-size: 18px;
-        font-weight: bold;
-        margin: 8px 0;
-      }
+      
+      /* Información de empresa optimizada con letras MUY grandes */
       .company-info {
         text-align: center;
-        margin-bottom: 15px;
-        font-size: 15px;
-        line-height: 1.4;
+        margin-bottom: 12px;
+        font-size: 16px;
+        line-height: 1.3;
       }
       .company-info div {
         margin-bottom: 3px;
       }
       .company-name {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: bold;
         margin-bottom: 6px;
         text-transform: uppercase;
+        letter-spacing: 2px;
       }
       .company-names {
         font-size: 16px;
         margin-bottom: 4px;
+        font-weight: bold;
       }
       .company-num {
-        font-size: 15px;
+        font-size: 16px;
         margin-bottom: 4px;
+        font-weight: bold;
       }
       .company-address {
-        font-size: 14px;
+        font-size: 15px;
         margin-bottom: 3px;
+        line-height: 1.2;
       }
       .company-contact {
-        font-size: 14px;
+        font-size: 15px;
         margin-bottom: 3px;
       }
       .company-regime {
-        font-size: 14px;
-        margin-bottom: 6px;
-      }
-      .sale-info {
-        margin-bottom: 15px;
         font-size: 15px;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      
+      /* Información de venta optimizada */
+      .sale-info {
+        margin-bottom: 12px;
+        font-size: 16px;
         text-align: center;
       }
       .sale-info div {
-        margin-bottom: 5px;
+        margin-bottom: 4px;
       }
       .sale-number {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: bold;
         margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
       }
       .sale-date {
-        font-size: 14px;
+        font-size: 16px;
       }
+      
+      /* Información de cliente optimizada */
       .client-info {
-        margin-bottom: 15px;
-        font-size: 15px;
+        margin-bottom: 12px;
+        font-size: 16px;
+        text-align: center;
       }
       .client-info div {
         margin-bottom: 4px;
@@ -304,57 +309,108 @@ export class SalesPrintService {
       .client-label {
         font-weight: bold;
       }
+      
+      /* Tabla optimizada para 80mm con letras MUY grandes */
       .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 15px 0;
+        margin: 12px 0;
         font-size: 14px;
       }
       .items-table th,
       .items-table td {
         border: 1px solid #000;
-        padding: 5px;
+        padding: 6px 3px;
         text-align: left;
+        vertical-align: top;
       }
       .items-table th {
         background-color: #f0f0f0;
         font-weight: bold;
         font-size: 13px;
+        padding: 7px 3px;
       }
       .items-table .number {
         text-align: right;
+        width: 15%;
+        font-size: 14px;
+        font-weight: bold;
       }
       .items-table .description {
         font-size: 13px;
-        line-height: 1.2;
+        line-height: 1.3;
+        width: 70%;
+        word-wrap: break-word;
+        word-break: break-all;
       }
+      .items-table .total-col {
+        width: 15%;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      
+      /* Totales optimizados con letras MUY grandes */
       .totals {
-        margin-top: 20px;
+        margin-top: 12px;
         text-align: right;
         font-size: 16px;
+        line-height: 1.4;
       }
       .totals div {
         margin-bottom: 4px;
       }
       .total-row {
         font-weight: bold;
-        font-size: 18px;
-        border-top: 2px solid #000;
-        padding-top: 10px;
+        font-size: 22px;
+        border-top: 3px solid #000;
+        border-bottom: 3px solid #000;
+        padding: 10px 0;
         margin-top: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
       }
-      .footer {
-        margin-top: 20px;
+      
+      /* Información de pago optimizada */
+      .payment-info {
+        margin-top: 12px;
+        border-top: 2px solid #000;
+        padding-top: 8px;
+        font-size: 15px;
+        line-height: 1.4;
+      }
+      .payment-info .payment-title {
+        font-weight: bold;
+        margin-bottom: 6px;
         text-align: center;
-        font-size: 14px;
-        color: #000;
-        line-height: 1.3;
+        text-transform: uppercase;
+        font-size: 16px;
       }
-      .footer div {
+      .payment-info div {
         margin-bottom: 3px;
       }
+      
+      /* Footer optimizado */
+      .footer {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #000;
+        line-height: 1.4;
+      }
+      
+      /* Separadores visuales */
+      .separator {
+        border-top: 2px solid #000;
+        margin: 8px 0;
+      }
+      
       @media print {
-        body { margin: 0; padding: 2px; }
+        body { 
+          margin: 0; 
+          padding: 2px; 
+          font-size: 15px;
+        }
         .no-print { display: none; }
       }
       @media screen {
@@ -362,7 +418,7 @@ export class SalesPrintService {
           background: white;
           box-shadow: 0 0 10px rgba(0,0,0,0.1);
           border-radius: 5px;
-          padding: 10px;
+          padding: 12px;
         }
       }
     ` : `
@@ -431,26 +487,31 @@ export class SalesPrintService {
       </head>
       <body>
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Formato para impresora térmica 80mm -->
+        <!-- Formato optimizado para impresora térmica 80mm -->
         <div class="header">
           <div class="company-info">
             <div class="company-name">${companyData?.name || 'EMPRESA'}</div>
-            <div class="company-names">${companyData?.business_name || ''}</div>
+            ${companyData?.business_name ? `<div class="company-names">${companyData.business_name}</div>` : ''}
             <div class="company-num">NIT ${companyData?.tax_id || '0000000000-0'}</div>
-            <div class="company-address">${companyData?.address || ''}, ${companyData?.city || ''}, ${companyData?.state || ''}</div>
-            <div class="company-contact">Teléfono: ${companyData?.phone || ''}</div>
-            <div class="company-contact">${companyData?.email || ''}</div>
-            <div class="company-regime">Régimen: ${companyData?.regimen_tributario || ''}</div>
+            ${companyData?.address ? `<div class="company-address">${companyData.address}</div>` : ''}
+            ${companyData?.city || companyData?.state ? `<div class="company-address">${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
+            ${companyData?.phone ? `<div class="company-contact">Tel: ${companyData.phone}</div>` : ''}
+            ${companyData?.email ? `<div class="company-contact">${companyData.email}</div>` : ''}
+            ${companyData?.regimen_tributario ? `<div class="company-regime">Régimen: ${companyData.regimen_tributario}</div>` : ''}
           </div>
+          
+          <div class="separator"></div>
           
           <div class="sale-info">
             <div class="sale-number">N° ${sale.sale_number}</div>
             <div class="sale-date">Fecha: ${this.formatDate(sale.created_at)}</div>
           </div>
           
+          <div class="separator"></div>
+          
           <div class="client-info">
-            <div><span class="client-label">Cliente:</span> ${sale.customer?.business_name || sale.customer?.name || 'Consumidor final'}</div>
-            ${sale.customer?.identification_number ? `<div>${sale.customer.identification_type || 'CC'} ${sale.customer.identification_number}</div>` : ''}
+            <div><span class="client-label">Cliente:</span> ${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</div>
+            ${sale.customer?.identification_number ? `<div>NIT: ${sale.customer.identification_number}</div>` : ''}
           </div>
         </div>
         ` : `
@@ -472,13 +533,13 @@ export class SalesPrintService {
         `}
 
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Tabla simplificada para 80mm -->
+        <!-- Tabla optimizada para 80mm -->
         <table class="items-table">
           <thead>
             <tr>
-              <th>Descripción</th>
+              <th class="description">Descripción</th>
               <th class="number">Cant.</th>
-              <th class="number">Total</th>
+              <th class="total-col">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -487,26 +548,39 @@ export class SalesPrintService {
       const discount = item.discount_amount || 0;
       const itemTotal = itemSubtotal - discount;
 
-      // Obtener información del producto
+      // Obtener información del producto optimizada
       let productName = 'Producto/Servicio';
       let productSku = '';
 
       if (item.product && item.product.name) {
-        productName = item.product.name;
+        // Truncar nombre de producto largo para mejor visualización
+        productName = item.product.name.length > 30 ?
+          item.product.name.substring(0, 27) + '...' :
+          item.product.name;
+
         if (item.product.sku) {
-          productSku = `SKU: ${item.product.sku}`;
+          // Truncar SKU largo para mejor visualización
+          const sku = item.product.sku.length > 20 ?
+            item.product.sku.substring(0, 17) + '...' :
+            item.product.sku;
+          productSku = `SKU: ${sku}`;
         }
       } else if (item.product_name) {
-        productName = item.product_name;
+        productName = item.product_name.length > 30 ?
+          item.product_name.substring(0, 27) + '...' :
+          item.product_name;
       }
 
-      const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
+      // Formato optimizado para mostrar nombre y SKU en líneas separadas
+      const productDisplay = productSku ?
+        `${productName}<br/>${productSku}` :
+        productName;
 
       return `
                 <tr>
                   <td class="description">${productDisplay}</td>
                   <td class="number">${item.quantity}</td>
-                  <td class="number">${this.formatCurrency(itemTotal)}</td>
+                  <td class="total-col">${this.formatCurrencyCompact(itemTotal)}</td>
                 </tr>
               `;
     }).join('')}
@@ -559,6 +633,17 @@ export class SalesPrintService {
         </table>
         `}
 
+        ${paperSize === 'thermal-80mm' ? `
+        <div class="totals">
+          <div>Subtotal: ${this.formatCurrencyCompact(sale.subtotal || 0)}</div>
+          ${sale.discount_amount && sale.discount_amount > 0 ? `<div>Descuento: -${this.formatCurrencyCompact(sale.discount_amount)}</div>` : ''}
+          ${sale.iva_amount && sale.iva_amount > 0 ? `<div>IVA: ${this.formatCurrencyCompact(sale.iva_amount)}</div>` : ''}
+          ${sale.ica_amount && sale.ica_amount > 0 ? `<div>ICA: ${this.formatCurrencyCompact(sale.ica_amount)}</div>` : ''}
+          ${sale.retencion_amount && sale.retencion_amount > 0 ? `<div>Retención: -${this.formatCurrencyCompact(sale.retencion_amount)}</div>` : ''}
+          ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `<div>Impuestos: ${this.formatCurrencyCompact(sale.tax_amount)}</div>` : ''}
+          <div class="total-row">TOTAL: ${this.formatCurrencyCompact(sale.total_amount || 0)}</div>
+        </div>
+        ` : `
         <div class="totals">
           <div>Subtotal: ${this.formatCurrency(sale.subtotal || 0)}</div>
           ${sale.discount_amount && sale.discount_amount > 0 ? `<div>Descuento: -${this.formatCurrency(sale.discount_amount)}</div>` : ''}
@@ -567,8 +652,20 @@ export class SalesPrintService {
           ${sale.retencion_amount && sale.retencion_amount > 0 ? `<div>Retención: -${this.formatCurrency(sale.retencion_amount)}</div>` : ''}
           ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `<div>Impuestos: ${this.formatCurrency(sale.tax_amount)}</div>` : ''}
           <div class="total-row">TOTAL: ${this.formatCurrency(sale.total_amount || 0)}</div>
-          
-          <!-- Información de pago -->
+        </div>
+        `}
+        
+        ${paperSize === 'thermal-80mm' ? `
+        <!-- Información de pago optimizada para 80mm -->
+        <div class="payment-info">
+          <div class="payment-title">INFORMACIÓN DE PAGO</div>
+          <div>Método: ${this.getPaymentMethodName(sale.payment_method)}</div>
+          ${sale.payment_reference ? `<div>Referencia: ${sale.payment_reference}</div>` : ''}
+          ${sale.payment_amount_received ? `<div>Recibido: ${this.formatCurrencyCompact(sale.payment_amount_received)}</div>` : ''}
+          ${sale.payment_change !== undefined && sale.payment_change !== null ? `<div>Cambio: ${this.formatCurrencyCompact(sale.payment_change)}</div>` : ''}
+        </div>
+        ` : `
+        <!-- Información de pago para tamaño carta -->
           <div style="margin-top: 15px; border-top: 1px solid #000; padding-top: 10px;">
             <div style="font-weight: bold; margin-bottom: 5px;">INFORMACIÓN DE PAGO</div>
             <div>Método: ${this.getPaymentMethodName(sale.payment_method)}</div>
@@ -576,14 +673,12 @@ export class SalesPrintService {
             ${sale.payment_amount_received ? `<div>Recibido: ${this.formatCurrency(sale.payment_amount_received)}</div>` : ''}
             ${sale.payment_change !== undefined && sale.payment_change !== null ? `<div>Cambio: ${this.formatCurrency(sale.payment_change)}</div>` : ''}
           </div>
-        </div>
+        `}
 
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Footer para 80mm -->
+        <!-- Footer optimizado para 80mm -->
         <div class="footer">
-          <div style="margin-top: 15px; font-weight: bold;">
-            ¡Gracias por su compra!
-          </div>
+          ¡Gracias por su compra!
         </div>
         ` : `
         <!-- Footer para tamaño carta -->
@@ -596,7 +691,7 @@ export class SalesPrintService {
     `;
   }
 
-  // Formatear moneda
+  // Formatear moneda optimizado para impresoras térmicas
   private static formatCurrency(amount: number): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -604,6 +699,11 @@ export class SalesPrintService {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  }
+
+  // Formatear moneda compacto para 80mm con mejor legibilidad
+  private static formatCurrencyCompact(amount: number): string {
+    return `$${amount.toLocaleString('es-CO')}`;
   }
 
   // Formatear fecha

@@ -46,11 +46,33 @@ export function POSSaleCompleteDialog({
 
     setIsPrinting(true);
     try {
-      await SalesPrintService.printSale(sale, companyId, printPaperSize);
-      toast.success('Factura impresa exitosamente');
+      // Generar HTML optimizado para impresión
+      const html = await SalesPrintService.generatePrintHTML(
+        sale,
+        companyId,
+        printPaperSize
+      );
+
+      // Abrir en nueva ventana para impresión directa
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (!printWindow) {
+        throw new Error(
+          'No se pudo abrir la ventana de impresión. Verifique que los pop-ups estén habilitados.'
+        );
+      }
+
+      printWindow.document.write(html);
+      printWindow.document.close();
+
+      // Esperar un momento para que se cargue el contenido
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+        toast.success('Diálogo de impresión del navegador abierto');
+      }, 500);
     } catch (error) {
-      console.error('Error imprimiendo venta:', error);
-      toast.error('Error al imprimir la factura');
+      console.error('Error generando impresión:', error);
+      toast.error('Error al abrir el diálogo de impresión');
     } finally {
       setIsPrinting(false);
     }
@@ -209,7 +231,7 @@ export function POSSaleCompleteDialog({
               ) : (
                 <Printer className="h-4 w-4 mr-2" />
               )}
-              Imprimir
+              {isPrinting ? 'Imprimiendo...' : 'Imprimir'}
             </Button>
             <Button
               onClick={handleNewSale}

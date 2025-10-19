@@ -259,9 +259,11 @@ export function POSPaymentDialog({
                 const customIcon = getCustomIcon(method.payment_type);
                 const isSelected = selectedMethod === method.id;
                 const label =
+                  method.name ||
                   paymentMethodLabels[
                     method.payment_type as keyof typeof paymentMethodLabels
-                  ] || method.name;
+                  ] ||
+                  method.payment_type;
 
                 return (
                   <button
@@ -269,7 +271,7 @@ export function POSPaymentDialog({
                     onClick={() => handleMethodSelect(method.id)}
                     disabled={!method.is_active}
                     className={`
-                      relative p-4 rounded-lg border-2 transition-all duration-200 
+                      relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center
                       ${
                         isSelected
                           ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
@@ -282,7 +284,7 @@ export function POSPaymentDialog({
                       }
                     `}
                   >
-                    <div className="flex flex-col items-center space-y-2">
+                    <div className="flex flex-col items-center space-y-3">
                       <div
                         className={`p-2 rounded-lg ${
                           isSelected
@@ -293,13 +295,16 @@ export function POSPaymentDialog({
                         {customIcon}
                       </div>
                       <span
-                        className={`text-xs font-medium text-center leading-tight ${
+                        className={`text-sm font-medium text-center leading-tight px-1 break-words ${
                           isSelected
                             ? 'text-teal-700 dark:text-teal-300'
                             : 'text-gray-700 dark:text-gray-300'
                         }`}
+                        title={label}
                       >
-                        {label}
+                        {label.length > 20
+                          ? `${label.substring(0, 20)}...`
+                          : label}
                       </span>
                     </div>
                     {isSelected && (
@@ -329,9 +334,11 @@ export function POSPaymentDialog({
                   const customIcon = getCustomIcon(method.payment_type);
                   const isSelected = selectedMethod === method.id;
                   const label =
+                    method.name ||
                     paymentMethodLabels[
                       method.payment_type as keyof typeof paymentMethodLabels
-                    ] || method.name;
+                    ] ||
+                    method.payment_type;
 
                   return (
                     <button
@@ -339,7 +346,7 @@ export function POSPaymentDialog({
                       onClick={() => handleMethodSelect(method.id)}
                       disabled={!method.is_active}
                       className={`
-                        relative p-4 rounded-lg border-2 transition-all duration-200 
+                        relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center
                         ${
                           isSelected
                             ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
@@ -352,7 +359,7 @@ export function POSPaymentDialog({
                         }
                       `}
                     >
-                      <div className="flex flex-col items-center space-y-2">
+                      <div className="flex flex-col items-center space-y-3">
                         <div
                           className={`p-2 rounded-lg ${
                             isSelected
@@ -363,13 +370,16 @@ export function POSPaymentDialog({
                           {customIcon}
                         </div>
                         <span
-                          className={`text-xs font-medium text-center leading-tight ${
+                          className={`text-sm font-medium text-center leading-tight px-1 ${
                             isSelected
                               ? 'text-teal-700 dark:text-teal-300'
                               : 'text-gray-700 dark:text-gray-300'
                           }`}
+                          title={label}
                         >
-                          {label}
+                          {label.length > 15
+                            ? `${label.substring(0, 15)}...`
+                            : label}
                         </span>
                       </div>
                       {isSelected && (
