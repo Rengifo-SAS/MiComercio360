@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Printer, Download, Eye } from 'lucide-react';
+import { Printer, Download, Eye, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { SalesPrintService } from '@/lib/services/sales-print-service';
 import { SalesService } from '@/lib/services/sales-service';
