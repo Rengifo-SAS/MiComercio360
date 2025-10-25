@@ -350,7 +350,11 @@ export function ProtectedNavigation({
   }
 
   return (
-    <nav className="flex-1 p-4 space-y-2">
+    <nav
+      className="flex-1 p-4 space-y-2"
+      role="navigation"
+      aria-label="Navegación principal"
+    >
       {filteredCategories.map((category) => {
         const CategoryIcon = category.icon;
         const isOpen = openCategories[category.title] || false;
@@ -371,25 +375,32 @@ export function ProtectedNavigation({
               href={item.href}
               onClick={onItemClick}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
                 'hover:bg-accent hover:text-accent-foreground',
                 active
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground',
                 isCollapsed && 'justify-center'
               )}
+              aria-current={active ? 'page' : undefined}
+              aria-label={`Navegar a ${item.title}`}
             >
               <Icon
                 className={cn(
                   'h-4 w-4 flex-shrink-0',
                   isCollapsed && 'mx-auto'
                 )}
+                aria-hidden="true"
               />
               {!isCollapsed && (
                 <>
                   <span className="truncate">{item.title}</span>
                   {item.badge && (
-                    <Badge variant="secondary" className="ml-auto text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="ml-auto text-xs"
+                      aria-label={`Notificación: ${item.badge}`}
+                    >
                       {item.badge}
                     </Badge>
                   )}
@@ -411,22 +422,29 @@ export function ProtectedNavigation({
               <CollapsibleTrigger asChild>
                 <button
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
+                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
                     'hover:bg-accent hover:text-accent-foreground',
                     'text-muted-foreground',
                     isCollapsed && 'justify-center'
                   )}
+                  aria-expanded={isOpen}
+                  aria-label={`${isOpen ? 'Contraer' : 'Expandir'} sección ${
+                    category.title
+                  }`}
                 >
-                  <CategoryIcon className="h-4 w-4 flex-shrink-0" />
+                  <CategoryIcon
+                    className="h-4 w-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   {!isCollapsed && (
                     <>
                       <span className="text-xs font-medium uppercase tracking-wider flex-1 text-left">
                         {category.title}
                       </span>
                       {isOpen ? (
-                        <ChevronDown className="h-3 w-3" />
+                        <ChevronDown className="h-3 w-3" aria-hidden="true" />
                       ) : (
-                        <ChevronRight className="h-3 w-3" />
+                        <ChevronRight className="h-3 w-3" aria-hidden="true" />
                       )}
                     </>
                   )}
@@ -435,7 +453,11 @@ export function ProtectedNavigation({
 
               {/* Contenido del acordeón */}
               {!isCollapsed && (
-                <CollapsibleContent className="space-y-1">
+                <CollapsibleContent
+                  className="space-y-1"
+                  role="group"
+                  aria-label={`Enlaces de ${category.title}`}
+                >
                   {category.items.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
@@ -446,19 +468,25 @@ export function ProtectedNavigation({
                         href={item.href}
                         onClick={onItemClick}
                         className={cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ml-4',
+                          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ml-4 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
                           'hover:bg-accent hover:text-accent-foreground',
                           active
                             ? 'bg-accent text-accent-foreground'
                             : 'text-muted-foreground'
                         )}
+                        aria-current={active ? 'page' : undefined}
+                        aria-label={`Navegar a ${item.title}`}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <Icon
+                          className="h-4 w-4 flex-shrink-0"
+                          aria-hidden="true"
+                        />
                         <span className="truncate">{item.title}</span>
                         {item.badge && (
                           <Badge
                             variant="secondary"
                             className="ml-auto text-xs"
+                            aria-label={`Notificación: ${item.badge}`}
                           >
                             {item.badge}
                           </Badge>
@@ -485,13 +513,18 @@ export function HomeLink({ isCollapsed = false }: { isCollapsed?: boolean }) {
     <Link
       href="/"
       className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+        'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
         'hover:bg-accent hover:text-accent-foreground text-muted-foreground',
         isCollapsed && 'justify-center',
         isActive && 'bg-accent text-accent-foreground'
       )}
+      aria-current={isActive ? 'page' : undefined}
+      aria-label="Navegar al inicio"
     >
-      <Home className={cn('h-4 w-4 flex-shrink-0', isCollapsed && 'mx-auto')} />
+      <Home
+        className={cn('h-4 w-4 flex-shrink-0', isCollapsed && 'mx-auto')}
+        aria-hidden="true"
+      />
       {!isCollapsed && <span className="truncate">Inicio</span>}
     </Link>
   );

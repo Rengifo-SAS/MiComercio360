@@ -64,7 +64,11 @@ export function SignUpForm({
           <CardDescription>Crear una nueva cuenta</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignUp}>
+          <form
+            onSubmit={handleSignUp}
+            role="form"
+            aria-label="Formulario de registro"
+          >
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
@@ -75,6 +79,10 @@ export function SignUpForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  aria-describedby="email-error"
+                  autoComplete="email"
+                  autoFocus
                 />
               </div>
               <div className="grid gap-2">
@@ -87,6 +95,9 @@ export function SignUpForm({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  aria-describedby="password-error"
+                  autoComplete="new-password"
                 />
               </div>
               <div className="grid gap-2">
@@ -99,16 +110,42 @@ export function SignUpForm({
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
+                  className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  aria-describedby="password-error"
+                  autoComplete="new-password"
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              {error && (
+                <p
+                  id="email-error"
+                  className="text-sm text-red-500"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="w-full focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                disabled={isLoading}
+                aria-describedby={isLoading ? 'loading-status' : undefined}
+              >
                 {isLoading ? 'Creando cuenta...' : 'Registrarse'}
+                {isLoading && (
+                  <span id="loading-status" className="sr-only">
+                    Procesando registro, por favor espere
+                  </span>
+                )}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
               ¿Ya tienes una cuenta?{' '}
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link
+                href="/auth/login"
+                className="underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded"
+                aria-label="Ir a página de inicio de sesión"
+              >
                 Iniciar Sesión
               </Link>
             </div>

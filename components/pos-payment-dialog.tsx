@@ -230,23 +230,34 @@ export function POSPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        role="dialog"
+        aria-labelledby="payment-title"
+        aria-describedby="payment-description"
+      >
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+          <DialogTitle
+            id="payment-title"
+            className="text-lg font-semibold text-gray-900 dark:text-white"
+          >
             Pagar factura
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="payment-description">
             Selecciona el método de pago y completa la transacción
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Total a Pagar */}
-          <div className="text-center">
+          <div className="text-center" role="status" aria-live="polite">
             <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
               TOTAL
             </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">
+            <div
+              className="text-3xl font-bold text-gray-900 dark:text-white"
+              aria-label={`Total a pagar: ${formatCurrency(totalAmount)}`}
+            >
               {formatCurrency(totalAmount)}
             </div>
           </div>
@@ -271,7 +282,7 @@ export function POSPaymentDialog({
                     onClick={() => handleMethodSelect(method.id)}
                     disabled={!method.is_active}
                     className={`
-                      relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center
+                      relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none
                       ${
                         isSelected
                           ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
@@ -283,6 +294,10 @@ export function POSPaymentDialog({
                           : 'cursor-pointer hover:shadow-sm'
                       }
                     `}
+                    aria-label={`Seleccionar método de pago: ${label}`}
+                    aria-pressed={isSelected}
+                    role="radio"
+                    aria-checked={isSelected}
                   >
                     <div className="flex flex-col items-center space-y-3">
                       <div
@@ -291,6 +306,7 @@ export function POSPaymentDialog({
                             ? 'bg-teal-100 dark:bg-teal-800'
                             : 'bg-gray-100 dark:bg-gray-700'
                         }`}
+                        aria-hidden="true"
                       >
                         {customIcon}
                       </div>
@@ -308,7 +324,10 @@ export function POSPaymentDialog({
                       </span>
                     </div>
                     {isSelected && (
-                      <div className="absolute top-2 right-2 w-3 h-3 bg-teal-500 rounded-full"></div>
+                      <div
+                        className="absolute top-2 right-2 w-3 h-3 bg-teal-500 rounded-full"
+                        aria-hidden="true"
+                      ></div>
                     )}
                   </button>
                 );
@@ -407,8 +426,13 @@ export function POSPaymentDialog({
                       setCashAmount(parseFloat(e.target.value) || 0)
                     }
                     placeholder="Ingrese el monto recibido"
-                    className="text-lg"
+                    className="text-lg focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    aria-label="Monto recibido del cliente"
+                    aria-describedby="cash-amount-help"
                   />
+                  <p id="cash-amount-help" className="text-xs text-gray-500">
+                    Ingrese la cantidad de dinero que recibió del cliente
+                  </p>
                 </div>
 
                 {/* Opciones rápidas */}
@@ -416,14 +440,21 @@ export function POSPaymentDialog({
                   <Label className="text-sm text-gray-600 dark:text-gray-400">
                     Opciones rápidas
                   </Label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div
+                    className="grid grid-cols-3 gap-2"
+                    role="group"
+                    aria-label="Opciones rápidas de monto"
+                  >
                     {getQuickBillOptions(totalAmount).map((amount) => (
                       <Button
                         key={amount}
                         variant="outline"
                         size="sm"
                         onClick={() => setCashAmount(amount)}
-                        className="flex flex-col h-auto py-2"
+                        className="flex flex-col h-auto py-2 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                        aria-label={`Establecer monto recibido a ${formatCurrency(
+                          amount
+                        )}`}
                       >
                         <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
                           {formatCurrency(amount)}
@@ -435,12 +466,19 @@ export function POSPaymentDialog({
 
                 {/* Devuelta */}
                 {change > 0 && (
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <div
+                    className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3"
+                    role="status"
+                    aria-live="polite"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-green-800 dark:text-green-200">
                         Devuelta:
                       </span>
-                      <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                      <span
+                        className="text-lg font-bold text-green-600 dark:text-green-400"
+                        aria-label={`Devuelta: ${formatCurrency(change)}`}
+                      >
                         {formatCurrency(change)}
                       </span>
                     </div>
@@ -448,7 +486,11 @@ export function POSPaymentDialog({
                 )}
 
                 {change < 0 && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <div
+                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3"
+                    role="alert"
+                    aria-live="polite"
+                  >
                     <div className="text-sm text-red-800 dark:text-red-200">
                       El monto recibido es menor al total a pagar
                     </div>
@@ -460,7 +502,8 @@ export function POSPaymentDialog({
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    aria-label="Procesar venta con pago en efectivo"
                   >
                     {loading ? 'Procesando...' : 'Vender'}
                   </Button>
@@ -491,6 +534,8 @@ export function POSPaymentDialog({
                         ? 'Número de transacción'
                         : 'Referencia del pago'
                     }
+                    className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    aria-label="Referencia del pago"
                   />
                 </div>
 
@@ -498,7 +543,8 @@ export function POSPaymentDialog({
                 <Button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  aria-label="Procesar venta con método de pago seleccionado"
                 >
                   {loading ? 'Procesando...' : 'Vender'}
                 </Button>
@@ -510,8 +556,9 @@ export function POSPaymentDialog({
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="px-6"
+              className="px-6 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               disabled={loading}
+              aria-label="Cancelar proceso de pago"
             >
               Cancelar
             </Button>

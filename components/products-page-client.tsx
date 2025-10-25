@@ -255,16 +255,20 @@ export function ProductsPageClient({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search
+                className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
+                aria-hidden="true"
+              />
               <Input
                 placeholder="Buscar productos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 w-64"
+                className="pl-8 w-64 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                aria-label="Buscar productos por nombre, SKU o descripción"
               />
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                 <SelectValue placeholder="Ordenar por" />
               </SelectTrigger>
               <SelectContent>
@@ -278,11 +282,20 @@ export function ProductsPageClient({
               variant="outline"
               size="sm"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label={`Cambiar orden a ${
+                sortOrder === 'asc' ? 'descendente' : 'ascendente'
+              }`}
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label="Exportar productos"
+            >
+              <Download className="h-4 w-4 mr-2" aria-hidden="true" />
               Exportar
             </Button>
           </div>
@@ -291,8 +304,10 @@ export function ProductsPageClient({
               variant="default"
               size="sm"
               onClick={() => setShowImportDialog(true)}
+              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label="Importar productos desde archivo Excel"
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
               Importar Excel
             </Button>
           </div>

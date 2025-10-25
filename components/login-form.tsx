@@ -57,7 +57,11 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
+          <form
+            onSubmit={handleLogin}
+            role="form"
+            aria-label="Formulario de inicio de sesión"
+          >
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
@@ -68,6 +72,9 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-describedby="email-error"
+                  autoComplete="email"
+                  autoFocus
                 />
               </div>
               <div className="grid gap-2">
@@ -75,7 +82,8 @@ export function LoginForm({
                   <Label htmlFor="password">Contraseña</Label>
                   <Link
                     href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded"
+                    aria-label="Recuperar contraseña"
                   >
                     ¿Olvidaste tu contraseña?
                   </Link>
@@ -86,18 +94,40 @@ export function LoginForm({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  aria-describedby="password-error"
+                  autoComplete="current-password"
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              {error && (
+                <p
+                  id="email-error"
+                  className="text-sm text-red-500"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                aria-describedby={isLoading ? 'loading-status' : undefined}
+              >
                 {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                {isLoading && (
+                  <span id="loading-status" className="sr-only">
+                    Procesando inicio de sesión, por favor espere
+                  </span>
+                )}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
               ¿No tienes una cuenta?{' '}
               <Link
                 href="/auth/sign-up"
-                className="underline underline-offset-4"
+                className="underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded"
+                aria-label="Crear nueva cuenta"
               >
                 Regístrate
               </Link>

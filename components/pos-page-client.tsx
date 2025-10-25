@@ -430,9 +430,13 @@ export function POSPageClient() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div
+      className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
+      role="main"
+      aria-label="Sistema de punto de venta"
+    >
       {/* Header Ultra Compacto */}
-      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between px-2 py-1">
           <div className="flex items-center gap-1">
             <h1 className="text-xs font-bold text-gray-900 dark:text-white">
@@ -440,7 +444,10 @@ export function POSPageClient() {
             </h1>
             <div className="hidden xl:flex items-center gap-1">
               <span className="text-xs text-gray-500">Terminal:</span>
-              <span className="text-xs font-medium text-teal-600">
+              <span
+                className="text-xs font-medium text-teal-600"
+                aria-label={`Terminal ${configuration.terminalName}`}
+              >
                 {configuration.terminalName}
               </span>
             </div>
@@ -457,21 +464,29 @@ export function POSPageClient() {
               variant="outline"
               size="sm"
               onClick={() => setShowConfiguration(true)}
-              className="text-xs h-6 px-1"
+              className="text-xs h-6 px-1 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label="Abrir configuración del POS"
             >
-              <Settings className="h-3 w-3" />
+              <Settings className="h-3 w-3" aria-hidden="true" />
               <span className="hidden xl:inline ml-1">Config</span>
             </Button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Layout Principal - Responsivo sin scroll global */}
-      <div className="flex-1 flex flex-col xl:flex-row min-h-0">
+      <div
+        className="flex-1 flex flex-col xl:flex-row min-h-0"
+        role="region"
+        aria-label="Área principal del POS"
+      >
         {/* En móvil/tablet: Una columna */}
         <div className="xl:hidden flex-1 flex flex-col min-h-0">
           {/* Grid de Productos en móvil/tablet - Con scroll propio */}
-          <div className="flex-1 min-h-0">
+          <section
+            className="flex-1 min-h-0"
+            aria-label="Catálogo de productos"
+          >
             <POSProductsGrid
               products={products}
               onAddToCart={addToCart}
@@ -480,10 +495,13 @@ export function POSPageClient() {
               companyId={companyId}
               onProductsReload={loadProducts}
             />
-          </div>
+          </section>
 
           {/* Carrito en móvil/tablet - Altura fija optimizada */}
-          <div className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0">
+          <aside
+            className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0"
+            aria-label="Carrito de compras"
+          >
             <POSCartPanel
               cart={cart}
               customers={customers}
@@ -498,13 +516,16 @@ export function POSPageClient() {
               selectedNumeration={selectedNumeration}
               onNumerationChange={setSelectedNumeration}
             />
-          </div>
+          </aside>
         </div>
 
         {/* En desktop: Dos columnas - Sin scroll global */}
         <div className="hidden xl:flex flex-1 min-h-0">
           {/* Panel Izquierdo - Grid de Productos (70%) */}
-          <div className="w-[70%] min-h-0">
+          <section
+            className="w-[70%] min-h-0"
+            aria-label="Catálogo de productos"
+          >
             <POSProductsGrid
               products={products}
               onAddToCart={addToCart}
@@ -513,10 +534,13 @@ export function POSPageClient() {
               companyId={companyId}
               onProductsReload={loadProducts}
             />
-          </div>
+          </section>
 
           {/* Panel Derecho - Carrito (30%) */}
-          <div className="w-[30%] min-h-0 border-l dark:border-gray-700">
+          <aside
+            className="w-[30%] min-h-0 border-l dark:border-gray-700"
+            aria-label="Carrito de compras"
+          >
             <POSCartPanel
               cart={cart}
               customers={customers}
@@ -531,7 +555,7 @@ export function POSPageClient() {
               selectedNumeration={selectedNumeration}
               onNumerationChange={setSelectedNumeration}
             />
-          </div>
+          </aside>
         </div>
       </div>
 

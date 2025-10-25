@@ -419,24 +419,33 @@ export function ProductFormDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Nuevo Producto
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
+      <DialogContent
+        className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]"
+        role="dialog"
+        aria-labelledby="product-dialog-title"
+        aria-describedby="product-dialog-description"
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle id="product-dialog-title">
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="product-dialog-description">
             {product
               ? 'Modifica la información del producto'
               : 'Crea un nuevo producto en tu catálogo'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          role="form"
+          aria-label="Formulario de producto"
+        >
           <div className="grid gap-4 py-4">
             {/* Información básica */}
             <div className="space-y-4">
@@ -452,7 +461,12 @@ export function ProductFormDialog({
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Ej: Coca Cola 350ml"
                     required
+                    className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    aria-describedby="name-help"
                   />
+                  <p id="name-help" className="text-xs text-gray-500">
+                    Ingrese el nombre completo del producto
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sku">Código Interno (SKU) *</Label>
@@ -462,7 +476,12 @@ export function ProductFormDialog({
                     onChange={(e) => handleInputChange('sku', e.target.value)}
                     placeholder="Ej: COC-350-001"
                     required
+                    className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    aria-describedby="sku-help"
                   />
+                  <p id="sku-help" className="text-xs text-gray-500">
+                    Código único para identificar el producto
+                  </p>
                 </div>
               </div>
 
@@ -476,7 +495,12 @@ export function ProductFormDialog({
                   }
                   placeholder="Descripción del producto"
                   rows={3}
+                  className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  aria-describedby="description-help"
                 />
+                <p id="description-help" className="text-xs text-gray-500">
+                  Descripción detallada del producto (opcional)
+                </p>
               </div>
             </div>
 
@@ -837,14 +861,27 @@ export function ProductFormDialog({
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              className="focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              aria-label="Cancelar creación de producto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label={
+                isLoading
+                  ? 'Guardando producto...'
+                  : product
+                  ? 'Actualizar producto'
+                  : 'Crear nuevo producto'
+              }
+            >
               {product ? (
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
               ) : (
-                <Package className="h-4 w-4 mr-2" />
+                <Package className="h-4 w-4 mr-2" aria-hidden="true" />
               )}
               {isLoading
                 ? 'Guardando...'
