@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { POSQuantityDialog } from '@/components/pos-quantity-dialog';
 import {
   Plus,
   Minus,
@@ -27,7 +28,46 @@ import {
   Receipt,
   CreditCard,
   RotateCcw,
+  Edit3,
 } from 'lucide-react';
+
+// Funciones auxiliares para manejo de unidades de medida
+const getQuantityStep = (unit: string): number => {
+  switch (unit) {
+    case 'kg':
+    case 'l':
+      return 0.1; // Incrementos de 100g o 100ml
+    case 'g':
+    case 'ml':
+      return 1; // Incrementos de 1g o 1ml
+    case 'm':
+      return 0.1; // Incrementos de 10cm
+    case 'cm':
+      return 1; // Incrementos de 1cm
+    default:
+      return 1; // Para piezas (pcs) y otros
+  }
+};
+
+const getUnitLabel = (unit: string): string => {
+  const unitLabels: { [key: string]: string } = {
+    pcs: 'pzs',
+    kg: 'kg',
+    g: 'g',
+    l: 'L',
+    ml: 'ml',
+    m: 'm',
+    cm: 'cm',
+  };
+  return unitLabels[unit] || unit;
+};
+
+const formatQuantity = (quantity: number, unit: string): string => {
+  if (unit === 'kg' || unit === 'l' || unit === 'm') {
+    return quantity.toFixed(1);
+  }
+  return quantity.toString();
+};
 
 interface CartItem {
   product: any;
@@ -64,6 +104,26 @@ export function POSCartPanel({
   onNumerationChange,
 }: POSCartPanelProps) {
   const [invoiceType, setInvoiceType] = useState('local');
+  const [showQuantityDialog, setShowQuantityDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedQuantity, setSelectedQuantity] = useState(0);
+
+  // Función para abrir el diálogo de cantidad
+  const handleOpenQuantityDialog = (product: any, currentQuantity: number) => {
+    setSelectedProduct(product);
+    setSelectedQuantity(currentQuantity);
+    setShowQuantityDialog(true);
+  };
+
+  // Función para confirmar la nueva cantidad
+  const handleConfirmQuantity = (newQuantity: number) => {
+    if (selectedProduct) {
+      onUpdateQuantity(selectedProduct.id, newQuantity);
+    }
+    setShowQuantityDialog(false);
+    setSelectedProduct(null);
+    setSelectedQuantity(0);
+  };
 
   // Calcular totales
   const saleItems = cart.map((item) => ({
@@ -304,7 +364,7 @@ export function POSCartPanel({
                             )}
                           </span>
                           <span className="text-xs text-gray-500">
-                            Precio unitario
+                            Precio por {getUnitLabel(item.product.unit)}
                           </span>
                         </div>
                         <div className="text-right">
@@ -328,7 +388,11 @@ export function POSCartPanel({
                             onClick={() =>
                               onUpdateQuantity(
                                 item.product.id,
-                                item.quantity - 1
+                                Math.max(
+                                  0,
+                                  item.quantity -
+                                    getQuantityStep(item.product.unit)
+                                )
                               )
                             }
                             className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
@@ -336,17 +400,44 @@ export function POSCartPanel({
                           >
                             <Minus className="h-4 w-4" aria-hidden="true" />
                           </Button>
-                          <div
-                            className="flex items-center justify-center min-w-[3rem] h-8 bg-gray-100 dark:bg-gray-700 rounded-md"
-                            role="status"
-                            aria-live="polite"
-                          >
-                            <span
-                              className="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                              aria-label={`Cantidad actual: ${item.quantity}`}
-                            >
-                              {item.quantity}
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              step={getQuantityStep(item.product.unit)}
+                              value={formatQuantity(
+                                item.quantity,
+                                item.product.unit
+                              )}
+                              onChange={(e) =>
+                                onUpdateQuantity(
+                                  item.product.id,
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="h-8 w-20 text-center text-sm font-semibold"
+                              aria-label={`Cantidad actual: ${formatQuantity(
+                                item.quantity,
+                                item.product.unit
+                              )} ${getUnitLabel(item.product.unit)}`}
+                            />
+                            <span className="text-xs text-gray-500 font-medium">
+                              {getUnitLabel(item.product.unit)}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleOpenQuantityDialog(
+                                  item.product,
+                                  item.quantity
+                                )
+                              }
+                              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              aria-label={`Editar cantidad de ${item.product.name}`}
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
                           </div>
                           <Button
                             variant="outline"
@@ -354,7 +445,8 @@ export function POSCartPanel({
                             onClick={() =>
                               onUpdateQuantity(
                                 item.product.id,
-                                item.quantity + 1
+                                item.quantity +
+                                  getQuantityStep(item.product.unit)
                               )
                             }
                             disabled={isAtLimit}
@@ -385,12 +477,18 @@ export function POSCartPanel({
                             aria-label={`Estado del inventario: ${
                               isAtLimit
                                 ? 'Sin stock'
-                                : `Stock disponible: ${availableQuantity} unidades`
+                                : `Stock disponible: ${formatQuantity(
+                                    availableQuantity,
+                                    item.product.unit
+                                  )} ${getUnitLabel(item.product.unit)}`
                             }`}
                           >
                             {isAtLimit
                               ? 'Sin stock'
-                              : `Stock: ${availableQuantity}`}
+                              : `Stock: ${formatQuantity(
+                                  availableQuantity,
+                                  item.product.unit
+                                )} ${getUnitLabel(item.product.unit)}`}
                           </span>
                         </div>
                       </div>
@@ -480,6 +578,15 @@ export function POSCartPanel({
           </Button>
         </div>
       </footer>
+
+      {/* Diálogo de cantidad */}
+      <POSQuantityDialog
+        open={showQuantityDialog}
+        onOpenChange={setShowQuantityDialog}
+        product={selectedProduct}
+        currentQuantity={selectedQuantity}
+        onConfirm={handleConfirmQuantity}
+      />
     </div>
   );
 }

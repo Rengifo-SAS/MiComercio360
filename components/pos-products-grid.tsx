@@ -19,6 +19,20 @@ import { cn } from '@/lib/utils';
 import { POSQuickProductDialog } from '@/components/pos-quick-product-dialog';
 import { ProductsService } from '@/lib/services/products-service';
 
+// Funciones auxiliares para manejo de unidades de medida
+const getUnitLabel = (unit: string): string => {
+  const unitLabels: { [key: string]: string } = {
+    pcs: 'pzs',
+    kg: 'kg',
+    g: 'g',
+    l: 'L',
+    ml: 'ml',
+    m: 'm',
+    cm: 'cm',
+  };
+  return unitLabels[unit] || unit;
+};
+
 interface CartItem {
   product: Product;
   quantity: number;
@@ -425,6 +439,9 @@ export function POSProductsGrid({
                             parseFloat(product.selling_price.toString())
                           )}
                         </span>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          por {getUnitLabel(product.unit)}
+                        </div>
                       </div>
 
                       {/* Badge de cantidad en carrito */}

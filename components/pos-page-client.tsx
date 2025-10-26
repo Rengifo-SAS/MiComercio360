@@ -31,6 +31,44 @@ import { useSidebar } from '@/contexts/sidebar-context';
 import { PaymentMethod } from '@/lib/types/payment-methods';
 import { Numeration } from '@/lib/types/numerations';
 
+// Funciones auxiliares para manejo de unidades de medida
+const getQuantityStep = (unit: string): number => {
+  switch (unit) {
+    case 'kg':
+    case 'l':
+      return 0.1; // Incrementos de 100g o 100ml
+    case 'g':
+    case 'ml':
+      return 1; // Incrementos de 1g o 1ml
+    case 'm':
+      return 0.1; // Incrementos de 10cm
+    case 'cm':
+      return 1; // Incrementos de 1cm
+    default:
+      return 1; // Para piezas (pcs) y otros
+  }
+};
+
+const getUnitLabel = (unit: string): string => {
+  const unitLabels: { [key: string]: string } = {
+    pcs: 'pzs',
+    kg: 'kg',
+    g: 'g',
+    l: 'L',
+    ml: 'ml',
+    m: 'm',
+    cm: 'cm',
+  };
+  return unitLabels[unit] || unit;
+};
+
+const formatQuantity = (quantity: number, unit: string): string => {
+  if (unit === 'kg' || unit === 'l' || unit === 'm') {
+    return quantity.toFixed(1);
+  }
+  return quantity.toString();
+};
+
 interface CartItem {
   product: Product;
   quantity: number;
@@ -258,10 +296,15 @@ export function POSPageClient() {
       const existingItem = prev.find((item) => item.product.id === product.id);
       if (existingItem) {
         // Validar que no se exceda la cantidad disponible al incrementar
-        const newQuantity = existingItem.quantity + 1;
+        const step = getQuantityStep(product.unit);
+        const newQuantity = existingItem.quantity + step;
         if (newQuantity > availableQuantity) {
+          const unitLabel = getUnitLabel(product.unit);
           toast.error(
-            `No hay suficiente inventario. Disponible: ${availableQuantity} unidades`
+            `No hay suficiente inventario. Disponible: ${formatQuantity(
+              availableQuantity,
+              product.unit
+            )} ${unitLabel}`
           );
           return prev;
         }
@@ -271,7 +314,7 @@ export function POSPageClient() {
             : item
         );
       } else {
-        return [...prev, { product, quantity: 1 }];
+        return [...prev, { product, quantity: getQuantityStep(product.unit) }];
       }
     });
   };
@@ -287,8 +330,12 @@ export function POSPageClient() {
 
         // Validar que no se exceda la cantidad disponible
         if (quantity > availableQuantity) {
+          const unitLabel = getUnitLabel(product.unit);
           toast.error(
-            `No hay suficiente inventario. Disponible: ${availableQuantity} unidades`
+            `No hay suficiente inventario. Disponible: ${formatQuantity(
+              availableQuantity,
+              product.unit
+            )} ${unitLabel}`
           );
           return;
         }
