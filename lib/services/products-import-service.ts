@@ -265,42 +265,52 @@ export class ProductsImportService {
 
       // Obtener código de barras y procesarlo correctamente
       const barcodeValue = getValue([
-        'código de barras (opcional)', 'codigo de barras (opcional)', 'código de barras', 'codigo de barras',
-        'barcode', 'barcode (opcional)', 'codigo', 'código', 'codigo interno', 'código interno'
+        'codigo de barras opcional', 'codigo de barras',
+        'barcode opcional', 'barcode',
+        'codigo', 'código'
       ]);
       const barcode = this.parseBarcodeValue(barcodeValue);
 
-      // Usar código de barras como SKU principal, si no hay código de barras, usar SKU proporcionado
+      // Obtener SKU del Excel
       const skuValue = getValue([
-        'sku (opcional)', 'sku', 'codigo', 'código', 'codigo interno', 'código interno',
-        'codigo producto', 'código producto'
+        'sku opcional', 'sku',
+        'codigo interno', 'codigo producto'
       ]);
-      let sku: string;
 
+      // Determinar el SKU y código de barras finales
+      let sku: string;
+      let finalBarcode: string;
+
+      // Prioridad 1: Usar código de barras del Excel si existe
       if (barcode && barcode.trim() !== '') {
-        // El código de barras es el SKU principal
-        sku = barcode;
-      } else if (skuValue && skuValue.trim() !== '') {
-        // Si no hay código de barras pero sí SKU, usar el SKU
+        finalBarcode = barcode;
+        // Si no hay SKU, usar el código de barras como SKU también
+        sku = (skuValue && skuValue.trim() !== '') ? skuValue : barcode;
+      }
+      // Prioridad 2: Usar SKU del Excel si existe
+      else if (skuValue && skuValue.trim() !== '') {
         sku = skuValue;
-      } else {
-        // Solo generar SKU automático si no hay ni código de barras ni SKU
+        finalBarcode = '';
+      }
+      // Prioridad 3: Generar SKU automático solo si no hay ninguno
+      else {
         sku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        finalBarcode = '';
       }
 
       return {
         name,
         sku,
-        barcode,
-        description: getValue(['descripción (opcional)', 'descripcion (opcional)', 'descripción', 'descripcion', 'description']),
-        category_name: getValue(['categoría *', 'categoria *', 'categoría', 'categoria', 'category']) || 'General',
+        barcode: finalBarcode,
+        description: getValue(['descripcion opcional', 'descripcion', 'description']),
+        category_name: getValue(['categoria', 'category']) || 'General',
         cost_price: getNumber(['precio de costo', 'precio costo', 'costo', 'cost_price']),
-        selling_price: getNumber(['precio de venta *', 'precio de venta', 'precio venta', 'venta', 'selling_price']),
-        available_quantity: getNumber(['cantidad disponible', 'cantidad', 'stock', 'available_quantity', 'cantidad disponible']),
-        iva_rate: getNumber(['iva (%)', 'iva', 'iva_rate']),
-        ica_rate: getNumber(['ica (%)', 'ica', 'ica_rate']),
-        retencion_rate: getNumber(['retencion (%)', 'retención (%)', 'retencion', 'retención', 'retencion_rate']),
-        warehouse_name: getValue(['bodega', 'warehouse', 'almacen', 'almacén'])
+        selling_price: getNumber(['precio de venta', 'precio venta', 'venta', 'selling_price']),
+        available_quantity: getNumber(['cantidad disponible', 'cantidad', 'stock', 'available_quantity']),
+        iva_rate: getNumber(['iva %', 'iva', 'iva_rate']),
+        ica_rate: getNumber(['ica %', 'ica', 'ica_rate']),
+        retencion_rate: getNumber(['retencion %', 'retencion', 'retencion_rate']),
+        warehouse_name: getValue(['bodega opcional', 'bodega', 'warehouse', 'almacen'])
       };
     } catch (error) {
       console.error(`Error mapeando fila ${rowNumber}:`, error);

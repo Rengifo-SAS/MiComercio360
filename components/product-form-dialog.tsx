@@ -425,17 +425,12 @@ export function ProductFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent
-        className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]"
-        role="dialog"
-        aria-labelledby="product-dialog-title"
-        aria-describedby="product-dialog-description"
-      >
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw]">
         <DialogHeader>
-          <DialogTitle id="product-dialog-title">
+          <DialogTitle>
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </DialogTitle>
-          <DialogDescription id="product-dialog-description">
+          <DialogDescription>
             {product
               ? 'Modifica la información del producto'
               : 'Crea un nuevo producto en tu catálogo'}

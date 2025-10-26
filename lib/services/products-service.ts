@@ -31,7 +31,7 @@ export class ProductsService {
         .from('products')
         .select(`
           *,
-          inventory:inventory(quantity, warehouse_id),
+          inventory:inventory(quantity, warehouse_id, warehouses!inventory_warehouse_id_fkey(id, name, code)),
           warehouses!products_warehouse_id_fkey(id, name, code)
         `, { count: 'exact' })
         .eq('company_id', companyId);
@@ -110,7 +110,7 @@ export class ProductsService {
         .from('products')
         .select(`
           *,
-          inventory:inventory(quantity, warehouse_id),
+          inventory:inventory(quantity, warehouse_id, warehouses!inventory_warehouse_id_fkey(id, name, code)),
           warehouses!products_warehouse_id_fkey(id, name, code)
         `)
         .eq('company_id', companyId)
@@ -133,6 +133,76 @@ export class ProductsService {
     } catch (error) {
       console.error('Error en searchProducts:', error);
       return [];
+    }
+  }
+
+  // Obtener estadísticas de productos desde la base de datos
+  static async getProductsStats(companyId: string): Promise<{
+    total_products: number;
+    active_products: number;
+    low_stock_count: number;
+    out_of_stock_count: number;
+  }> {
+    try {
+      // Obtener estadísticas básicas de productos
+      const { data: basicStats, error: basicError } = await this.supabase
+        .from('products')
+        .select('id, is_active, min_stock')
+        .eq('company_id', companyId);
+
+      if (basicError) {
+        console.error('Error obteniendo estadísticas básicas:', basicError);
+        throw new Error('Error al obtener estadísticas de productos');
+      }
+
+      // Obtener inventario de todos los productos
+      const { data: inventoryData, error: inventoryError } = await this.supabase
+        .from('inventory')
+        .select('product_id, quantity')
+        .eq('company_id', companyId);
+
+      if (inventoryError) {
+        console.error('Error obteniendo inventario:', inventoryError);
+        throw new Error('Error al obtener datos de inventario');
+      }
+
+      // Crear un mapa de inventario por producto
+      const inventoryMap = new Map<string, number>();
+      inventoryData?.forEach(item => {
+        inventoryMap.set(item.product_id, item.quantity);
+      });
+
+      // Calcular estadísticas
+      let totalProducts = 0;
+      let activeProducts = 0;
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+
+      basicStats?.forEach(product => {
+        totalProducts++;
+
+        if (product.is_active) {
+          activeProducts++;
+        }
+
+        const currentQuantity = inventoryMap.get(product.id) || 0;
+
+        if (currentQuantity === 0) {
+          outOfStockCount++;
+        } else if (product.min_stock > 0 && currentQuantity <= product.min_stock) {
+          lowStockCount++;
+        }
+      });
+
+      return {
+        total_products: totalProducts,
+        active_products: activeProducts,
+        low_stock_count: lowStockCount,
+        out_of_stock_count: outOfStockCount,
+      };
+    } catch (error) {
+      console.error('Error en getProductsStats:', error);
+      throw error;
     }
   }
 

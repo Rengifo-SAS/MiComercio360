@@ -58,6 +58,12 @@ interface Product extends BaseProduct {
     id: string;
     quantity: number;
     location?: string;
+    warehouse_id?: string;
+    warehouses?: {
+      id: string;
+      name: string;
+      code: string;
+    };
   }>;
 }
 
@@ -87,7 +93,32 @@ export function ProductsPageClient({
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+  // Estados para estadísticas de la base de datos
+  const [stats, setStats] = useState({
+    total_products: 0,
+    active_products: 0,
+    low_stock_count: 0,
+    out_of_stock_count: 0,
+  });
+
   const itemsPerPage = 20;
+
+  // Función para cargar estadísticas desde la base de datos
+  const loadStats = async () => {
+    try {
+      const statsData = await ProductsService.getProductsStats(companyId);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+      // Mantener valores por defecto en caso de error
+      setStats({
+        total_products: 0,
+        active_products: 0,
+        low_stock_count: 0,
+        out_of_stock_count: 0,
+      });
+    }
+  };
 
   // Función para cargar productos con paginación
   const loadProducts = async (page: number = 1) => {
@@ -114,9 +145,10 @@ export function ProductsPageClient({
     }
   };
 
-  // Cargar productos iniciales
+  // Cargar productos iniciales y estadísticas
   useEffect(() => {
     loadProducts(1);
+    loadStats();
   }, []);
 
   // Efecto para cargar productos cuando cambian los filtros
@@ -145,11 +177,15 @@ export function ProductsPageClient({
   const handleProductCreate = (newProduct: Product) => {
     // Recargar la lista para mantener la paginación correcta
     loadProducts(currentPage);
+    // Recargar estadísticas para reflejar el nuevo producto
+    loadStats();
   };
 
   const handleProductDelete = (deletedProductId: string) => {
     // Recargar la lista para mantener la paginación correcta
     loadProducts(currentPage);
+    // Recargar estadísticas para reflejar el producto eliminado
+    loadStats();
     // Cerrar el diálogo de ajuste si se eliminó el producto seleccionado
     if (selectedProduct?.id === deletedProductId) {
       setSelectedProduct(null);
@@ -160,6 +196,8 @@ export function ProductsPageClient({
   const handleImportComplete = () => {
     // Recargar la lista para mostrar los nuevos productos
     loadProducts(1);
+    // Recargar estadísticas para reflejar los productos importados
+    loadStats();
   };
 
   return (
@@ -187,7 +225,7 @@ export function ProductsPageClient({
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
+            <div className="text-2xl font-bold">{stats.total_products}</div>
             <p className="text-xs text-muted-foreground">En catálogo</p>
           </CardContent>
         </Card>
@@ -198,9 +236,7 @@ export function ProductsPageClient({
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {products.filter((p) => p.is_active).length}
-            </div>
+            <div className="text-2xl font-bold">{stats.active_products}</div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
@@ -211,19 +247,7 @@ export function ProductsPageClient({
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {
-                products.filter((product) => {
-                  const inventory = product.inventory?.[0];
-                  const currentQuantity = inventory?.quantity || 0;
-                  return (
-                    product.min_stock > 0 &&
-                    currentQuantity <= product.min_stock &&
-                    currentQuantity > 0
-                  );
-                }).length
-              }
-            </div>
+            <div className="text-2xl font-bold">{stats.low_stock_count}</div>
             <p className="text-xs text-muted-foreground">
               Necesitan reposición
             </p>
@@ -236,15 +260,7 @@ export function ProductsPageClient({
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {
-                products.filter((product) => {
-                  const inventory = product.inventory?.[0];
-                  const currentQuantity = inventory?.quantity || 0;
-                  return currentQuantity === 0;
-                }).length
-              }
-            </div>
+            <div className="text-2xl font-bold">{stats.out_of_stock_count}</div>
             <p className="text-xs text-muted-foreground">Agotados</p>
           </CardContent>
         </Card>
@@ -401,7 +417,9 @@ export function ProductsPageClient({
                       <div className="text-center">
                         <p className="text-lg font-bold">{currentQuantity}</p>
                         <p className="text-xs text-muted-foreground">
-                          {product.warehouses?.name || 'Sin bodega'}
+                          {inventory?.warehouses?.name ||
+                            product.warehouses?.name ||
+                            'Sin bodega'}
                         </p>
                       </div>
                       <div>

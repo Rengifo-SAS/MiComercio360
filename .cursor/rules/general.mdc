@@ -1,6 +1,13 @@
 ---
 alwaysApply: true
 ---
+
+Always write **clean, readable, and efficient code**.  
+Follow **good programming practices** and apply **recognized design patterns** when appropriate.  
+Ensure the system has a **modular, scalable, and maintainable architecture**, allowing easy updates, improvements, or changes in the future.  
+Minimize and carefully evaluate external dependencies to avoid tight coupling and reduce technical debt.  
+Prioritize **consistency, reusability, and testing** to guarantee software quality and reliability.  
+
 Always write **clean, readable, and efficient code**.  
 Follow **good programming practices** and apply **recognized design patterns** when appropriate.  
 Ensure the system has a **modular, scalable, and maintainable architecture**, allowing easy updates, improvements, or changes in the future.  
