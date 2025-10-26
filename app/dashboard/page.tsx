@@ -13,21 +13,18 @@ import { Button } from '@/components/ui/button';
 import {
   Building2,
   Users,
-  Package,
-  ShoppingCart,
   TrendingUp,
   DollarSign,
-  BarChart3,
   AlertTriangle,
   CheckCircle,
-  Eye,
-  Plus,
   ArrowUpRight,
-  Activity,
   CreditCard,
-  FileText,
+  ShoppingCart,
+  Plus,
 } from 'lucide-react';
 import Link from 'next/link';
+import { SalesChart } from '@/components/dashboard/sales-chart';
+import { TopProductsChart } from '@/components/dashboard/top-products-chart';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -57,8 +54,8 @@ export default async function DashboardPage() {
     customersStats,
     recentSales,
     lowStockProducts,
-    recentActivities,
     accountsStats,
+    topSoldProducts,
   ] = await Promise.all([
     // Estadísticas de ventas
     supabase
@@ -91,40 +88,33 @@ export default async function DashboardPage() {
         total_amount,
         created_at,
         payment_status,
-        customers(id, name)
+        status,
+        customers(id, business_name)
       `
       )
       .eq('company_id', companyId)
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(6),
 
-    // Productos con stock bajo
+    // Productos con stock bajo o sin stock - ordenados por más vendidos
     supabase
-      .from('warehouse_inventory')
+      .from('inventory')
       .select(
         `
         quantity,
-        min_stock,
-        products!inner(id, name, sku, company_id)
+        products!inner(
+          id, 
+          name, 
+          sku, 
+          min_stock, 
+          company_id,
+          created_at
+        )
       `
       )
       .eq('products.company_id', companyId)
-      .lt('quantity', 'min_stock')
-      .limit(5),
-
-    // Actividades recientes (audit_log)
-    supabase
-      .from('audit_log')
-      .select(
-        `
-        id,
-        table_name,
-        action,
-        created_at,
-        profiles!inner(full_name, email)
-      `
-      )
-      .order('created_at', { ascending: false })
+      .or('quantity.lte.products.min_stock,quantity.eq.0')
+      .order('products.created_at', { ascending: false })
       .limit(10),
 
     // Estadísticas de cuentas
@@ -133,6 +123,24 @@ export default async function DashboardPage() {
       .select('current_balance, account_type, is_active')
       .eq('company_id', companyId)
       .eq('is_active', true),
+
+    // Productos más vendidos para ordenar alertas
+    supabase
+      .from('sale_items')
+      .select(
+        `
+        product_id,
+        quantity,
+        products!inner(id, name, company_id)
+      `
+      )
+      .eq('products.company_id', companyId)
+      .gte(
+        'created_at',
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      )
+      .order('quantity', { ascending: false })
+      .limit(20),
   ]);
 
   // Procesar estadísticas
@@ -166,6 +174,41 @@ export default async function DashboardPage() {
 
   const lowStockCount = lowStockProducts.data?.length || 0;
 
+  // Procesar productos con bajo stock ordenados por más vendidos
+  const processedLowStockProducts =
+    lowStockProducts.data
+      ?.map((item: any) => {
+        const product = item.products[0];
+        const currentStock = item.quantity;
+        const isOutOfStock = currentStock === 0;
+        const isLowStock =
+          currentStock <= product.min_stock && currentStock > 0;
+
+        // Buscar información de ventas para este producto
+        const salesData = topSoldProducts.data?.find(
+          (sale: any) => sale.product_id === product.id
+        );
+        const totalSold = salesData?.quantity || 0;
+
+        return {
+          ...item,
+          product: product,
+          currentStock,
+          isOutOfStock,
+          isLowStock,
+          totalSold,
+          priority: isOutOfStock ? 1 : isLowStock ? 2 : 3, // Prioridad: sin stock > bajo stock > otros
+        };
+      })
+      .sort((a: any, b: any) => {
+        // Ordenar por prioridad (sin stock primero), luego por más vendidos
+        if (a.priority !== b.priority) {
+          return a.priority - b.priority;
+        }
+        return b.totalSold - a.totalSold;
+      })
+      .slice(0, 5) || [];
+
   const totalCash =
     accountsStats.data?.reduce(
       (
@@ -184,36 +227,40 @@ export default async function DashboardPage() {
     ) || 0;
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="flex-1 w-full flex flex-col gap-2 xs:gap-3 sm:gap-4 lg:gap-6 p-2 xs:p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 xs:gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg xs:text-xl sm:text-2xl lg:text-3xl font-bold truncate">
+            {setupStatus.company?.name || 'Dashboard'}
+          </h1>
+          <p className="text-xs sm:text-sm lg:text-base text-muted-foreground truncate">
             Bienvenido,{' '}
             {setupStatus.profile?.full_name || setupStatus.profile?.email}
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Building2 className="h-4 w-4" />
-          <span>{setupStatus.company?.name}</span>
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+          <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="truncate max-w-[200px] sm:max-w-none">
+            {setupStatus.company?.name}
+          </span>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">
               Ventas del Mes
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
               ${totalSales.toLocaleString('es-CO')}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               {salesCount} transacciones
               {pendingSales > 0 && (
                 <span className="text-orange-600 ml-1">
@@ -224,190 +271,119 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Productos</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">
+              Clientes
+            </CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              {activeProducts} activos
-              {lowStockCount > 0 && (
-                <span className="text-red-600 ml-1">
-                  ({lowStockCount} con stock bajo)
-                </span>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold">
+              {totalCustomers}
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
               {activeCustomers} activos
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow sm:col-span-2 xl:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">
               Efectivo Total
             </CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
               ${totalCash.toLocaleString('es-CO')}
             </div>
-            <p className="text-xs text-muted-foreground">En cuentas activas</p>
+            <p className="text-xs text-muted-foreground truncate">
+              En cuentas activas
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/dashboard/pos">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Punto de Venta
-              </CardTitle>
-              <CardDescription>
-                Iniciar una nueva transacción de venta
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Venta
-              </Button>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/inventory">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Inventario
-              </CardTitle>
-              <CardDescription>Gestionar productos y stock</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                <Eye className="h-4 w-4 mr-2" />
-                Ver Inventario
-              </Button>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/sales">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Ventas
-              </CardTitle>
-              <CardDescription>Ver historial de ventas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Ver Ventas
-              </Button>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/customers">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Clientes
-              </CardTitle>
-              <CardDescription>Gestionar base de clientes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                <Users className="h-4 w-4 mr-2" />
-                Ver Clientes
-              </Button>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+        <SalesChart companyId={companyId} />
+        <TopProductsChart companyId={companyId} />
       </div>
 
       {/* Alerts and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
         {/* Alerts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
               Alertas
             </CardTitle>
-            <CardDescription>Elementos que requieren atención</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Elementos que requieren atención
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {lowStockCount > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+          <CardContent className="pt-0">
+            {processedLowStockProducts.length > 0 ? (
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-orange-800 dark:text-orange-200 truncate">
                       Stock Bajo
                     </p>
-                    <p className="text-xs text-orange-600 dark:text-orange-300">
-                      {lowStockCount} productos con stock bajo
+                    <p className="text-xs text-orange-600 dark:text-orange-300 truncate">
+                      {processedLowStockProducts.length} productos prioritarios
+                      con stock bajo o sin stock
                     </p>
                   </div>
                   <Link href="/dashboard/inventory">
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-shrink-0 text-xs"
+                    >
                       Ver
                     </Button>
                   </Link>
                 </div>
-                {lowStockProducts.data?.slice(0, 3).map(
-                  (item: {
-                    quantity: number;
-                    min_stock: number;
-                    products: {
-                      id: string;
-                      name: string;
-                      sku: string;
-                      company_id: string;
-                    }[];
-                  }) => {
-                    const product = item.products[0]; // Tomar el primer producto del array
-                    return (
-                      <div
-                        key={product.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Stock: {item.quantity} / Mín: {item.min_stock}
-                          </p>
-                        </div>
-                        <Badge variant="destructive" className="text-xs">
-                          Bajo
-                        </Badge>
+                {processedLowStockProducts.map((item: any) => {
+                  const product = item.product;
+                  const currentStock = item.currentStock;
+                  const isOutOfStock = item.isOutOfStock;
+                  const isLowStock = item.isLowStock;
+                  const totalSold = item.totalSold;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium truncate">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          SKU: {product.sku} | Stock: {currentStock} / Mín:{' '}
+                          {product.min_stock}
+                          {totalSold > 0 && (
+                            <span className="ml-2 text-blue-600">
+                              | Vendidos: {totalSold}
+                            </span>
+                          )}
+                        </p>
                       </div>
-                    );
-                  }
-                )}
+                      <Badge
+                        variant={isOutOfStock ? 'destructive' : 'secondary'}
+                        className="text-xs flex-shrink-0 ml-2"
+                      >
+                        {isOutOfStock ? 'Sin Stock' : 'Stock Bajo'}
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-4 text-muted-foreground">
@@ -419,38 +395,41 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Sales */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
               Ventas Recientes
             </CardTitle>
-            <CardDescription>Últimas transacciones realizadas</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Últimas transacciones realizadas
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {recentSales.data && recentSales.data.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {recentSales.data.map(
                   (sale: {
                     id: string;
                     total_amount: string | number;
                     created_at: string;
                     payment_status: string;
-                    customers: { id: string; name: string }[];
+                    status: string;
+                    customers: { id: string; business_name: string }[];
                   }) => {
-                    const customer = sale.customers[0]; // Tomar el primer cliente del array
+                    const customer = sale.customers?.[0]; // Tomar el primer cliente del array si existe
                     return (
                       <div
                         key={sale.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-full">
-                            <DollarSign className="h-4 w-4 text-green-600" />
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1 sm:p-2 bg-green-100 dark:bg-green-900/20 rounded-full flex-shrink-0">
+                            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {customer?.name || 'Cliente General'}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium truncate">
+                              {customer?.business_name || 'Consumidor Final'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(sale.created_at).toLocaleDateString(
@@ -459,20 +438,20 @@ export default async function DashboardPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold">
+                        <div className="text-right flex-shrink-0 ml-2 sm:ml-3">
+                          <p className="text-xs sm:text-sm font-bold">
                             ${Number(sale.total_amount).toLocaleString('es-CO')}
                           </p>
                           <Badge
                             variant={
-                              sale.payment_status === 'COMPLETED'
+                              sale.status === 'completed'
                                 ? 'default'
                                 : 'secondary'
                             }
                             className="text-xs"
                           >
-                            {sale.payment_status === 'COMPLETED'
-                              ? 'Pagado'
+                            {sale.status === 'completed'
+                              ? 'Completada'
                               : 'Pendiente'}
                           </Badge>
                         </div>
@@ -482,21 +461,30 @@ export default async function DashboardPage() {
                 )}
                 <div className="pt-2">
                   <Link href="/dashboard/sales">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs sm:text-sm"
+                    >
                       Ver todas las ventas
-                      <ArrowUpRight className="h-4 w-4 ml-2" />
+                      <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 ml-2" />
                     </Button>
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No hay ventas recientes</p>
-                <p className="text-sm">Las transacciones aparecerán aquí</p>
-                <Link href="/dashboard/pos" className="mt-4 inline-block">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <ShoppingCart className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">No hay ventas recientes</p>
+                <p className="text-xs sm:text-sm">
+                  Las transacciones aparecerán aquí
+                </p>
+                <Link
+                  href="/dashboard/pos"
+                  className="mt-3 sm:mt-4 inline-block"
+                >
+                  <Button size="sm" className="text-xs sm:text-sm">
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     Realizar Primera Venta
                   </Button>
                 </Link>
@@ -505,81 +493,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Actividad Reciente
-          </CardTitle>
-          <CardDescription>
-            Últimas acciones realizadas en el sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentActivities.data && recentActivities.data.length > 0 ? (
-            <div className="space-y-3">
-              {recentActivities.data
-                .slice(0, 5)
-                .map(
-                  (activity: {
-                    id: string;
-                    action: string;
-                    table_name: string;
-                    created_at: string;
-                    profiles: { full_name?: string; email?: string }[];
-                  }) => {
-                    const profile = activity.profiles[0]; // Tomar el primer perfil del array
-                    return (
-                      <div
-                        key={activity.id}
-                        className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                      >
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                          <Activity className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {activity.action} en {activity.table_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Por{' '}
-                            {profile?.full_name || profile?.email || 'Usuario'}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(activity.created_at).toLocaleDateString(
-                              'es-CO'
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(activity.created_at).toLocaleTimeString(
-                              'es-CO',
-                              {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              }
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }
-                )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay actividad reciente</p>
-              <p className="text-sm">
-                Las acciones del sistema aparecerán aquí
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

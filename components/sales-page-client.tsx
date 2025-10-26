@@ -350,7 +350,7 @@ export function SalesPageClient({
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ventas Hoy</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -363,7 +363,7 @@ export function SalesPageClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ventas del Mes
@@ -380,7 +380,7 @@ export function SalesPageClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Promedio por Venta
@@ -397,7 +397,7 @@ export function SalesPageClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total de Items
@@ -405,9 +405,9 @@ export function SalesPageClient({
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total_items || 0}</div>
+            <div className="text-2xl font-bold">{stats?.items_today || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats?.total_amount || 0)} total
+              {formatCurrency(stats?.amount_today || 0)} total
             </p>
           </CardContent>
         </Card>

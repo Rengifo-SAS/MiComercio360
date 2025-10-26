@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/client';
-import { 
-  Sale, 
-  SaleItem, 
-  CreateSaleData, 
-  UpdateSaleData, 
-  SaleFilters, 
+import {
+  Sale,
+  SaleItem,
+  CreateSaleData,
+  UpdateSaleData,
+  SaleFilters,
   SaleSearchParams,
   SaleStats,
   SaleChartData,
@@ -19,7 +19,7 @@ export class SalesService {
 
   // Obtener todas las ventas con filtros
   static async getSales(
-    companyId: string, 
+    companyId: string,
     params: SaleSearchParams = {}
   ): Promise<{ sales: Sale[]; total: number }> {
     const {
@@ -142,7 +142,7 @@ export class SalesService {
   // Crear una nueva venta
   static async createSale(companyId: string, saleData: CreateSaleData): Promise<Sale> {
     const { items, ...saleInfo } = saleData;
-    
+
     // Obtener el turno activo para asociar la venta
     const { data: activeShift } = await this.supabase
       .from('shifts')
@@ -150,13 +150,13 @@ export class SalesService {
       .eq('company_id', companyId)
       .eq('status', 'open')
       .maybeSingle();
-    
+
     // Obtener productos para cálculo de impuestos
     const { data: products } = await this.supabase
       .from('products')
       .select('id, iva_rate, ica_rate, retencion_rate')
       .in('id', items.map(item => item.product_id));
-    
+
     // Calcular totales con impuestos - crear objetos Product mínimos para el cálculo
     const productsForCalculation = (products || []).map(p => ({
       id: p.id,
@@ -182,9 +182,9 @@ export class SalesService {
       updated_at: '',
       company_id: ''
     }));
-    
+
     const totals = calculateSaleTotals(items, saleInfo.discount_amount || 0, productsForCalculation);
-    
+
     // Generar número de venta usando la numeración específica si se proporciona
     const saleNumber = await this.generateSaleNumber(companyId, saleInfo.numeration_id);
 
@@ -235,11 +235,11 @@ export class SalesService {
       quantity: item.quantity,
       unit_price: item.unit_price,
       discount_percentage: item.discount_percentage || 0,
-      discount_amount: item.discount_percentage 
-        ? (item.quantity * item.unit_price * item.discount_percentage) / 100 
+      discount_amount: item.discount_percentage
+        ? (item.quantity * item.unit_price * item.discount_percentage) / 100
         : 0,
-      total_price: (item.quantity * item.unit_price) - (item.discount_percentage 
-        ? (item.quantity * item.unit_price * item.discount_percentage) / 100 
+      total_price: (item.quantity * item.unit_price) - (item.discount_percentage
+        ? (item.quantity * item.unit_price * item.discount_percentage) / 100
         : 0)
     }));
 
@@ -342,7 +342,7 @@ export class SalesService {
         .from('products')
         .select('id, iva_rate, ica_rate, retencion_rate')
         .in('id', saleData.items.map(item => item.product_id));
-      
+
       // Crear objetos Product mínimos para el cálculo
       const productsForCalculation = (products || []).map(p => ({
         id: p.id,
@@ -368,7 +368,7 @@ export class SalesService {
         updated_at: '',
         company_id: ''
       }));
-      
+
       const totals = calculateSaleTotals(saleData.items, saleData.discount_amount || 0, productsForCalculation);
       updateData = {
         ...updateData,
@@ -386,11 +386,11 @@ export class SalesService {
             quantity: item.quantity,
             unit_price: item.unit_price,
             discount_percentage: item.discount_percentage
-          })), 
+          })),
           'increase'
         );
       }
-      
+
       await this.updateInventoryForSale(saleData.items, 'decrease');
 
       // Actualizar items de venta
@@ -405,11 +405,11 @@ export class SalesService {
         quantity: item.quantity,
         unit_price: item.unit_price,
         discount_percentage: item.discount_percentage || 0,
-        discount_amount: item.discount_percentage 
-          ? (item.quantity * item.unit_price * item.discount_percentage) / 100 
+        discount_amount: item.discount_percentage
+          ? (item.quantity * item.unit_price * item.discount_percentage) / 100
           : 0,
-        total_price: (item.quantity * item.unit_price) - (item.discount_percentage 
-          ? (item.quantity * item.unit_price * item.discount_percentage) / 100 
+        total_price: (item.quantity * item.unit_price) - (item.discount_percentage
+          ? (item.quantity * item.unit_price * item.discount_percentage) / 100
           : 0)
       }));
 
@@ -448,7 +448,7 @@ export class SalesService {
           quantity: item.quantity,
           unit_price: item.unit_price,
           discount_percentage: item.discount_percentage
-        })), 
+        })),
         'increase'
       );
     }
@@ -472,7 +472,8 @@ export class SalesService {
   }
 
   // Obtener estadísticas de ventas
-  static async getSalesStats(companyId: string, period?: { from: string; to: string }): Promise<SaleStats> {
+  static async getSalesStats(companyId: string, period?: { from: string; to: string }, referenceDate?: Date): Promise<SaleStats> {
+    // Obtener todas las ventas completadas de la empresa
     let query = this.supabase
       .from('sales')
       .select('id, total_amount, created_at')
@@ -490,33 +491,86 @@ export class SalesService {
       throw new Error('Error al obtener estadísticas');
     }
 
+    // Calcular estadísticas generales
     const totalAmount = sales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
     const totalSales = sales?.length || 0;
     const averageSale = totalSales > 0 ? totalAmount / totalSales : 0;
 
-    // Calcular total de items
+    // Calcular total de items vendidos - obtener todos los items de la empresa
     const { data: itemsData } = await this.supabase
       .from('sale_items')
-      .select('quantity')
-      .in('sale_id', sales?.map(s => s.id) || []);
+      .select(`
+        quantity,
+        created_at,
+        sales!inner(
+          id,
+          company_id,
+          status
+        )
+      `)
+      .eq('sales.company_id', companyId)
+      .eq('sales.status', 'completed');
 
     const totalItems = itemsData?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
-    // Estadísticas por período
-    const today = new Date().toISOString().split('T')[0];
-    const thisMonth = new Date().toISOString().substring(0, 7);
-    const thisYear = new Date().getFullYear().toString();
+    // Calcular estadísticas por período (hoy, mes, año)
+    // Usar la fecha de la venta más reciente como referencia si no se especifica una fecha
+    const mostRecentSale = sales && sales.length > 0 ? new Date(sales[0].created_at) : new Date();
+    const now = referenceDate || mostRecentSale;
+    const today = now.toISOString().split('T')[0];
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
 
-    const salesToday = sales?.filter(s => s.created_at.startsWith(today)).length || 0;
-    const salesThisMonth = sales?.filter(s => s.created_at.startsWith(thisMonth)).length || 0;
-    const salesThisYear = sales?.filter(s => s.created_at.startsWith(thisYear)).length || 0;
+    // Ventas de hoy - usar comparación de fechas más robusta
+    const salesToday = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      const saleDateStr = saleDate.toISOString().split('T')[0];
+      return saleDateStr === today;
+    }).length || 0;
 
-    const amountToday = sales?.filter(s => s.created_at.startsWith(today))
-      .reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
-    const amountThisMonth = sales?.filter(s => s.created_at.startsWith(thisMonth))
-      .reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
-    const amountThisYear = sales?.filter(s => s.created_at.startsWith(thisYear))
-      .reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+    const amountToday = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      const saleDateStr = saleDate.toISOString().split('T')[0];
+      return saleDateStr === today;
+    }).reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+
+    // Ventas del mes actual - usar comparación de fechas más robusta
+    const salesThisMonth = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      return saleDate >= new Date(startOfMonth);
+    }).length || 0;
+
+    const amountThisMonth = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      return saleDate >= new Date(startOfMonth);
+    }).reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+
+    // Ventas del año actual - usar comparación de fechas más robusta
+    const salesThisYear = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      return saleDate >= new Date(startOfYear);
+    }).length || 0;
+
+    const amountThisYear = sales?.filter(s => {
+      const saleDate = new Date(s.created_at);
+      return saleDate >= new Date(startOfYear);
+    }).reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+
+    // Calcular items vendidos por período
+    const itemsToday = itemsData?.filter(item => {
+      const itemDate = new Date(item.created_at).toISOString().split('T')[0];
+      return itemDate === today;
+    }).reduce((sum, item) => sum + item.quantity, 0) || 0;
+
+    const itemsThisMonth = itemsData?.filter(item => {
+      const itemDate = new Date(item.created_at);
+      return itemDate >= new Date(startOfMonth);
+    }).reduce((sum, item) => sum + item.quantity, 0) || 0;
+
+    const itemsThisYear = itemsData?.filter(item => {
+      const itemDate = new Date(item.created_at);
+      return itemDate >= new Date(startOfYear);
+    }).reduce((sum, item) => sum + item.quantity, 0) || 0;
 
     return {
       total_sales: totalSales,
@@ -529,12 +583,15 @@ export class SalesService {
       amount_today: amountToday,
       amount_this_month: amountThisMonth,
       amount_this_year: amountThisYear,
+      items_today: itemsToday,
+      items_this_month: itemsThisMonth,
+      items_this_year: itemsThisYear,
     };
   }
 
   // Obtener datos para gráficos
   static async getSalesChartData(
-    companyId: string, 
+    companyId: string,
     period: { from: string; to: string },
     groupBy: 'day' | 'week' | 'month' = 'day'
   ): Promise<SaleChartData[]> {
@@ -599,7 +656,7 @@ export class SalesService {
         // Usar la numeración específica proporcionada
         const numeration = await NumerationsService.getNumeration(numerationId);
         const saleNumber = await NumerationsService.getNextNumber(
-          companyId, 
+          companyId,
           'invoice', // Tipo de documento para ventas
           numeration.name
         );
@@ -607,7 +664,7 @@ export class SalesService {
       } else {
         // Usar la numeración por defecto
         const saleNumber = await NumerationsService.getNextNumber(
-          companyId, 
+          companyId,
           'invoice', // Tipo de documento para ventas
           'Facturas de Venta Principal' // Nombre de la numeración por defecto
         );
@@ -622,7 +679,7 @@ export class SalesService {
 
   // Actualizar inventario para venta
   private static async updateInventoryForSale(
-    items: Array<{ product_id: string; quantity: number }>, 
+    items: Array<{ product_id: string; quantity: number }>,
     operation: 'increase' | 'decrease'
   ): Promise<void> {
     for (const item of items) {
@@ -634,7 +691,7 @@ export class SalesService {
         .maybeSingle();
 
       if (inventory) {
-        const newQuantity = operation === 'decrease' 
+        const newQuantity = operation === 'decrease'
           ? inventory.quantity - item.quantity
           : inventory.quantity + item.quantity;
 

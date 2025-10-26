@@ -16,17 +16,17 @@ export interface Sale {
   updated_at: string;
   company_id: string;
   account_id?: string;
-  
+
   // Información de pago
   payment_reference?: string;
   payment_amount_received?: number;
   payment_change?: number;
-  
+
   // Impuestos específicos
   iva_amount?: number;
   ica_amount?: number;
   retencion_amount?: number;
-  
+
   // Relaciones
   customer?: Customer;
   cashier?: Profile;
@@ -44,11 +44,11 @@ export interface SaleItem {
   discount_amount: number;
   total_price: number;
   created_at: string;
-  
+
   // Campos adicionales para impresión
   product_name?: string;
   sku?: string;
-  
+
   // Relaciones
   product?: Product;
 }
@@ -63,7 +63,7 @@ export interface Customer {
   tax_responsibility: string;
   department: string;
   municipality: string;
-  
+
   // Campos adicionales para compatibilidad
   name?: string;
   city?: string;
@@ -254,6 +254,9 @@ export interface SaleStats {
   amount_today: number;
   amount_this_month: number;
   amount_this_year: number;
+  items_today: number;
+  items_this_month: number;
+  items_this_year: number;
 }
 
 export interface SaleChartData {
@@ -336,7 +339,7 @@ export function formatDateTime(date: string | Date): string {
 }
 
 export function calculateSaleTotals(
-  items: CreateSaleItemData[], 
+  items: CreateSaleItemData[],
   discountAmount: number = 0,
   products?: Product[]
 ): {
@@ -351,8 +354,8 @@ export function calculateSaleTotals(
   // Calcular subtotal
   const subtotal = items.reduce((sum, item) => {
     const itemTotal = item.quantity * item.unit_price;
-    const itemDiscount = item.discount_percentage 
-      ? (itemTotal * item.discount_percentage) / 100 
+    const itemDiscount = item.discount_percentage
+      ? (itemTotal * item.discount_percentage) / 100
       : 0;
     return sum + itemTotal - itemDiscount;
   }, 0);
@@ -367,7 +370,7 @@ export function calculateSaleTotals(
 
   if (items.length > 0) {
     items.forEach(item => {
-      const base = (item.quantity * item.unit_price) - 
+      const base = (item.quantity * item.unit_price) -
         (item.discount_percentage ? (item.quantity * item.unit_price * item.discount_percentage) / 100 : 0);
 
       // Usar tasas del ítem si están presentes; si no, intentar de products[] como respaldo
