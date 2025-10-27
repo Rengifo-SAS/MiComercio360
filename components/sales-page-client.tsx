@@ -151,6 +151,9 @@ export function SalesPageClient({
         amount_today: 0,
         amount_this_month: 0,
         amount_this_year: 0,
+        items_today: 0,
+        items_this_month: 0,
+        items_this_year: 0,
       });
       return;
     }
@@ -171,6 +174,9 @@ export function SalesPageClient({
         amount_today: 0,
         amount_this_month: 0,
         amount_this_year: 0,
+        items_today: 0,
+        items_this_month: 0,
+        items_this_year: 0,
       });
     }
   };

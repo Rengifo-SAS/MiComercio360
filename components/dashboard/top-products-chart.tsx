@@ -77,9 +77,11 @@ export function TopProductsChart({ companyId }: TopProductsChartProps) {
       // Agrupar por producto
       const productMap = new Map<string, TopProduct>();
 
-      data?.forEach((item) => {
+      data?.forEach((item: any) => {
         const productId = item.product_id;
-        const productName = item.products.name;
+        const productName = item.products?.name;
+
+        if (!productName) return; // Skip if no product name found
 
         if (productMap.has(productId)) {
           const existing = productMap.get(productId)!;

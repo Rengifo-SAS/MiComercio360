@@ -230,20 +230,12 @@ export function POSPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md"
-        role="dialog"
-        aria-labelledby="payment-title"
-        aria-describedby="payment-description"
-      >
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-0">
         <DialogHeader>
-          <DialogTitle
-            id="payment-title"
-            className="text-lg font-semibold text-gray-900 dark:text-white"
-          >
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Pagar factura
           </DialogTitle>
-          <DialogDescription id="payment-description">
+          <DialogDescription>
             Selecciona el método de pago y completa la transacción
           </DialogDescription>
         </DialogHeader>
@@ -255,7 +247,7 @@ export function POSPaymentDialog({
               TOTAL
             </div>
             <div
-              className="text-3xl font-bold text-gray-900 dark:text-white"
+              className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white"
               aria-label={`Total a pagar: ${formatCurrency(totalAmount)}`}
             >
               {formatCurrency(totalAmount)}
@@ -265,7 +257,7 @@ export function POSPaymentDialog({
           {/* Métodos de Pago - Diseño de Tarjetas */}
           <div className="space-y-4">
             {/* Primera fila - Métodos principales */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               {paymentMethods.slice(0, 3).map((method) => {
                 const customIcon = getCustomIcon(method.payment_type);
                 const isSelected = selectedMethod === method.id;
@@ -282,7 +274,7 @@ export function POSPaymentDialog({
                     onClick={() => handleMethodSelect(method.id)}
                     disabled={!method.is_active}
                     className={`
-                      relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none
+                      relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 min-h-[80px] sm:min-h-[100px] flex flex-col justify-center focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none
                       ${
                         isSelected
                           ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
@@ -311,15 +303,15 @@ export function POSPaymentDialog({
                         {customIcon}
                       </div>
                       <span
-                        className={`text-sm font-medium text-center leading-tight px-1 break-words ${
+                        className={`text-xs sm:text-sm font-medium text-center leading-tight px-1 break-words ${
                           isSelected
                             ? 'text-teal-700 dark:text-teal-300'
                             : 'text-gray-700 dark:text-gray-300'
                         }`}
                         title={label}
                       >
-                        {label.length > 20
-                          ? `${label.substring(0, 20)}...`
+                        {label.length > 15
+                          ? `${label.substring(0, 15)}...`
                           : label}
                       </span>
                     </div>
@@ -348,7 +340,7 @@ export function POSPaymentDialog({
 
             {/* Segunda fila - Otros métodos */}
             {paymentMethods.length > 3 && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {paymentMethods.slice(3).map((method) => {
                   const customIcon = getCustomIcon(method.payment_type);
                   const isSelected = selectedMethod === method.id;
@@ -365,7 +357,7 @@ export function POSPaymentDialog({
                       onClick={() => handleMethodSelect(method.id)}
                       disabled={!method.is_active}
                       className={`
-                        relative p-4 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center
+                        relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 min-h-[80px] sm:min-h-[100px] flex flex-col justify-center
                         ${
                           isSelected
                             ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
@@ -389,15 +381,15 @@ export function POSPaymentDialog({
                           {customIcon}
                         </div>
                         <span
-                          className={`text-sm font-medium text-center leading-tight px-1 ${
+                          className={`text-xs sm:text-sm font-medium text-center leading-tight px-1 ${
                             isSelected
                               ? 'text-teal-700 dark:text-teal-300'
                               : 'text-gray-700 dark:text-gray-300'
                           }`}
                           title={label}
                         >
-                          {label.length > 15
-                            ? `${label.substring(0, 15)}...`
+                          {label.length > 12
+                            ? `${label.substring(0, 12)}...`
                             : label}
                         </span>
                       </div>
@@ -441,7 +433,7 @@ export function POSPaymentDialog({
                     Opciones rápidas
                   </Label>
                   <div
-                    className="grid grid-cols-3 gap-2"
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-2"
                     role="group"
                     aria-label="Opciones rápidas de monto"
                   >
