@@ -57,13 +57,11 @@ export default function NotFound() {
                 Ir al Dashboard
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => window.history.back()}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver Atrás
+            <Button variant="outline" className="flex-1" asChild>
+              <Link href="javascript:history.back()">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver Atrás
+              </Link>
             </Button>
           </div>
 
