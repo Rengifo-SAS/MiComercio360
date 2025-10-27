@@ -159,6 +159,15 @@ export function POSCartPanel({
     return availableQuantity <= 0;
   });
 
+  // Debug: verificar estado del cliente seleccionado (comentado para producción)
+  // console.log('POSCartPanel Debug:', {
+  //   selectedCustomer,
+  //   cartLength: cart.length,
+  //   loading,
+  //   hasInsufficientInventory,
+  //   hasOutOfStockItems,
+  // });
+
   return (
     <div
       className="h-full flex flex-col bg-white dark:bg-gray-800 overflow-hidden"

@@ -17,6 +17,8 @@ import {
   CreateSaleItemData,
 } from '@/lib/types/sales';
 import { formatCurrency, calculateSaleTotals } from '@/lib/types/sales';
+import { PendingSaleCartItem } from '@/lib/types/multiventas';
+import { useMultiVentas } from '@/lib/hooks/use-multiventas';
 import { POSProductsGrid } from './pos-products-grid';
 import { POSCartPanel } from './pos-cart-panel';
 import { POSConfigurationDialog } from './pos-configuration-dialog';
@@ -24,6 +26,7 @@ import { POSPaymentDialog } from './pos-payment-dialog';
 import { POSSaleCompleteDialog } from './pos-sale-complete-dialog';
 import { POSShiftIndicator } from './pos-shift-indicator';
 import { POSTerminalSummary } from './pos-terminal-summary';
+import { POSMultiVentasTabs } from './pos-multiventas-tabs';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,10 +72,8 @@ const formatQuantity = (quantity: number, unit: string): string => {
   return quantity.toString();
 };
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
+// Usar PendingSaleCartItem directamente desde multiventas
+type CartItem = PendingSaleCartItem;
 
 interface POSConfiguration {
   defaultAccountId: string;
@@ -83,17 +84,26 @@ interface POSConfiguration {
 }
 
 export function POSPageClient() {
+  // Hook de multiventas
+  const {
+    pendingSales,
+    activeSaleId,
+    activeSale,
+    addNewSale,
+    setActiveSale,
+    renameSale,
+    deleteSale,
+    updateSaleCart,
+    updateSaleCustomer,
+    updateSaleNumeration,
+    clearSaleCart,
+  } = useMultiVentas();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [numerations, setNumerations] = useState<Numeration[]>([]);
-  const [selectedNumeration, setSelectedNumeration] =
-    useState<Numeration | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
   const [loading, setLoading] = useState(true);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -122,6 +132,40 @@ export function POSPageClient() {
       setIsCollapsed(false);
     };
   }, [setIsCollapsed]);
+
+  // Aplicar configuración por defecto cuando activeSale esté disponible
+  useEffect(() => {
+    if (activeSale && customers.length > 0 && numerations.length > 0) {
+      // Verificar si la venta activa ya tiene cliente y numeración asignados
+      if (!activeSale.selectedCustomer || !activeSale.selectedNumeration) {
+        // Debug: comentado para producción
+        // console.log(
+        //   'Aplicando configuración por defecto a venta activa:',
+        //   activeSale.id
+        // );
+
+        // Aplicar numeración por defecto si no tiene
+        if (!activeSale.selectedNumeration && numerations.length > 0) {
+          updateSaleNumeration(activeSale.id, numerations[0]);
+        }
+
+        // Aplicar cliente por defecto si no tiene
+        if (!activeSale.selectedCustomer) {
+          const defaultCustomer = customers.find(
+            (c: Customer) =>
+              c.identification_number === '22222222-2' &&
+              c.business_name === 'Consumidor Final'
+          );
+
+          if (defaultCustomer) {
+            // Debug: comentado para producción
+            // console.log('Asignando cliente por defecto:', defaultCustomer);
+            updateSaleCustomer(activeSale.id, defaultCustomer);
+          }
+        }
+      }
+    }
+  }, [activeSale, customers, numerations]);
 
   // Función para cargar productos
   const loadProducts = async () => {
@@ -204,8 +248,8 @@ export function POSPageClient() {
             const savedCustomer = customersData.customers.find(
               (c: Customer) => c.id === savedConfig.default_customer_id
             );
-            if (savedCustomer) {
-              setSelectedCustomer(savedCustomer);
+            if (savedCustomer && activeSale) {
+              updateSaleCustomer(activeSale.id, savedCustomer);
             }
           }
 
@@ -214,8 +258,8 @@ export function POSPageClient() {
             const savedNumeration = numerationsData.find(
               (n) => n.id === savedConfig.default_numeration_id
             );
-            if (savedNumeration) {
-              setSelectedNumeration(savedNumeration);
+            if (savedNumeration && activeSale) {
+              updateSaleNumeration(activeSale.id, savedNumeration);
             }
           }
         } else {
@@ -249,8 +293,8 @@ export function POSPageClient() {
     numerations: any[]
   ) => {
     // Configurar numeración por defecto (primera numeración activa)
-    if (numerations.length > 0) {
-      setSelectedNumeration(numerations[0]);
+    if (numerations.length > 0 && activeSale) {
+      updateSaleNumeration(activeSale.id, numerations[0]);
       setConfiguration((prev) => ({
         ...prev,
         defaultNumerationId: numerations[0].id,
@@ -264,8 +308,19 @@ export function POSPageClient() {
         c.business_name === 'Consumidor Final'
     );
 
-    if (defaultCustomer) {
-      setSelectedCustomer(defaultCustomer);
+    // Debug: comentado para producción
+    // console.log(
+    //   'Debug loadDefaultConfiguration:',
+    //   {
+    //     customers: customers.length,
+    //     defaultCustomer,
+    //     activeSale: activeSale?.id,
+    //     activeSaleCustomer: activeSale?.selectedCustomer,
+    //   }
+    // );
+
+    if (defaultCustomer && activeSale) {
+      updateSaleCustomer(activeSale.id, defaultCustomer);
       setConfiguration((prev) => ({
         ...prev,
         defaultCustomerId: defaultCustomer.id,
@@ -285,6 +340,8 @@ export function POSPageClient() {
   };
 
   const addToCart = (product: Product) => {
+    if (!activeSale) return;
+
     // Validar que el producto tenga inventario disponible
     const availableQuantity = product.available_quantity || 0;
     if (availableQuantity <= 0) {
@@ -292,34 +349,45 @@ export function POSPageClient() {
       return;
     }
 
-    setCart((prev) => {
-      const existingItem = prev.find((item) => item.product.id === product.id);
-      if (existingItem) {
-        // Validar que no se exceda la cantidad disponible al incrementar
-        const step = getQuantityStep(product.unit);
-        const newQuantity = existingItem.quantity + step;
-        if (newQuantity > availableQuantity) {
-          const unitLabel = getUnitLabel(product.unit);
-          toast.error(
-            `No hay suficiente inventario. Disponible: ${formatQuantity(
-              availableQuantity,
-              product.unit
-            )} ${unitLabel}`
-          );
-          return prev;
-        }
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: newQuantity }
-            : item
+    const currentCart = activeSale.cart;
+    const existingItem = currentCart.find(
+      (item) => item.product.id === product.id
+    );
+
+    let newCart: CartItem[];
+
+    if (existingItem) {
+      // Validar que no se exceda la cantidad disponible al incrementar
+      const step = getQuantityStep(product.unit);
+      const newQuantity = existingItem.quantity + step;
+      if (newQuantity > availableQuantity) {
+        const unitLabel = getUnitLabel(product.unit);
+        toast.error(
+          `No hay suficiente inventario. Disponible: ${formatQuantity(
+            availableQuantity,
+            product.unit
+          )} ${unitLabel}`
         );
-      } else {
-        return [...prev, { product, quantity: getQuantityStep(product.unit) }];
+        return;
       }
-    });
+      newCart = currentCart.map((item) =>
+        item.product.id === product.id
+          ? { ...item, quantity: newQuantity }
+          : item
+      );
+    } else {
+      newCart = [
+        ...currentCart,
+        { product, quantity: getQuantityStep(product.unit) },
+      ];
+    }
+
+    updateSaleCart(activeSale.id, newCart);
   };
 
   const updateCartItemQuantity = (productId: string, quantity: number) => {
+    if (!activeSale) return;
+
     if (quantity <= 0) {
       removeFromCart(productId);
     } else {
@@ -340,37 +408,44 @@ export function POSPageClient() {
           return;
         }
 
-        setCart((prev) =>
-          prev.map((item) =>
-            item.product.id === productId ? { ...item, quantity } : item
-          )
+        const newCart = activeSale.cart.map((item) =>
+          item.product.id === productId ? { ...item, quantity } : item
         );
+        updateSaleCart(activeSale.id, newCart);
       }
     }
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+    if (!activeSale) return;
+
+    const newCart = activeSale.cart.filter(
+      (item) => item.product.id !== productId
+    );
+    updateSaleCart(activeSale.id, newCart);
   };
 
   const clearCart = () => {
-    setCart([]);
+    if (!activeSale) return;
+    clearSaleCart(activeSale.id);
   };
 
   const processSale = async () => {
-    if (!selectedCustomer) {
+    if (!activeSale) return;
+
+    if (!activeSale.selectedCustomer) {
       toast.error('Debe seleccionar un cliente');
       return;
     }
 
-    if (cart.length === 0) {
+    if (activeSale.cart.length === 0) {
       toast.error('El carrito está vacío');
       return;
     }
 
     // Validar inventario disponible
     const inventoryErrors = [];
-    for (const item of cart) {
+    for (const item of activeSale.cart) {
       const product = products.find((p) => p.id === item.product.id);
       if (product && item.quantity > (product.available_quantity || 0)) {
         inventoryErrors.push(
@@ -391,11 +466,13 @@ export function POSPageClient() {
   };
 
   const handlePaymentProcess = async (paymentData: any) => {
+    if (!activeSale) return;
+
     try {
       setLoading(true);
 
       // Crear items de venta con impuestos específicos del producto
-      const saleItems: CreateSaleItemData[] = cart.map((item) => ({
+      const saleItems: CreateSaleItemData[] = activeSale.cart.map((item) => ({
         product_id: item.product.id,
         quantity: item.quantity,
         unit_price: parseFloat(item.product.selling_price.toString()),
@@ -423,17 +500,17 @@ export function POSPageClient() {
       const totals = calculateSaleTotals(
         saleItems,
         0,
-        cart.map((item) => item.product)
+        activeSale.cart.map((item) => item.product)
       );
 
       // Crear datos de venta
       const saleData: CreateSaleData = {
-        customer_id: selectedCustomer!.id,
+        customer_id: activeSale.selectedCustomer!.id,
         total_amount: totals.total_amount,
         payment_method: paymentData.method.payment_type,
-        notes: `Venta POS - ${configuration.terminalName}`,
+        notes: `Venta POS - ${configuration.terminalName} - ${activeSale.name}`,
         account_id: configuration.defaultAccountId,
-        numeration_id: selectedNumeration?.id,
+        numeration_id: activeSale.selectedNumeration?.id,
         items: saleItems,
         // Incluir información de pago
         payment_reference: paymentData.reference,
@@ -450,7 +527,7 @@ export function POSPageClient() {
       setShowSaleCompleteDialog(true);
 
       toast.success('Venta procesada exitosamente');
-      clearCart();
+      clearSaleCart(activeSale.id);
     } catch (error) {
       console.error('Error procesando venta:', error);
       toast.error('Error procesando la venta');
@@ -463,6 +540,17 @@ export function POSPageClient() {
     setLastSale(null);
     setLastChangeAmount(0);
     setShowSaleCompleteDialog(false);
+  };
+
+  // Funciones para manejar cambios en la venta activa
+  const handleCustomerChange = (customer: Customer | null) => {
+    if (!activeSale) return;
+    updateSaleCustomer(activeSale.id, customer);
+  };
+
+  const handleNumerationChange = (numeration: Numeration | null) => {
+    if (!activeSale) return;
+    updateSaleNumeration(activeSale.id, numeration);
   };
 
   if (loading) {
@@ -521,90 +609,104 @@ export function POSPageClient() {
         </div>
       </header>
 
+      {/* Pestañas de Multiventas */}
+      {pendingSales.length > 0 && (
+        <POSMultiVentasTabs
+          pendingSales={pendingSales}
+          activeSaleId={activeSaleId}
+          onAddNewSale={addNewSale}
+          onSetActiveSale={setActiveSale}
+          onRenameSale={renameSale}
+          onDeleteSale={deleteSale}
+        />
+      )}
+
       {/* Layout Principal - Responsivo sin scroll global */}
-      <div
-        className="flex-1 flex flex-col xl:flex-row min-h-0"
-        role="region"
-        aria-label="Área principal del POS"
-      >
-        {/* En móvil/tablet: Una columna */}
-        <div className="xl:hidden flex-1 flex flex-col min-h-0">
-          {/* Grid de Productos en móvil/tablet - Con scroll propio */}
-          <section
-            className="flex-1 min-h-0"
-            aria-label="Catálogo de productos"
-          >
-            <POSProductsGrid
-              products={products}
-              onAddToCart={addToCart}
-              cart={cart}
-              loading={loading}
-              companyId={companyId}
-              onProductsReload={loadProducts}
-            />
-          </section>
+      {pendingSales.length > 0 && activeSale && (
+        <div
+          className="flex-1 flex flex-col xl:flex-row min-h-0"
+          role="region"
+          aria-label="Área principal del POS"
+        >
+          {/* En móvil/tablet: Una columna */}
+          <div className="xl:hidden flex-1 flex flex-col min-h-0">
+            {/* Grid de Productos en móvil/tablet - Con scroll propio */}
+            <section
+              className="flex-1 min-h-0"
+              aria-label="Catálogo de productos"
+            >
+              <POSProductsGrid
+                products={products}
+                onAddToCart={addToCart}
+                cart={activeSale?.cart || []}
+                loading={loading}
+                companyId={companyId}
+                onProductsReload={loadProducts}
+              />
+            </section>
 
-          {/* Carrito en móvil/tablet - Altura fija optimizada */}
-          <aside
-            className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0"
-            aria-label="Carrito de compras"
-          >
-            <POSCartPanel
-              cart={cart}
-              customers={customers}
-              selectedCustomer={selectedCustomer}
-              onCustomerChange={setSelectedCustomer}
-              onUpdateQuantity={updateCartItemQuantity}
-              onRemoveItem={removeFromCart}
-              onClearCart={clearCart}
-              onProcessSale={processSale}
-              loading={loading}
-              numerations={numerations}
-              selectedNumeration={selectedNumeration}
-              onNumerationChange={setSelectedNumeration}
-            />
-          </aside>
+            {/* Carrito en móvil/tablet - Altura fija optimizada */}
+            <aside
+              className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0"
+              aria-label="Carrito de compras"
+            >
+              <POSCartPanel
+                cart={activeSale?.cart || []}
+                customers={customers}
+                selectedCustomer={activeSale?.selectedCustomer || null}
+                onCustomerChange={handleCustomerChange}
+                onUpdateQuantity={updateCartItemQuantity}
+                onRemoveItem={removeFromCart}
+                onClearCart={clearCart}
+                onProcessSale={processSale}
+                loading={loading}
+                numerations={numerations}
+                selectedNumeration={activeSale?.selectedNumeration || null}
+                onNumerationChange={handleNumerationChange}
+              />
+            </aside>
+          </div>
+
+          {/* En desktop: Dos columnas - Sin scroll global */}
+          <div className="hidden xl:flex flex-1 min-h-0">
+            {/* Panel Izquierdo - Grid de Productos (70%) */}
+            <section
+              className="w-[70%] min-h-0"
+              aria-label="Catálogo de productos"
+            >
+              <POSProductsGrid
+                products={products}
+                onAddToCart={addToCart}
+                cart={activeSale?.cart || []}
+                loading={loading}
+                companyId={companyId}
+                onProductsReload={loadProducts}
+              />
+            </section>
+
+            {/* Panel Derecho - Carrito (30%) */}
+            <aside
+              className="w-[30%] min-h-0 border-l dark:border-gray-700"
+              aria-label="Carrito de compras"
+            >
+              <POSCartPanel
+                cart={activeSale?.cart || []}
+                customers={customers}
+                selectedCustomer={activeSale?.selectedCustomer || null}
+                onCustomerChange={handleCustomerChange}
+                onUpdateQuantity={updateCartItemQuantity}
+                onRemoveItem={removeFromCart}
+                onClearCart={clearCart}
+                onProcessSale={processSale}
+                loading={loading}
+                numerations={numerations}
+                selectedNumeration={activeSale?.selectedNumeration || null}
+                onNumerationChange={handleNumerationChange}
+              />
+            </aside>
+          </div>
         </div>
-
-        {/* En desktop: Dos columnas - Sin scroll global */}
-        <div className="hidden xl:flex flex-1 min-h-0">
-          {/* Panel Izquierdo - Grid de Productos (70%) */}
-          <section
-            className="w-[70%] min-h-0"
-            aria-label="Catálogo de productos"
-          >
-            <POSProductsGrid
-              products={products}
-              onAddToCart={addToCart}
-              cart={cart}
-              loading={loading}
-              companyId={companyId}
-              onProductsReload={loadProducts}
-            />
-          </section>
-
-          {/* Panel Derecho - Carrito (30%) */}
-          <aside
-            className="w-[30%] min-h-0 border-l dark:border-gray-700"
-            aria-label="Carrito de compras"
-          >
-            <POSCartPanel
-              cart={cart}
-              customers={customers}
-              selectedCustomer={selectedCustomer}
-              onCustomerChange={setSelectedCustomer}
-              onUpdateQuantity={updateCartItemQuantity}
-              onRemoveItem={removeFromCart}
-              onClearCart={clearCart}
-              onProcessSale={processSale}
-              loading={loading}
-              numerations={numerations}
-              selectedNumeration={selectedNumeration}
-              onNumerationChange={setSelectedNumeration}
-            />
-          </aside>
-        </div>
-      </div>
+      )}
 
       {/* Diálogo de Configuración */}
       <POSConfigurationDialog
@@ -623,7 +725,8 @@ export function POSPageClient() {
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
         totalAmount={(() => {
-          const saleItems = cart.map((item) => ({
+          if (!activeSale) return 0;
+          const saleItems = activeSale.cart.map((item) => ({
             product_id: item.product.id,
             quantity: item.quantity,
             unit_price: parseFloat(item.product.selling_price.toString()),
@@ -640,7 +743,7 @@ export function POSPageClient() {
           return calculateSaleTotals(
             saleItems,
             0,
-            cart.map((item) => item.product)
+            activeSale.cart.map((item) => item.product)
           ).total_amount;
         })()}
         paymentMethods={paymentMethods}
