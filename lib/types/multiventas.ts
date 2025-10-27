@@ -47,7 +47,7 @@ export const generateSaleName = (saleNumber: number): string => {
 // Función para crear una nueva venta pendiente
 export const createPendingSale = (
     id: string,
-    name: string,
+    name: string | undefined,
     nextSaleNumber: number
 ): PendingSale => {
     return {
