@@ -52,8 +52,20 @@ import {
 import { PaymentMethod } from '@/lib/types/payment-methods';
 import { AccountsService } from '@/lib/services/accounts-service';
 import type { Account } from '@/lib/types/accounts';
-import { Product } from '@/lib/types/sales';
+import { Product } from '@/lib/types/products';
 import { Customer } from '@/lib/types/sales';
+
+// Función auxiliar para convertir productos del tipo products.ts al formato esperado por calculateSaleTotals
+const convertProductsForTotals = (products: Product[]): any[] => {
+  return products.map(product => ({
+    ...product,
+    iva_rate: product.iva_rate ?? 0,
+    ica_rate: product.ica_rate ?? 0,
+    retencion_rate: product.retencion_rate ?? 0,
+    fiscal_classification: product.fiscal_classification ?? '',
+    excise_tax: product.excise_tax ?? false,
+  }));
+};
 
 interface SalesFormDialogProps {
   open: boolean;
@@ -359,7 +371,7 @@ export function SalesFormDialog({
   const totals = calculateSaleTotals(
     formData.items,
     formData.discount_amount || 0,
-    products
+    convertProductsForTotals(products)
   );
   const filteredProducts = products.filter(
     (product) =>

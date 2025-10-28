@@ -1064,7 +1064,7 @@ export class ProductsImportService {
       // 3. Obtener o crear bodega
       let warehouseId: string | null = null;
       if (product.warehouse_name) {
-        warehouseId = warehouseMap.get(product.warehouse_name.toLowerCase().trim());
+        warehouseId = warehouseMap.get(product.warehouse_name.toLowerCase().trim()) || null;
         if (!warehouseId) {
           if (config.createMissingWarehouses) {
             warehouseId = await this.createWarehouse(product.warehouse_name, config.companyId);

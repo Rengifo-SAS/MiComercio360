@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ShiftsService } from '@/lib/services/shifts-service';
 import { Shift } from '@/lib/types/shifts';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertCircle } from 'lucide-react';
+import { Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 import { ShiftOpenDialog } from './shift-open-dialog';
 import { ShiftCloseDialog } from './shift-close-dialog';
 import {
@@ -25,6 +25,7 @@ export function POSShiftIndicator({
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(true);
   const [shiftDuration, setShiftDuration] = useState<string>('');
+  const [isLongShift, setIsLongShift] = useState(false);
 
   useEffect(() => {
     if (companyId && userId) {
@@ -44,6 +45,9 @@ export function POSShiftIndicator({
         );
         if (duration) {
           setShiftDuration(formatShiftDuration(duration));
+          // Verificar si el turno lleva más de 12 horas
+          const durationInHours = duration / (1000 * 60 * 60);
+          setIsLongShift(durationInHours >= 12);
         }
       }, 1000);
     }
@@ -68,6 +72,9 @@ export function POSShiftIndicator({
         );
         if (duration) {
           setShiftDuration(formatShiftDuration(duration));
+          // Verificar si el turno lleva más de 12 horas
+          const durationInHours = duration / (1000 * 60 * 60);
+          setIsLongShift(durationInHours >= 12);
         }
       }
     } catch (error) {
@@ -143,16 +150,32 @@ export function POSShiftIndicator({
 
   return (
     <div className="flex items-center gap-1">
-      <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-        <Clock className="h-3 w-3 text-green-600 dark:text-green-400" />
+      <div className={`flex items-center gap-1 px-2 py-1 border rounded ${
+        isLongShift 
+          ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' 
+          : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+      }`}>
+        {isLongShift ? (
+          <AlertTriangle className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+        ) : (
+          <Clock className="h-3 w-3 text-green-600 dark:text-green-400" />
+        )}
         <div className="flex items-center gap-1">
           <Badge
             variant="default"
-            className="bg-green-100 text-green-800 text-xs px-1 py-0"
+            className={`text-xs px-1 py-0 ${
+              isLongShift 
+                ? 'bg-orange-100 text-orange-800' 
+                : 'bg-green-100 text-green-800'
+            }`}
           >
-            Activo
+            {isLongShift ? 'Largo' : 'Activo'}
           </Badge>
-          <span className="text-xs font-medium text-green-700 dark:text-green-300">
+          <span className={`text-xs font-medium ${
+            isLongShift 
+              ? 'text-orange-700 dark:text-orange-300' 
+              : 'text-green-700 dark:text-green-300'
+          }`}>
             {shiftDuration}
           </span>
         </div>

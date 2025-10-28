@@ -37,7 +37,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Product as BaseProduct } from '@/lib/types/sales';
+import { Product as BaseProduct } from '@/lib/types/products';
 
 interface Product extends BaseProduct {
   categories?: {
@@ -54,17 +54,6 @@ interface Product extends BaseProduct {
     name: string;
     code: string;
   };
-  inventory?: Array<{
-    id: string;
-    quantity: number;
-    location?: string;
-    warehouse_id?: string;
-    warehouses?: {
-      id: string;
-      name: string;
-      code: string;
-    };
-  }>;
 }
 
 interface ProductsPageClientProps {

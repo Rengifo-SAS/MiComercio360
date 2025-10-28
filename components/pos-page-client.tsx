@@ -11,11 +11,11 @@ import { NumerationsService } from '@/lib/services/numerations-service';
 import { POSConfigurationService } from '@/lib/services/pos-configuration-service';
 import { Customer } from '@/lib/types/customers';
 import {
-  Product,
   Sale,
   CreateSaleData,
   CreateSaleItemData,
 } from '@/lib/types/sales';
+import { Product } from '@/lib/types/products';
 import { formatCurrency, calculateSaleTotals } from '@/lib/types/sales';
 import { PendingSaleCartItem } from '@/lib/types/multiventas';
 import { useMultiVentas } from '@/lib/hooks/use-multiventas';
@@ -27,6 +27,7 @@ import { POSSaleCompleteDialog } from './pos-sale-complete-dialog';
 import { POSShiftIndicator } from './pos-shift-indicator';
 import { POSTerminalSummary } from './pos-terminal-summary';
 import { POSMultiVentasTabs } from './pos-multiventas-tabs';
+import { POSShiftWarningDialog } from './pos-shift-warning-dialog';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -74,6 +75,18 @@ const formatQuantity = (quantity: number, unit: string): string => {
 
 // Usar PendingSaleCartItem directamente desde multiventas
 type CartItem = PendingSaleCartItem;
+
+// Función auxiliar para convertir productos del tipo products.ts al formato esperado por calculateSaleTotals
+const convertProductsForTotals = (products: Product[]): any[] => {
+  return products.map(product => ({
+    ...product,
+    iva_rate: product.iva_rate ?? 0,
+    ica_rate: product.ica_rate ?? 0,
+    retencion_rate: product.retencion_rate ?? 0,
+    fiscal_classification: product.fiscal_classification ?? '',
+    excise_tax: product.excise_tax ?? false,
+  }));
+};
 
 interface POSConfiguration {
   defaultAccountId: string;
@@ -500,7 +513,7 @@ export function POSPageClient() {
       const totals = calculateSaleTotals(
         saleItems,
         0,
-        activeSale.cart.map((item) => item.product)
+        convertProductsForTotals(activeSale.cart.map((item) => item.product))
       );
 
       // Crear datos de venta
@@ -743,7 +756,7 @@ export function POSPageClient() {
           return calculateSaleTotals(
             saleItems,
             0,
-            activeSale.cart.map((item) => item.product)
+            convertProductsForTotals(activeSale.cart.map((item) => item.product))
           ).total_amount;
         })()}
         paymentMethods={paymentMethods}
@@ -762,6 +775,11 @@ export function POSPageClient() {
         changeAmount={lastChangeAmount}
         printPaperSize={configuration.printPaperSize}
       />
+
+      {/* Diálogo de Advertencia de Turno Largo */}
+      {companyId && userId && (
+        <POSShiftWarningDialog companyId={companyId} userId={userId} />
+      )}
     </div>
   );
 }

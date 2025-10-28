@@ -665,7 +665,7 @@ export class ProductsService {
         }
 
         const { data: skuData } = await skuQuery;
-        skuExists = (skuData && skuData.length > 0);
+        skuExists = Boolean(skuData && skuData.length > 0);
       }
 
       // Verificar código de barras
@@ -682,7 +682,7 @@ export class ProductsService {
         }
 
         const { data: barcodeData } = await barcodeQuery;
-        barcodeExists = (barcodeData && barcodeData.length > 0);
+        barcodeExists = Boolean(barcodeData && barcodeData.length > 0);
       }
 
       return { skuExists, barcodeExists };

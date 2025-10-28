@@ -1,4 +1,4 @@
-import { Product } from './sales';
+import { Product } from './products';
 import { Customer } from './customers';
 import { Numeration } from './numerations';
 

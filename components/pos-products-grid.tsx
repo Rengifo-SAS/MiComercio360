@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Product } from '@/lib/types/sales';
+import { Product } from '@/lib/types/products';
 import { formatCurrency } from '@/lib/types/sales';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -23,7 +23,7 @@ import {
   Image,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Product } from '@/lib/types/sales';
+import { Product } from '@/lib/types/products';
 
 interface Category {
   id: string;
