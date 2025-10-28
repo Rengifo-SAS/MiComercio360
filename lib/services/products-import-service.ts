@@ -1,25 +1,48 @@
 import { createClient } from '@/lib/supabase/client';
 import * as XLSX from 'xlsx';
 
+/**
+ * Interfaz para los datos de importación de productos desde Excel
+ */
 export interface ProductImportData {
+  // Campos básicos
   name: string;
   sku: string;
-  barcode: string;
-  description: string;
+  barcode?: string;
+  description?: string;
+
+  // Categoría y bodega
   category_name: string;
+  warehouse_name?: string;
+
+  // Precios (siempre en números, no strings)
   cost_price: number;
   selling_price: number;
+
+  // Stock
   available_quantity: number;
+  min_stock?: number;
+  max_stock?: number;
+  unit?: string;
+
+  // Impuestos (en porcentaje: 19 para 19%)
   iva_rate: number;
   ica_rate: number;
   retencion_rate: number;
-  warehouse_name?: string;
+
+  // Clasificación fiscal
+  fiscal_classification?: string;
+  excise_tax?: boolean;
 }
 
+/**
+ * Resultado de la importación
+ */
 export interface ImportResult {
   success: boolean;
   imported: number;
-  updated?: number;
+  updated: number;
+  skipped: number;
   errors: Array<{
     row: number;
     field: string;
@@ -33,14 +56,21 @@ export interface ImportResult {
   }>;
 }
 
+/**
+ * Configuración de importación
+ */
 export interface ImportConfig {
   companyId: string;
   userId: string;
   updateExistingProducts: boolean;
   createMissingCategories: boolean;
   createMissingWarehouses: boolean;
+  skipProductsWithErrors?: boolean;
 }
 
+/**
+ * Historial de importación
+ */
 export interface ImportHistory {
   id: string;
   filename: string;
@@ -55,47 +85,110 @@ export interface ImportHistory {
   errors?: string;
 }
 
+/**
+ * Servicio mejorado para importación de productos desde Excel
+ * 
+ * Características:
+ * - Validación robusta de datos
+ * - Manejo correcto de formatos numéricos (colombianos e internacionales)
+ * - Prevención de códigos de barras en notación científica
+ * - Sincronización correcta de inventarios
+ * - Manejo de transacciones para integridad de datos
+ */
 export class ProductsImportService {
   private static supabase = createClient();
 
   /**
-   * Parsea un valor numérico manejando formatos colombianos/latinoamericanos
+   * Parsea un valor numérico manejando múltiples formatos
+   * Soporta: 3500, 3.500, 3,500, 3.500,00, 3,500.00
    */
-  private static parseNumericValue(value: string | number, defaultValue: number = 0): number {
-    if (!value && value !== 0) return defaultValue;
+  private static parseNumericValue(value: string | number | null | undefined, defaultValue: number = 0): number {
+    // Casos edge
+    if (value === null || value === undefined) return defaultValue;
+    if (value === '') return defaultValue;
+    if (typeof value === 'number') return isNaN(value) ? defaultValue : value;
 
     let cleaned = value.toString().trim();
+    if (cleaned === '') return defaultValue;
 
-    // Si contiene punto y coma, es formato colombiano (ej: 3500,00)
-    if (cleaned.includes(',') && !cleaned.includes('.')) {
-      // Formato colombiano: 3500,00 -> 3500.00
-      cleaned = cleaned.replace(',', '.');
-    } else if (cleaned.includes(',') && cleaned.includes('.')) {
-      // Formato con separadores de miles y decimales: 3.500,00 -> 3500.00
-      // Buscar el último punto o coma para determinar cuál es el separador decimal
-      const lastComma = cleaned.lastIndexOf(',');
-      const lastDot = cleaned.lastIndexOf('.');
+    // Remover símbolos de moneda y espacios
+    cleaned = cleaned.replace(/[$\s]/g, '');
 
+    // Detectar formato basado en posición de comas y puntos
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+    const commaCount = (cleaned.match(/,/g) || []).length;
+    const dotCount = (cleaned.match(/\./g) || []).length;
+
+    // Caso 1: Solo números, sin separadores
+    if (lastComma === -1 && lastDot === -1) {
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+
+    // Caso 2: Solo comas
+    if (lastDot === -1 && lastComma > -1) {
+      if (commaCount === 1) {
+        // Verificar si es decimal (ej: 3500,50) o separador de miles (ej: 3,500)
+        const afterComma = cleaned.substring(lastComma + 1);
+        if (afterComma.length <= 2 && afterComma.length > 0) {
+          // Es separador decimal: 3500,50 -> 3500.50
+          cleaned = cleaned.replace(',', '.');
+        } else {
+          // Es separador de miles: 3,500 -> 3500
+          cleaned = cleaned.replace(/,/g, '');
+        }
+      } else {
+        // Múltiples comas: separadores de miles excepto la última
+        // Ej: 1,234,567,89 -> última coma es decimal
+        const parts = cleaned.split(',');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart.length <= 2) {
+          // Última es decimal
+          cleaned = parts.slice(0, -1).join('') + '.' + lastPart;
+        } else {
+          // Todas son separadores de miles
+          cleaned = cleaned.replace(/,/g, '');
+        }
+      }
+    }
+    // Caso 3: Solo puntos
+    else if (lastComma === -1 && lastDot > -1) {
+      if (dotCount === 1) {
+        // Verificar si es decimal o separador de miles
+        const afterDot = cleaned.substring(lastDot + 1);
+        if (afterDot.length === 3 && !cleaned.includes(',')) {
+          // Probablemente separador de miles: 3.500 -> 3500
+          cleaned = cleaned.replace(/\./g, '');
+        }
+        // Si tiene 1 o 2 dígitos después del punto, es decimal
+        // Si tiene más de 3, es decimal (ej: 3.14159)
+        // Dejar como está
+      } else {
+        // Múltiples puntos: separadores de miles excepto el último
+        const parts = cleaned.split('.');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart.length <= 2) {
+          // Último es decimal
+          cleaned = parts.slice(0, -1).join('') + '.' + lastPart;
+        } else {
+          // Todos son separadores de miles
+          cleaned = cleaned.replace(/\./g, '');
+        }
+      }
+    }
+    // Caso 4: Mezcla de comas y puntos
+    else {
       if (lastComma > lastDot) {
-        // La coma es el separador decimal: 3.500,00 -> 3500.00
+        // La coma viene después: formato europeo (3.500,00)
         cleaned = cleaned.replace(/\./g, '').replace(',', '.');
       } else {
-        // El punto es el separador decimal: 3,500.00 -> 3500.00
-        cleaned = cleaned.replace(/,/g, '');
-      }
-    } else if (cleaned.includes(',')) {
-      // Solo hay comas, verificar si es separador decimal o de miles
-      const parts = cleaned.split(',');
-      if (parts.length === 2 && parts[1].length <= 2) {
-        // Es separador decimal: 3500,00 -> 3500.00
-        cleaned = cleaned.replace(',', '.');
-      } else {
-        // Es separador de miles: 3,500 -> 3500
+        // El punto viene después: formato anglosajón (3,500.00)
         cleaned = cleaned.replace(/,/g, '');
       }
     }
 
-    // Limpiar cualquier carácter no numérico excepto punto
+    // Remover cualquier carácter no numérico excepto el punto decimal
     cleaned = cleaned.replace(/[^\d.]/g, '');
 
     const parsed = parseFloat(cleaned);
@@ -103,47 +196,75 @@ export class ProductsImportService {
   }
 
   /**
-   * Convierte códigos de barras de notación científica a formato numérico completo
+   * Convierte códigos de barras evitando notación científica
+   * Maneja correctamente códigos largos como EAN-13
    */
-  private static parseBarcodeValue(value: string | number): string {
-    if (!value && value !== 0) return '';
+  private static parseBarcodeValue(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) return '';
 
     let cleaned = value.toString().trim();
+    if (cleaned === '') return '';
 
-    // Si está en notación científica (ej: 7,70629E+12), convertir a número completo
-    if (cleaned.includes('E+') || cleaned.includes('e+')) {
-      const numericValue = parseFloat(cleaned);
-      if (!isNaN(numericValue)) {
-        // Convertir a entero sin decimales para códigos de barras
-        cleaned = Math.floor(numericValue).toString();
+    // Si está en notación científica, convertir
+    if (/[eE][+\-]?\d+/.test(cleaned)) {
+      try {
+        const numericValue = parseFloat(cleaned);
+        if (!isNaN(numericValue) && isFinite(numericValue)) {
+          // Convertir a entero para evitar decimales en códigos de barras
+          cleaned = Math.floor(Math.abs(numericValue)).toString();
+        }
+      } catch (error) {
+        console.warn('Error convirtiendo notación científica:', error);
       }
-    } else {
-      // Si no está en notación científica, solo limpiar espacios y caracteres no deseados
-      // pero mantener el valor numérico tal como está
-      cleaned = cleaned.replace(/[^\d]/g, '');
     }
+
+    // Remover todo excepto números
+    cleaned = cleaned.replace(/[^\d]/g, '');
 
     return cleaned;
   }
 
   /**
+   * Genera un SKU único basado en timestamp y aleatorio
+   */
+  private static generateUniqueSKU(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9).toUpperCase();
+    return `SKU-${timestamp}-${random}`;
+  }
+
+  /**
    * Parsea un archivo Excel y extrae los datos de productos
    */
-  static parseExcelFile(file: File): Promise<ProductImportData[]> {
+  static async parseExcelFile(file: File): Promise<ProductImportData[]> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = XLSX.read(data, {
+            type: 'array',
+            cellText: false,
+            cellDates: false,
+            raw: true
+          });
 
           // Obtener la primera hoja
           const sheetName = workbook.SheetNames[0];
+          if (!sheetName) {
+            reject(new Error('El archivo Excel no contiene hojas'));
+            return;
+          }
+
           const worksheet = workbook.Sheets[sheetName];
 
-          // Convertir a JSON
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          // Convertir a JSON preservando los tipos originales
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            raw: false,
+            defval: ''
+          });
 
           if (jsonData.length < 2) {
             reject(new Error('El archivo debe tener al menos una fila de encabezados y una fila de datos'));
@@ -154,21 +275,20 @@ export class ProductsImportService {
           const headers = jsonData[0] as string[];
           const dataRows = jsonData.slice(1) as any[][];
 
-          // Mapear encabezados a índices
+          // Crear mapa de encabezados
           const headerMap = this.createHeaderMap(headers);
 
-          // Validar que tenemos los campos requeridos (en español o inglés)
-          const requiredFieldMappings = {
-            'name': ['nombre del producto *', 'nombre del producto', 'nombre', 'producto'],
-            'cost_price': ['precio de costo', 'precio costo', 'costo', 'cost_price'],
-            'selling_price': ['precio de venta *', 'precio de venta', 'venta', 'selling_price']
+          // Validar campos requeridos
+          const requiredFields = {
+            'name': ['nombre del producto', 'nombre', 'producto', 'name'],
+            'selling_price': ['precio de venta', 'precio venta', 'venta', 'selling_price', 'selling price']
           };
 
-          const missingFields = [];
-          for (const [requiredField, possibleNames] of Object.entries(requiredFieldMappings)) {
+          const missingFields: string[] = [];
+          for (const [field, possibleNames] of Object.entries(requiredFields)) {
             const found = possibleNames.some(name => headerMap[name] !== undefined);
             if (!found) {
-              missingFields.push(requiredField);
+              missingFields.push(field);
             }
           }
 
@@ -183,17 +303,25 @@ export class ProductsImportService {
           for (let i = 0; i < dataRows.length; i++) {
             const row = dataRows[i];
 
-            if (!row || row.length === 0) continue;
+            // Saltar filas vacías
+            if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
+              continue;
+            }
 
             try {
-              const product = this.mapRowToProduct(row, headerMap, i + 2); // +2 porque empezamos desde la fila 2
+              const product = this.mapRowToProduct(row, headerMap, i + 2);
               if (product) {
                 products.push(product);
               }
             } catch (error) {
               console.warn(`Error parseando fila ${i + 2}:`, error);
-              continue;
+              // Continuar con las demás filas
             }
+          }
+
+          if (products.length === 0) {
+            reject(new Error('No se encontraron productos válidos en el archivo'));
+            return;
           }
 
           resolve(products);
@@ -211,106 +339,200 @@ export class ProductsImportService {
   }
 
   /**
-   * Crea un mapa de encabezados a índices
+   * Crea un mapa normalizado de encabezados a índices
    */
   private static createHeaderMap(headers: string[]): { [key: string]: number } {
     const map: { [key: string]: number } = {};
 
     headers.forEach((header, index) => {
-      if (header) {
-        // Normalizar header sin quitar paréntesis ni espacios
-        const normalizedHeader = header.toLowerCase()
-          .replace(/[áéíóúñ]/g, (match) => {
-            const map: { [key: string]: string } = {
-              'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ñ': 'n'
-            };
-            return map[match] || match;
-          })
-          .trim();
+      if (!header) return;
 
-        // Agregar tanto la versión original como sin paréntesis
-        map[normalizedHeader] = index;
-        map[normalizedHeader.replace(/[()]/g, '').trim()] = index;
-      }
+      // Normalizar: minúsculas, sin acentos, sin espacios extras
+      const normalized = header
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+        .replace(/[*()]/g, '') // Remover caracteres especiales
+        .trim()
+        .replace(/\s+/g, ' '); // Normalizar espacios
+
+      map[normalized] = index;
+
+      // También agregar versiones sin espacios
+      map[normalized.replace(/\s/g, '')] = index;
     });
 
     return map;
   }
 
   /**
-   * Mapea una fila de datos a un objeto ProductImportData
+   * Mapea una fila de Excel a un objeto ProductImportData
    */
-  private static mapRowToProduct(row: any[], headerMap: { [key: string]: number }, rowNumber: number): ProductImportData | null {
+  private static mapRowToProduct(
+    row: any[],
+    headerMap: { [key: string]: number },
+    rowNumber: number
+  ): ProductImportData | null {
     try {
+      // Función helper para obtener valor de la celda
       const getValue = (possibleFields: string[]): string => {
         for (const field of possibleFields) {
           const index = headerMap[field];
-          if (index !== undefined && row[index] !== undefined) {
-            return String(row[index]).trim();
+          if (index !== undefined && row[index] !== undefined && row[index] !== null) {
+            const value = row[index].toString().trim();
+            if (value !== '') return value;
           }
         }
         return '';
       };
 
+      // Función helper para obtener valor numérico
       const getNumber = (possibleFields: string[], defaultValue: number = 0): number => {
         const value = getValue(possibleFields);
         return this.parseNumericValue(value, defaultValue);
       };
 
-      const name = getValue(['nombre del producto *', 'nombre del producto', 'nombre', 'producto', 'name']);
+      // Función helper para obtener booleano
+      const getBoolean = (possibleFields: string[], defaultValue: boolean = false): boolean => {
+        const value = getValue(possibleFields).toLowerCase();
+        if (value === 'true' || value === 'sí' || value === 'si' || value === '1' || value === 'yes') {
+          return true;
+        }
+        if (value === 'false' || value === 'no' || value === '0') {
+          return false;
+        }
+        return defaultValue;
+      };
+
+      // 1. NOMBRE (requerido)
+      const name = getValue([
+        'nombre del producto', 'nombredelproducto',
+        'nombre', 'producto', 'name', 'product'
+      ]);
+
       if (!name) {
         console.warn(`Fila ${rowNumber}: Nombre del producto es requerido`);
         return null;
       }
 
-      // Obtener código de barras y procesarlo correctamente
+      // 2. CÓDIGO DE BARRAS
       const barcodeValue = getValue([
-        'codigo de barras opcional', 'codigo de barras',
-        'barcode opcional', 'barcode',
-        'codigo', 'código'
+        'codigo de barras', 'codigodebarras', 'codigodebarrasopcional',
+        'barcode', 'codigo', 'code', 'ean', 'upc'
       ]);
       const barcode = this.parseBarcodeValue(barcodeValue);
 
-      // Obtener SKU del Excel
+      // 3. SKU
       const skuValue = getValue([
-        'sku opcional', 'sku',
-        'codigo interno', 'codigo producto'
+        'sku', 'codigo interno', 'codigointerno', 'skuopcional',
+        'referencia', 'ref', 'codigo producto'
       ]);
 
-      // Determinar el SKU y código de barras finales
-      let sku: string;
-      let finalBarcode: string;
+      // Determinar SKU final
+      let finalSKU: string;
+      if (skuValue && skuValue.trim() !== '') {
+        // Usar SKU del Excel
+        finalSKU = skuValue.trim();
+      } else if (barcode && barcode.trim() !== '') {
+        // Usar código de barras como SKU si no hay SKU
+        finalSKU = barcode;
+      } else {
+        // Generar SKU único
+        finalSKU = this.generateUniqueSKU();
+      }
 
-      // Prioridad 1: Usar código de barras del Excel si existe
-      if (barcode && barcode.trim() !== '') {
-        finalBarcode = barcode;
-        // Si no hay SKU, usar el código de barras como SKU también
-        sku = (skuValue && skuValue.trim() !== '') ? skuValue : barcode;
-      }
-      // Prioridad 2: Usar SKU del Excel si existe
-      else if (skuValue && skuValue.trim() !== '') {
-        sku = skuValue;
-        finalBarcode = '';
-      }
-      // Prioridad 3: Generar SKU automático solo si no hay ninguno
-      else {
-        sku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        finalBarcode = '';
-      }
+      // 4. DESCRIPCIÓN
+      const description = getValue([
+        'descripcion', 'descripcionopcional',
+        'description', 'desc', 'detalle'
+      ]);
+
+      // 5. CATEGORÍA
+      const categoryName = getValue([
+        'categoria', 'category', 'tipo', 'type'
+      ]) || 'General';
+
+      // 6. BODEGA
+      const warehouseName = getValue([
+        'bodega', 'warehouse', 'almacen', 'bodegaopcional'
+      ]);
+
+      // 7. PRECIOS (requeridos, no pueden ser negativos)
+      const costPrice = Math.max(0, getNumber([
+        'precio de costo', 'preciodecosto', 'precio costo', 'preciocosto',
+        'costo', 'cost', 'cost price', 'costprice'
+      ], 0));
+
+      const sellingPrice = Math.max(0, getNumber([
+        'precio de venta', 'preciodeventa', 'precio venta', 'precioventa',
+        'venta', 'precio', 'price', 'selling price', 'sellingprice'
+      ], 0));
+
+      // 8. INVENTARIO (siempre números enteros)
+      const availableQuantity = Math.floor(Math.max(0, getNumber([
+        'cantidad disponible', 'cantidaddisponible',
+        'cantidad', 'stock', 'inventory', 'qty', 'available'
+      ], 0)));
+
+      const minStock = Math.floor(Math.max(0, getNumber([
+        'stock minimo', 'stockminimo', 'min stock', 'minstock',
+        'minimo', 'min'
+      ], 0)));
+
+      const maxStock = Math.floor(getNumber([
+        'stock maximo', 'stockmaximo', 'max stock', 'maxstock',
+        'maximo', 'max'
+      ]));
+
+      // 9. UNIDAD
+      const unit = getValue([
+        'unidad', 'unit', 'medida', 'uom'
+      ]) || 'unidad';
+
+      // 10. IMPUESTOS (en porcentaje)
+      const ivaRate = Math.max(0, Math.min(100, getNumber([
+        'iva', 'iva %', 'iva rate', 'ivarate', 'impuesto iva'
+      ], 0)));
+
+      const icaRate = Math.max(0, Math.min(100, getNumber([
+        'ica', 'ica %', 'ica rate', 'icarate', 'impuesto ica'
+      ], 0)));
+
+      const retencionRate = Math.max(0, Math.min(100, getNumber([
+        'retencion', 'retencion %', 'retencion rate', 'retencionrate',
+        'impuesto retencion', 'ret'
+      ], 0)));
+
+      // 11. CLASIFICACIÓN FISCAL
+      const fiscalClassification = getValue([
+        'clasificacion fiscal', 'clasificacionfiscal',
+        'fiscal classification', 'tipo fiscal', 'clasificacion'
+      ]) || 'Bien';
+
+      // 12. IMPUESTO AL CONSUMO
+      const exciseTax = getBoolean([
+        'impuesto al consumo', 'impuestoalconsumo',
+        'excise tax', 'excisetax', 'consumo'
+      ], false);
 
       return {
-        name,
-        sku,
-        barcode: finalBarcode,
-        description: getValue(['descripcion opcional', 'descripcion', 'description']),
-        category_name: getValue(['categoria', 'category']) || 'General',
-        cost_price: getNumber(['precio de costo', 'precio costo', 'costo', 'cost_price']),
-        selling_price: getNumber(['precio de venta', 'precio venta', 'venta', 'selling_price']),
-        available_quantity: getNumber(['cantidad disponible', 'cantidad', 'stock', 'available_quantity']),
-        iva_rate: getNumber(['iva %', 'iva', 'iva_rate']),
-        ica_rate: getNumber(['ica %', 'ica', 'ica_rate']),
-        retencion_rate: getNumber(['retencion %', 'retencion', 'retencion_rate']),
-        warehouse_name: getValue(['bodega opcional', 'bodega', 'warehouse', 'almacen'])
+        name: name.trim(),
+        sku: finalSKU,
+        barcode: barcode || undefined,
+        description: description || undefined,
+        category_name: categoryName.trim(),
+        warehouse_name: warehouseName || undefined,
+        cost_price: costPrice,
+        selling_price: sellingPrice,
+        available_quantity: availableQuantity,
+        min_stock: minStock > 0 ? minStock : undefined,
+        max_stock: maxStock && maxStock > 0 ? maxStock : undefined,
+        unit: unit.trim(),
+        iva_rate: ivaRate,
+        ica_rate: icaRate,
+        retencion_rate: retencionRate,
+        fiscal_classification: fiscalClassification,
+        excise_tax: exciseTax
       };
     } catch (error) {
       console.error(`Error mapeando fila ${rowNumber}:`, error);
@@ -329,23 +551,36 @@ export class ProductsImportService {
         'Código de Barras (Opcional)': '7706286001870',
         'Descripción (Opcional)': 'COCO RALLADO X 60 G',
         'Categoría *': 'CONDIMENTOS GUISASON',
-        'Precio de Costo': '3500,00',
-        'Precio de Venta *': '3500,00',
+        'Precio de Costo': '2605.00',
+        'Precio de Venta *': '3500.00',
         'Cantidad Disponible': 8,
         'IVA (%)': 0,
         'ICA (%)': 0,
         'Retención (%)': 0
       },
       {
-        'Nombre del Producto *': 'ARROZ INTEGRAL 500G',
-        'SKU (Opcional)': '7701234567890',
-        'Código de Barras (Opcional)': '7701234567890',
-        'Descripción (Opcional)': 'ARROZ INTEGRAL 500G',
-        'Categoría *': 'GRANOS',
-        'Precio de Costo': '46000,00',
-        'Precio de Venta *': '46000,00',
-        'Cantidad Disponible': 15,
-        'IVA (%)': 19,
+        'Nombre del Producto *': 'PAPRIKA 60 GM',
+        'SKU (Opcional)': '7706286002266',
+        'Código de Barras (Opcional)': '7706286002266',
+        'Descripción (Opcional)': 'PAPRIKA 60 GM',
+        'Categoría *': 'CONDIMENTOS GUISASON',
+        'Precio de Costo': '3361.00',
+        'Precio de Venta *': '4500.00',
+        'Cantidad Disponible': 8,
+        'IVA (%)': 0,
+        'ICA (%)': 0,
+        'Retención (%)': 0
+      },
+      {
+        'Nombre del Producto *': 'SIETE ESPECIAS',
+        'SKU (Opcional)': '7706286004178',
+        'Código de Barras (Opcional)': '7706286004178',
+        'Descripción (Opcional)': 'SIETE ESPECIAS',
+        'Categoría *': 'CONDIMENTOS GUISASON',
+        'Precio de Costo': '1429.00',
+        'Precio de Venta *': '1900.00',
+        'Cantidad Disponible': 5,
+        'IVA (%)': 0,
         'ICA (%)': 0,
         'Retención (%)': 0
       }
@@ -354,49 +589,37 @@ export class ProductsImportService {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(templateData);
 
-    // Configurar formato de celdas para que los precios y códigos de barras se mantengan como texto
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-
-    // Aplicar formato de texto a las columnas de precios y códigos de barras
-    for (let row = range.s.r; row <= range.e.r; row++) {
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-        const cell = worksheet[cellAddress];
-
-        if (cell && cell.v) {
-          const headerCell = worksheet[XLSX.utils.encode_cell({ r: 0, c: col })];
-          if (headerCell) {
-            // Si es una columna de precio, forzar formato de texto
-            if (headerCell.v.includes('Precio') ||
-              headerCell.v.includes('Costo') ||
-              headerCell.v.includes('Venta')) {
-              const numericValue = parseFloat(cell.v);
-              if (!isNaN(numericValue)) {
-                // Formato simple: 3500 -> "3500,00"
-                cell.v = numericValue.toFixed(2).replace('.', ',');
-                cell.t = 's'; // Tipo string
-              }
-            }
-            // Si es una columna de código de barras o SKU, forzar formato de texto
-            else if (headerCell.v.includes('Código de Barras') ||
-              headerCell.v.includes('SKU')) {
-              // Asegurar que se mantenga como texto para evitar notación científica
-              cell.t = 's'; // Tipo string
-              cell.v = String(cell.v);
-            }
-          }
-        }
-      }
-    }
+    // Configurar ancho de columnas
+    const columnWidths = [
+      { wch: 30 }, // Nombre del Producto *
+      { wch: 18 }, // SKU (Opcional)
+      { wch: 25 }, // Código de Barras (Opcional)
+      { wch: 50 }, // Descripción (Opcional)
+      { wch: 25 }, // Categoría *
+      { wch: 15 }, // Precio de Costo
+      { wch: 15 }, // Precio de Venta *
+      { wch: 18 }, // Cantidad Disponible
+      { wch: 10 }, // IVA (%)
+      { wch: 10 }, // ICA (%)
+      { wch: 12 }  // Retención (%)
+    ];
+    worksheet['!cols'] = columnWidths;
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
 
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+      cellStyles: true
+    });
+
+    return new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
   }
 
   /**
-   * Valida los datos de importación
+   * Valida los datos de importación antes de procesarlos
    */
   static async validateImportData(
     products: ProductImportData[],
@@ -406,174 +629,7 @@ export class ProductsImportService {
     const warnings: ImportResult['warnings'] = [];
 
     try {
-      // Obtener datos existentes en paralelo
-      const [categoriesResult, existingProductsResult] = await Promise.all([
-        this.supabase
-          .from('categories')
-          .select('id, name')
-          .eq('company_id', config.companyId)
-          .eq('is_active', true),
-        this.supabase
-          .from('products')
-          .select('id, sku, barcode, name')
-          .eq('company_id', config.companyId)
-      ]);
-
-      if (categoriesResult.error) {
-        throw new Error(`Error obteniendo categorías: ${categoriesResult.error.message}`);
-      }
-
-      if (existingProductsResult.error) {
-        throw new Error(`Error obteniendo productos existentes: ${existingProductsResult.error.message}`);
-      }
-
-      const categories = categoriesResult.data || [];
-      const existingProducts = existingProductsResult.data || [];
-
-      const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase(), c.id]));
-      const existingSkus = new Set(existingProducts.map((p: any) => p.sku).filter(Boolean));
-      const existingBarcodes = new Set(existingProducts.map((p: any) => p.barcode).filter(Boolean));
-      const existingNames = new Set(existingProducts.map((p: any) => p.name.toLowerCase()));
-
-      // Validar cada producto
-      for (let i = 0; i < products.length; i++) {
-        const product = products[i];
-        const rowNumber = i + 2; // +2 porque empezamos desde la fila 2
-
-        // Validaciones básicas
-        if (!product.name.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'name',
-            message: 'El nombre del producto es requerido',
-            data: product
-          });
-          continue;
-        }
-
-        if (product.cost_price < 0) {
-          errors.push({
-            row: rowNumber,
-            field: 'cost_price',
-            message: 'El precio de costo no puede ser negativo',
-            data: product
-          });
-        }
-
-        if (product.selling_price < 0) {
-          errors.push({
-            row: rowNumber,
-            field: 'selling_price',
-            message: 'El precio de venta no puede ser negativo',
-            data: product
-          });
-        }
-
-        // Verificar categoría
-        const categoryExists = categoryMap.has(product.category_name.toLowerCase());
-        if (!categoryExists && !config.createMissingCategories) {
-          errors.push({
-            row: rowNumber,
-            field: 'category_name',
-            message: `La categoría "${product.category_name}" no existe`,
-            data: product
-          });
-        }
-
-        // Verificar productos duplicados
-        let productExists = false;
-
-        if (product.sku && existingSkus.has(product.sku)) {
-          productExists = true;
-          if (config.updateExistingProducts) {
-            warnings.push({
-              row: rowNumber,
-              message: `El producto con SKU "${product.sku}" será actualizado`,
-              data: product
-            });
-          } else {
-            errors.push({
-              row: rowNumber,
-              field: 'sku',
-              message: `Ya existe un producto con SKU "${product.sku}"`,
-              data: product
-            });
-          }
-        }
-
-        if (product.barcode && existingBarcodes.has(product.barcode)) {
-          productExists = true;
-          if (config.updateExistingProducts) {
-            warnings.push({
-              row: rowNumber,
-              message: `El producto con código de barras "${product.barcode}" será actualizado`,
-              data: product
-            });
-          } else {
-            errors.push({
-              row: rowNumber,
-              field: 'barcode',
-              message: `Ya existe un producto con código de barras "${product.barcode}"`,
-              data: product
-            });
-          }
-        }
-
-        if (existingNames.has(product.name.toLowerCase())) {
-          productExists = true;
-          if (config.updateExistingProducts) {
-            warnings.push({
-              row: rowNumber,
-              message: `El producto con nombre "${product.name}" será actualizado`,
-              data: product
-            });
-          } else {
-            errors.push({
-              row: rowNumber,
-              field: 'name',
-              message: `Ya existe un producto con nombre "${product.name}"`,
-              data: product
-            });
-          }
-        }
-      }
-
-      return {
-        success: errors.length === 0,
-        imported: products.length - errors.length,
-        errors,
-        warnings
-      };
-    } catch (error) {
-      return {
-        success: false,
-        imported: 0,
-        errors: [{
-          row: 0,
-          field: 'validation',
-          message: `Error durante la validación: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-          data: null
-        }],
-        warnings: []
-      };
-    }
-  }
-
-  /**
-   * Importa productos con procesamiento en lotes
-   */
-  static async importProducts(
-    products: ProductImportData[],
-    config: ImportConfig,
-    onProgress?: (progress: number) => void
-  ): Promise<ImportResult> {
-    const errors: ImportResult['errors'] = [];
-    const warnings: ImportResult['warnings'] = [];
-    let importedCount = 0;
-    let updatedCount = 0;
-
-    try {
-      // Obtener datos existentes
+      // Obtener datos existentes de la empresa
       const [categoriesResult, existingProductsResult, warehousesResult] = await Promise.all([
         this.supabase
           .from('categories')
@@ -591,6 +647,257 @@ export class ProductsImportService {
           .eq('is_active', true)
       ]);
 
+      if (categoriesResult.error) {
+        throw new Error(`Error obteniendo categorías: ${categoriesResult.error.message}`);
+      }
+
+      if (existingProductsResult.error) {
+        throw new Error(`Error obteniendo productos existentes: ${existingProductsResult.error.message}`);
+      }
+
+      if (warehousesResult.error) {
+        throw new Error(`Error obteniendo bodegas: ${warehousesResult.error.message}`);
+      }
+
+      const categories = categoriesResult.data || [];
+      const existingProducts = existingProductsResult.data || [];
+      const warehouses = warehousesResult.data || [];
+
+      // Crear mapas para búsqueda rápida
+      const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase().trim(), c.id]));
+      const warehouseMap = new Map(warehouses.map((w: any) => [w.name.toLowerCase().trim(), w.id]));
+      const existingSkus = new Set(existingProducts.map((p: any) => p.sku?.toLowerCase().trim()).filter(Boolean));
+      const existingBarcodes = new Set(existingProducts.map((p: any) => p.barcode?.toLowerCase().trim()).filter(Boolean));
+
+      // Validar cada producto
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        const rowNumber = i + 2; // +2 porque empezamos desde fila 2 (después de headers)
+
+        // Validación 1: Nombre requerido
+        if (!product.name || product.name.trim() === '') {
+          errors.push({
+            row: rowNumber,
+            field: 'name',
+            message: 'El nombre del producto es requerido',
+            data: product
+          });
+          continue;
+        }
+
+        // Validación 2: Precio de venta debe ser mayor que 0
+        if (product.selling_price <= 0) {
+          errors.push({
+            row: rowNumber,
+            field: 'selling_price',
+            message: 'El precio de venta debe ser mayor que 0',
+            data: product
+          });
+        }
+
+        // Validación 3: Precios no pueden ser negativos
+        if (product.cost_price < 0) {
+          errors.push({
+            row: rowNumber,
+            field: 'cost_price',
+            message: 'El precio de costo no puede ser negativo',
+            data: product
+          });
+        }
+
+        // Validación 4: Cantidades no pueden ser negativas
+        if (product.available_quantity < 0) {
+          errors.push({
+            row: rowNumber,
+            field: 'available_quantity',
+            message: 'La cantidad disponible no puede ser negativa',
+            data: product
+          });
+        }
+
+        // Validación 5: Stock mínimo no puede ser mayor que máximo
+        if (product.min_stock && product.max_stock && product.min_stock > product.max_stock) {
+          warnings.push({
+            row: rowNumber,
+            message: 'El stock mínimo es mayor que el stock máximo',
+            data: product
+          });
+        }
+
+        // Validación 6: Impuestos deben estar entre 0 y 100
+        if (product.iva_rate < 0 || product.iva_rate > 100) {
+          errors.push({
+            row: rowNumber,
+            field: 'iva_rate',
+            message: 'El IVA debe estar entre 0 y 100',
+            data: product
+          });
+        }
+
+        if (product.ica_rate < 0 || product.ica_rate > 100) {
+          errors.push({
+            row: rowNumber,
+            field: 'ica_rate',
+            message: 'El ICA debe estar entre 0 y 100',
+            data: product
+          });
+        }
+
+        if (product.retencion_rate < 0 || product.retencion_rate > 100) {
+          errors.push({
+            row: rowNumber,
+            field: 'retencion_rate',
+            message: 'La retención debe estar entre 0 y 100',
+            data: product
+          });
+        }
+
+        // Validación 7: Categoría existe o se puede crear
+        const categoryExists = categoryMap.has(product.category_name.toLowerCase().trim());
+        if (!categoryExists && !config.createMissingCategories) {
+          errors.push({
+            row: rowNumber,
+            field: 'category_name',
+            message: `La categoría "${product.category_name}" no existe. Active la opción "Crear categorías faltantes" para crearla automáticamente.`,
+            data: product
+          });
+        } else if (!categoryExists) {
+          warnings.push({
+            row: rowNumber,
+            message: `La categoría "${product.category_name}" será creada automáticamente`,
+            data: product
+          });
+        }
+
+        // Validación 8: Bodega existe o se puede crear
+        if (product.warehouse_name) {
+          const warehouseExists = warehouseMap.has(product.warehouse_name.toLowerCase().trim());
+          if (!warehouseExists && !config.createMissingWarehouses) {
+            errors.push({
+              row: rowNumber,
+              field: 'warehouse_name',
+              message: `La bodega "${product.warehouse_name}" no existe. Active la opción "Crear bodegas faltantes" para crearla automáticamente.`,
+              data: product
+            });
+          } else if (!warehouseExists) {
+            warnings.push({
+              row: rowNumber,
+              message: `La bodega "${product.warehouse_name}" será creada automáticamente`,
+              data: product
+            });
+          }
+        }
+
+        // Validación 9: Producto duplicado por SKU
+        const productSku = product.sku.toLowerCase().trim();
+        if (existingSkus.has(productSku)) {
+          if (config.updateExistingProducts) {
+            warnings.push({
+              row: rowNumber,
+              message: `El producto con SKU "${product.sku}" será actualizado`,
+              data: product
+            });
+          } else {
+            errors.push({
+              row: rowNumber,
+              field: 'sku',
+              message: `Ya existe un producto con SKU "${product.sku}". Active la opción "Actualizar productos existentes" para actualizarlo.`,
+              data: product
+            });
+          }
+        }
+
+        // Validación 10: Producto duplicado por código de barras
+        if (product.barcode) {
+          const productBarcode = product.barcode.toLowerCase().trim();
+          if (existingBarcodes.has(productBarcode)) {
+            if (config.updateExistingProducts) {
+              warnings.push({
+                row: rowNumber,
+                message: `El producto con código de barras "${product.barcode}" será actualizado`,
+                data: product
+              });
+            } else {
+              errors.push({
+                row: rowNumber,
+                field: 'barcode',
+                message: `Ya existe un producto con código de barras "${product.barcode}". Active la opción "Actualizar productos existentes" para actualizarlo.`,
+                data: product
+              });
+            }
+          }
+        }
+
+        // Advertencia: Costo mayor que precio de venta
+        if (product.cost_price > product.selling_price) {
+          warnings.push({
+            row: rowNumber,
+            message: `El precio de costo ($${product.cost_price}) es mayor que el precio de venta ($${product.selling_price})`,
+            data: product
+          });
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        imported: 0,
+        updated: 0,
+        skipped: errors.length,
+        errors,
+        warnings
+      };
+    } catch (error) {
+      return {
+        success: false,
+        imported: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [{
+          row: 0,
+          field: 'validation',
+          message: `Error durante la validación: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+          data: null
+        }],
+        warnings: []
+      };
+    }
+  }
+
+  /**
+   * Importa productos con procesamiento transaccional
+   */
+  static async importProducts(
+    products: ProductImportData[],
+    config: ImportConfig,
+    onProgress?: (progress: number, message: string) => void
+  ): Promise<ImportResult> {
+    const errors: ImportResult['errors'] = [];
+    const warnings: ImportResult['warnings'] = [];
+    let importedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    try {
+      onProgress?.(0, 'Cargando datos existentes...');
+
+      // Obtener datos existentes
+      const [categoriesResult, existingProductsResult, warehousesResult] = await Promise.all([
+        this.supabase
+          .from('categories')
+          .select('id, name')
+          .eq('company_id', config.companyId)
+          .eq('is_active', true),
+        this.supabase
+          .from('products')
+          .select('id, sku, barcode, name')
+          .eq('company_id', config.companyId),
+        this.supabase
+          .from('warehouses')
+          .select('id, name, is_main')
+          .eq('company_id', config.companyId)
+          .eq('is_active', true)
+      ]);
+
       if (categoriesResult.error) throw new Error(`Error obteniendo categorías: ${categoriesResult.error.message}`);
       if (existingProductsResult.error) throw new Error(`Error obteniendo productos: ${existingProductsResult.error.message}`);
       if (warehousesResult.error) throw new Error(`Error obteniendo bodegas: ${warehousesResult.error.message}`);
@@ -600,75 +907,73 @@ export class ProductsImportService {
       const warehouses = warehousesResult.data || [];
 
       // Crear mapas para búsqueda rápida
-      const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase(), c.id]));
-      const warehouseMap = new Map(warehouses.map((w: any) => [w.name.toLowerCase(), w.id]));
+      const categoryMap = new Map(categories.map((c: any) => [c.name.toLowerCase().trim(), c.id]));
+      const warehouseMap = new Map(warehouses.map((w: any) => [w.name.toLowerCase().trim(), w.id]));
       const existingProductMap = new Map();
 
       existingProducts.forEach((p: any) => {
-        if (p.sku) existingProductMap.set(`sku:${p.sku}`, p);
-        if (p.barcode) existingProductMap.set(`barcode:${p.barcode}`, p);
-        existingProductMap.set(`name:${p.name.toLowerCase()}`, p);
+        if (p.sku) existingProductMap.set(`sku:${p.sku.toLowerCase().trim()}`, p);
+        if (p.barcode) existingProductMap.set(`barcode:${p.barcode.toLowerCase().trim()}`, p);
       });
 
-      // Procesar productos en lotes
-      const batchSize = 10;
-      const totalBatches = Math.ceil(products.length / batchSize);
+      // Obtener bodega principal
+      const mainWarehouse = warehouses.find((w: any) => w.is_main);
+      const mainWarehouseId = mainWarehouse?.id || (warehouses.length > 0 ? warehouses[0].id : null);
 
-      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-        const startIndex = batchIndex * batchSize;
-        const endIndex = Math.min(startIndex + batchSize, products.length);
-        const batch = products.slice(startIndex, endIndex);
+      onProgress?.(5, 'Iniciando importación...');
 
-        // Procesar lote en paralelo
-        const batchPromises = batch.map(async (product, index) => {
-          const globalIndex = startIndex + index;
+      // Procesar productos uno por uno
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        const rowNumber = i + 2;
+        const progress = Math.round(5 + ((i + 1) / products.length) * 90);
 
-          try {
-            return await this.processProduct(
-              product,
-              config,
-              categoryMap,
-              warehouseMap,
-              existingProductMap,
-              globalIndex + 2
-            );
-          } catch (error) {
-            return {
-              success: false,
-              error: {
-                row: globalIndex + 2,
-                field: 'import',
-                message: `Error procesando producto: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-                data: product
-              }
-            };
-          }
-        });
+        onProgress?.(progress, `Procesando producto ${i + 1} de ${products.length}: ${product.name}`);
 
-        const batchResults = await Promise.all(batchPromises);
+        try {
+          const result = await this.processProduct(
+            product,
+            config,
+            categoryMap,
+            warehouseMap,
+            existingProductMap,
+            mainWarehouseId,
+            rowNumber
+          );
 
-        // Procesar resultados del lote
-        for (const result of batchResults) {
           if (result.success) {
             if (result.updated) {
               updatedCount++;
             } else {
               importedCount++;
             }
-          } else {
-            errors.push(result.error);
-          }
-        }
 
-        // Actualizar progreso
-        const progress = Math.round(((batchIndex + 1) / totalBatches) * 100);
-        onProgress?.(progress);
+            if (result.warning) {
+              warnings.push(result.warning);
+            }
+          } else if (result.error) {
+            errors.push(result.error);
+            skippedCount++;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+          errors.push({
+            row: rowNumber,
+            field: 'import',
+            message: `Error procesando producto: ${errorMessage}`,
+            data: product
+          });
+          skippedCount++;
+        }
       }
+
+      onProgress?.(100, 'Importación completada');
 
       return {
         success: errors.length === 0,
         imported: importedCount,
         updated: updatedCount,
+        skipped: skippedCount,
         errors,
         warnings
       };
@@ -676,6 +981,8 @@ export class ProductsImportService {
       return {
         success: false,
         imported: 0,
+        updated: 0,
+        skipped: 0,
         errors: [{
           row: 0,
           field: 'import',
@@ -696,79 +1003,137 @@ export class ProductsImportService {
     categoryMap: Map<string, string>,
     warehouseMap: Map<string, string>,
     existingProductMap: Map<string, any>,
+    mainWarehouseId: string | null,
     rowNumber: number
-  ): Promise<{ success: boolean; updated?: boolean; error?: any }> {
+  ): Promise<{
+    success: boolean;
+    updated?: boolean;
+    error?: any;
+    warning?: any;
+  }> {
     try {
-      // Buscar producto existente
-      const existingProduct = existingProductMap.get(`sku:${product.sku}`) ||
-        existingProductMap.get(`barcode:${product.barcode}`) ||
-        existingProductMap.get(`name:${product.name.toLowerCase()}`);
-
-      // Obtener o crear categoría
-      let categoryId = categoryMap.get(product.category_name.toLowerCase());
-      if (!categoryId && config.createMissingCategories) {
-        categoryId = await this.createCategory(product.category_name, config.companyId);
-        categoryMap.set(product.category_name.toLowerCase(), categoryId);
+      // 1. Validación de cantidades (deben ser enteros)
+      if (product.available_quantity % 1 !== 0) {
+        return {
+          success: false,
+          error: {
+            row: rowNumber,
+            field: 'available_quantity',
+            message: `La cantidad debe ser un número entero (${product.available_quantity} no es válido)`,
+            data: product
+          }
+        };
       }
 
-      // Obtener o crear bodega
-      let warehouseId = null;
+      // 2. Buscar producto existente
+      const existingProduct = existingProductMap.get(`sku:${product.sku.toLowerCase().trim()}`) ||
+        (product.barcode ? existingProductMap.get(`barcode:${product.barcode.toLowerCase().trim()}`) : null);
+
+      // Si existe y no se permite actualizar, saltar
+      if (existingProduct && !config.updateExistingProducts) {
+        return {
+          success: false,
+          error: {
+            row: rowNumber,
+            field: 'sku',
+            message: `El producto ya existe (SKU: ${product.sku})`,
+            data: product
+          }
+        };
+      }
+
+      // 2. Obtener o crear categoría
+      let categoryId = categoryMap.get(product.category_name.toLowerCase().trim());
+      if (!categoryId) {
+        if (config.createMissingCategories) {
+          categoryId = await this.createCategory(product.category_name, config.companyId);
+          categoryMap.set(product.category_name.toLowerCase().trim(), categoryId);
+        } else {
+          return {
+            success: false,
+            error: {
+              row: rowNumber,
+              field: 'category_name',
+              message: `La categoría "${product.category_name}" no existe`,
+              data: product
+            }
+          };
+        }
+      }
+
+      // 3. Obtener o crear bodega
+      let warehouseId: string | null = null;
       if (product.warehouse_name) {
-        warehouseId = warehouseMap.get(product.warehouse_name.toLowerCase());
-        if (!warehouseId && config.createMissingWarehouses) {
-          warehouseId = await this.createWarehouse(product.warehouse_name, config.companyId);
-          warehouseMap.set(product.warehouse_name.toLowerCase(), warehouseId);
+        warehouseId = warehouseMap.get(product.warehouse_name.toLowerCase().trim());
+        if (!warehouseId) {
+          if (config.createMissingWarehouses) {
+            warehouseId = await this.createWarehouse(product.warehouse_name, config.companyId);
+            warehouseMap.set(product.warehouse_name.toLowerCase().trim(), warehouseId);
+          } else {
+            return {
+              success: false,
+              error: {
+                row: rowNumber,
+                field: 'warehouse_name',
+                message: `La bodega "${product.warehouse_name}" no existe`,
+                data: product
+              }
+            };
+          }
         }
       } else {
-        // Si no se especifica bodega, usar la bodega principal del usuario
-        warehouseId = await this.getMainWarehouse(config.companyId);
+        // Usar bodega principal si no se especifica
+        warehouseId = mainWarehouseId;
       }
 
-      let productId: string;
+      // 4. Preparar datos del producto
+      const productData: any = {
+        name: product.name.trim(),
+        sku: product.sku.trim(),
+        barcode: product.barcode?.trim() || null,
+        description: product.description?.trim() || null,
+        category_id: categoryId,
+        warehouse_id: warehouseId,
+        cost_price: product.cost_price,
+        selling_price: product.selling_price,
+        min_stock: product.min_stock || 0,
+        max_stock: product.max_stock || null,
+        unit: product.unit || 'unidad',
+        iva_rate: product.iva_rate,
+        ica_rate: product.ica_rate,
+        retencion_rate: product.retencion_rate,
+        fiscal_classification: product.fiscal_classification || 'Bien',
+        excise_tax: product.excise_tax || false,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      };
 
-      if (existingProduct && config.updateExistingProducts) {
-        // Actualizar producto existente
+      let productId: string;
+      let isUpdate = false;
+
+      // 5. Crear o actualizar producto
+      if (existingProduct) {
+        // Actualizar TODOS los productos con el mismo SKU o barcode
+        // (puede haber duplicados en la BD)
         const { error: updateError } = await this.supabase
           .from('products')
-          .update({
-            name: product.name,
-            sku: product.sku,
-            barcode: product.barcode,
-            description: product.description,
-            category_id: categoryId,
-            cost_price: product.cost_price,
-            selling_price: product.selling_price,
-            iva_rate: product.iva_rate,
-            ica_rate: product.ica_rate,
-            retencion_rate: product.retencion_rate,
-            warehouse_id: warehouseId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingProduct.id);
+          .update(productData)
+          .eq('company_id', config.companyId)
+          .or(`sku.eq.${product.sku}${product.barcode ? `,barcode.eq.${product.barcode}` : ''}`);
 
         if (updateError) {
           throw new Error(`Error actualizando producto: ${updateError.message}`);
         }
 
         productId = existingProduct.id;
+        isUpdate = true;
       } else {
         // Crear nuevo producto
         const { data: newProduct, error: insertError } = await this.supabase
           .from('products')
           .insert({
-            name: product.name,
-            sku: product.sku,
-            barcode: product.barcode,
-            description: product.description,
-            category_id: categoryId,
-            cost_price: product.cost_price,
-            selling_price: product.selling_price,
-            iva_rate: product.iva_rate,
-            ica_rate: product.ica_rate,
-            retencion_rate: product.retencion_rate,
-            warehouse_id: warehouseId,
-            company_id: config.companyId,
-            is_active: true
+            ...productData,
+            company_id: config.companyId
           })
           .select('id')
           .single();
@@ -778,16 +1143,25 @@ export class ProductsImportService {
         }
 
         productId = newProduct.id;
+        isUpdate = false;
       }
 
-      // Actualizar inventario si es necesario
-      if (product.available_quantity > 0) {
-        await this.updateInventory(productId, product.available_quantity, warehouseId || null, config.companyId);
+      // 6. Actualizar inventario si se especifica cantidad
+      if (product.available_quantity >= 0 && warehouseId) {
+        // Asegurar que la cantidad sea un entero
+        const integerQuantity = Math.floor(Math.max(0, product.available_quantity));
+        await this.syncInventory(
+          productId,
+          warehouseId,
+          integerQuantity,
+          config.companyId,
+          config.userId
+        );
       }
 
       return {
         success: true,
-        updated: !!existingProduct && config.updateExistingProducts
+        updated: isUpdate
       };
     } catch (error) {
       return {
@@ -809,7 +1183,7 @@ export class ProductsImportService {
     const { data, error } = await this.supabase
       .from('categories')
       .insert({
-        name,
+        name: name.trim(),
         company_id: companyId,
         is_active: true
       })
@@ -817,7 +1191,7 @@ export class ProductsImportService {
       .single();
 
     if (error) {
-      throw new Error(`Error creando categoría: ${error.message}`);
+      throw new Error(`Error creando categoría "${name}": ${error.message}`);
     }
 
     return data.id;
@@ -827,142 +1201,111 @@ export class ProductsImportService {
    * Crea una nueva bodega
    */
   private static async createWarehouse(name: string, companyId: string): Promise<string> {
+    const code = name.toUpperCase().replace(/\s+/g, '_').substring(0, 20);
+
     const { data, error } = await this.supabase
       .from('warehouses')
       .insert({
-        name,
-        code: name.toUpperCase().replace(/\s+/g, '_'),
+        name: name.trim(),
+        code: code,
         company_id: companyId,
-        is_active: true
+        is_active: true,
+        is_main: false
       })
       .select('id')
       .single();
 
     if (error) {
-      throw new Error(`Error creando bodega: ${error.message}`);
+      throw new Error(`Error creando bodega "${name}": ${error.message}`);
     }
 
     return data.id;
   }
 
   /**
-   * Obtiene la bodega principal de la empresa
+   * Sincroniza el inventario en ambas tablas (inventory y warehouse_inventory)
+   * Usa estrategia de buscar-actualizar-insertar para evitar problemas con constraints
    */
-  private static async getMainWarehouse(companyId: string): Promise<string> {
-    // Primero intentar obtener la bodega principal existente
-    const { data: existingWarehouse, error: fetchError } = await this.supabase
-      .from('warehouses')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('is_main', true)
-      .eq('is_active', true)
-      .single();
-
-    if (existingWarehouse && !fetchError) {
-      return existingWarehouse.id;
-    }
-
-    // Si no existe, crear la bodega principal
-    const { data, error } = await this.supabase
-      .from('warehouses')
-      .insert({
-        name: 'Bodega Principal',
-        code: 'MAIN',
-        description: 'Bodega principal de la empresa',
-        is_main: true,
-        company_id: companyId,
-        is_active: true
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      throw new Error(`Error obteniendo/creando bodega principal: ${error.message}`);
-    }
-
-    return data.id;
-  }
-
-  /**
-   * Actualiza el inventario de un producto
-   */
-  private static async updateInventory(
+  private static async syncInventory(
     productId: string,
+    warehouseId: string,
     quantity: number,
-    warehouseId: string | null,
-    companyId: string
+    companyId: string,
+    userId: string
   ): Promise<void> {
     try {
-      // Si no se especifica bodega, usar la bodega principal
-      let targetWarehouseId = warehouseId;
-      if (!targetWarehouseId) {
-        targetWarehouseId = await this.getMainWarehouse(companyId);
-      }
+      // Asegurar que quantity sea un entero
+      const integerQuantity = Math.floor(Math.max(0, quantity));
+      const now = new Date().toISOString();
 
-      // Buscar inventario existente en la tabla inventory (sistema tradicional)
+      // 1. Sincronizar tabla inventory
+      // Buscar registro existente
       const { data: existingInventory } = await this.supabase
         .from('inventory')
         .select('id')
         .eq('product_id', productId)
         .eq('company_id', companyId)
-        .eq('warehouse_id', targetWarehouseId)
+        .eq('warehouse_id', warehouseId)
         .maybeSingle();
 
       if (existingInventory) {
-        // Actualizar inventario existente
-        await this.supabase
+        // Actualizar registro existente
+        const { error: updateError } = await this.supabase
           .from('inventory')
           .update({
-            quantity,
-            last_updated: new Date().toISOString()
+            quantity: integerQuantity,
+            last_updated: now,
+            updated_by: userId
           })
           .eq('id', existingInventory.id);
+
+        if (updateError) {
+          console.error('Error actualizando inventory:', updateError);
+          throw new Error(`Error actualizando inventario: ${updateError.message}`);
+        }
       } else {
-        // Crear nuevo inventario
-        await this.supabase
+        // Crear nuevo registro
+        const { error: insertError } = await this.supabase
           .from('inventory')
           .insert({
             product_id: productId,
-            quantity,
+            warehouse_id: warehouseId,
+            quantity: integerQuantity,
             company_id: companyId,
-            warehouse_id: targetWarehouseId,
-            last_updated: new Date().toISOString()
+            last_updated: now,
+            updated_by: userId
           });
+
+        if (insertError) {
+          console.error('Error insertando inventory:', insertError);
+          throw new Error(`Error insertando inventario: ${insertError.message}`);
+        }
       }
 
-      // También actualizar warehouse_inventory (sistema de bodegas)
-      const { data: existingWarehouseInventory } = await this.supabase
+      // 2. Sincronizar tabla warehouse_inventory
+      // Esta tabla SÍ tiene restricción única en (warehouse_id, product_id)
+      // por lo que podemos usar upsert de forma segura
+      const { error: warehouseInventoryError } = await this.supabase
         .from('warehouse_inventory')
-        .select('id')
-        .eq('product_id', productId)
-        .eq('warehouse_id', targetWarehouseId)
-        .eq('company_id', companyId)
-        .maybeSingle();
+        .upsert({
+          product_id: productId,
+          warehouse_id: warehouseId,
+          quantity: integerQuantity,
+          company_id: companyId,
+          last_updated: now,
+          updated_by: userId
+        }, {
+          onConflict: 'warehouse_id,product_id',
+          ignoreDuplicates: false
+        });
 
-      if (existingWarehouseInventory) {
-        // Actualizar inventario existente en warehouse_inventory
-        await this.supabase
-          .from('warehouse_inventory')
-          .update({
-            quantity,
-            last_updated: new Date().toISOString()
-          })
-          .eq('id', existingWarehouseInventory.id);
-      } else {
-        // Crear nuevo inventario en warehouse_inventory
-        await this.supabase
-          .from('warehouse_inventory')
-          .insert({
-            product_id: productId,
-            warehouse_id: targetWarehouseId,
-            quantity,
-            company_id: companyId,
-            last_updated: new Date().toISOString()
-          });
+      if (warehouseInventoryError) {
+        console.error('Error sincronizando warehouse_inventory:', warehouseInventoryError);
+        throw new Error(`Error sincronizando inventario de bodega: ${warehouseInventoryError.message}`);
       }
     } catch (error) {
-      console.error('Error actualizando inventario:', error);
-      // No lanzar error para no interrumpir la importación
+      console.error('Error sincronizando inventario:', error);
+      throw error;
     }
   }
 
@@ -974,7 +1317,8 @@ export class ProductsImportService {
       .from('product_import_history')
       .select('*')
       .eq('company_id', companyId)
-      .order('uploaded_at', { ascending: false });
+      .order('uploaded_at', { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error('Error obteniendo historial de importaciones:', error);
@@ -987,29 +1331,111 @@ export class ProductsImportService {
   /**
    * Guarda el historial de una importación
    */
-  static async saveImportHistory(history: Partial<ImportHistory>): Promise<void> {
-    const { error } = await this.supabase
-      .from('product_import_history')
-      .insert({
-        filename: history.filename || 'unknown',
-        file_path: history.file_path || '',
-        company_id: history.company_id || '',
-        uploaded_by: history.uploaded_by || '',
-        total_rows: history.total_rows || 0,
-        imported_rows: history.imported_rows || 0,
-        error_rows: history.error_rows || 0,
-        status: history.status || 'completed',
-        errors: history.errors || null
-      });
+  static async saveImportHistory(
+    filename: string,
+    companyId: string,
+    userId: string,
+    result: ImportResult
+  ): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('product_import_history')
+        .insert({
+          filename: filename,
+          file_path: '',
+          company_id: companyId,
+          uploaded_by: userId,
+          total_rows: result.imported + result.updated + result.skipped,
+          imported_rows: result.imported + result.updated,
+          error_rows: result.skipped,
+          status: result.success ? 'completed' : 'failed',
+          errors: result.errors.length > 0 ? JSON.stringify(result.errors) : null
+        });
 
-    if (error) {
-      console.error('Error guardando historial de importación:', error);
+      if (error) {
+        console.error('Error guardando historial de importación:', error);
+      }
+    } catch (error) {
+      console.error('Error guardando historial:', error);
     }
   }
 
+  /**
+   * Elimina productos duplicados (mismo SKU, múltiples registros)
+   * Conserva solo el más reciente y activo
+   */
+  static async removeDuplicateProducts(companyId: string): Promise<{
+    success: boolean;
+    duplicatesFound: number;
+    duplicatesRemoved: number;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let duplicatesFound = 0;
+    let duplicatesRemoved = 0;
+
+    try {
+      // Buscar SKUs duplicados
+      const { data: duplicates, error: fetchError } = await this.supabase
+        .rpc('find_duplicate_skus', { p_company_id: companyId });
+
+      if (fetchError) {
+        // Si la función no existe, buscar manualmente
+        const { data: products } = await this.supabase
+          .from('products')
+          .select('sku, id, is_active, created_at')
+          .eq('company_id', companyId)
+          .order('sku');
+
+        if (!products) return { success: true, duplicatesFound: 0, duplicatesRemoved: 0, errors: [] };
+
+        const skuMap = new Map<string, any[]>();
+        products.forEach(p => {
+          if (!skuMap.has(p.sku)) skuMap.set(p.sku, []);
+          skuMap.get(p.sku)!.push(p);
+        });
+
+        // Procesar duplicados
+        for (const [sku, items] of skuMap.entries()) {
+          if (items.length > 1) {
+            duplicatesFound++;
+            // Ordenar: activos primero, luego por fecha
+            items.sort((a, b) => {
+              if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+
+            // Mantener el primero, marcar los demás como inactivos
+            for (let i = 1; i < items.length; i++) {
+              const { error } = await this.supabase
+                .from('products')
+                .update({ is_active: false })
+                .eq('id', items[i].id);
+
+              if (!error) duplicatesRemoved++;
+            }
+          }
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        duplicatesFound,
+        duplicatesRemoved,
+        errors
+      };
+    } catch (error) {
+      return {
+        success: false,
+        duplicatesFound: 0,
+        duplicatesRemoved: 0,
+        errors: [`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`]
+      };
+    }
+  }
 
   /**
-   * Corrige productos existentes que tengan códigos de barras en formato científico
+   * Corrige productos existentes con códigos de barras en formato científico
    */
   static async fixExistingProductsBarcodeFormat(companyId: string): Promise<{
     success: boolean;
@@ -1020,12 +1446,12 @@ export class ProductsImportService {
     let fixed = 0;
 
     try {
-      // Buscar productos con códigos de barras que contengan notación científica
+      // Buscar productos con notación científica
       const { data: products, error: fetchError } = await this.supabase
         .from('products')
         .select('id, sku, barcode, name')
         .eq('company_id', companyId)
-        .or('barcode.ilike.*E+*,sku.ilike.*E+*');
+        .or('barcode.ilike.%E+%,barcode.ilike.%e+%,sku.ilike.%E+%,sku.ilike.%e+%');
 
       if (fetchError) {
         throw new Error(`Error obteniendo productos: ${fetchError.message}`);
@@ -1041,8 +1467,8 @@ export class ProductsImportService {
           let needsUpdate = false;
           const updateData: any = {};
 
-          // Corregir código de barras si está en notación científica
-          if (product.barcode && (product.barcode.includes('E+') || product.barcode.includes('e+'))) {
+          // Corregir código de barras
+          if (product.barcode && /[eE][+\-]?\d+/.test(product.barcode)) {
             const correctedBarcode = this.parseBarcodeValue(product.barcode);
             if (correctedBarcode && correctedBarcode !== product.barcode) {
               updateData.barcode = correctedBarcode;
@@ -1050,8 +1476,8 @@ export class ProductsImportService {
             }
           }
 
-          // Corregir SKU si está en notación científica
-          if (product.sku && (product.sku.includes('E+') || product.sku.includes('e+'))) {
+          // Corregir SKU
+          if (product.sku && /[eE][+\-]?\d+/.test(product.sku)) {
             const correctedSku = this.parseBarcodeValue(product.sku);
             if (correctedSku && correctedSku !== product.sku) {
               updateData.sku = correctedSku;
@@ -1059,7 +1485,7 @@ export class ProductsImportService {
             }
           }
 
-          // Actualizar producto si es necesario
+          // Actualizar si es necesario
           if (needsUpdate) {
             const { error: updateError } = await this.supabase
               .from('products')
