@@ -247,20 +247,48 @@ export interface ReportHistorySearchParams {
 export interface SalesReportResult {
   summary: {
     total_sales: number;
-    total_amount: number;
-    total_discount: number;
-    total_tax: number;
-    average_sale: number;
+    total_cost: number;
+    gross_profit: number;
+    profit_margin: number;
+    total_transactions: number;
+    avg_ticket: number;
+    total_amount?: number;
+    total_discount?: number;
+    total_tax?: number;
+    average_sale?: number;
   };
-  by_payment_method: Record<string, {
+  sales_trend: Array<{
+    period: string;
+    total_sales: number;
+    total_cost: number;
+    profit: number;
+    transactions: number;
+  }>;
+  top_products: Array<{
+    product_name: string;
+    quantity: number;
+    total: number;
+    avg_price: number;
+  }>;
+  payment_methods: Array<{
+    method: string;
+    total: number;
+  }>;
+  by_cashier: Array<{
+    cashier_name: string;
+    transactions: number;
+    total_sales: number;
+    avg_ticket: number;
+  }>;
+  by_payment_method?: Record<string, {
     count: number;
     total: number;
   }>;
-  by_status: Record<string, {
+  by_status?: Record<string, {
     count: number;
     total: number;
   }>;
-  sales_by_date: Array<{
+  sales_by_date?: Array<{
     date: string;
     count: number;
     total: number;
@@ -319,15 +347,29 @@ export interface CustomersReportResult {
 
 // Resultado de reporte financiero
 export interface FinancialReportResult {
-  income: {
+  total_revenue: number;
+  total_cost: number;
+  total_expenses: number;
+  gross_profit: number;
+  net_profit: number;
+  profit_margin: number;
+  revenue_by_category: Array<{
+    category: string;
+    total: number;
+  }>;
+  expenses_by_category: Array<{
+    category: string;
+    total: number;
+  }>;
+  income?: {
     sales: number;
     account_deposits: number;
   };
-  expenses: {
+  expenses?: {
     purchases: number;
     account_withdrawals: number;
   };
-  accounts_summary: Array<{
+  accounts_summary?: Array<{
     account_name: string;
     account_type: string;
     current_balance: number;
@@ -556,7 +598,7 @@ export function formatReportStatus(status: ReportStatus): string {
 
 export function getReportCategory(reportType: ReportType): keyof typeof reportCategories | null {
   for (const [category, types] of Object.entries(reportCategories)) {
-    if (types.includes(reportType as any)) {
+    if ((types as readonly string[]).includes(reportType)) {
       return category as keyof typeof reportCategories;
     }
   }
@@ -572,4 +614,268 @@ export function getStatusColor(status: ReportStatus): string {
     CANCELLED: 'text-gray-600 bg-gray-50 border-gray-200',
   };
   return colors[status] || 'text-gray-600 bg-gray-50 border-gray-200';
+}
+
+// Resultado de reporte de Balance General (Balance Sheet)
+export interface BalanceSheetReportResult {
+  as_of_date: string;
+  assets: {
+    current_assets: number;
+    fixed_assets: number;
+    total_assets: number;
+  };
+  liabilities: {
+    current_liabilities: number;
+    long_term_liabilities: number;
+    total_liabilities: number;
+  };
+  equity: {
+    capital: number;
+    retained_earnings: number;
+    total_equity: number;
+  };
+  activos?: {
+    corrientes: Array<{
+      cuenta: string;
+      codigo_cuenta: string;
+      saldo: number;
+    }>;
+    no_corrientes: Array<{
+      cuenta: string;
+      codigo_cuenta: string;
+      saldo: number;
+    }>;
+    total_corrientes: number;
+    total_no_corrientes: number;
+    total_activos: number;
+  };
+  pasivos?: {
+    corrientes: Array<{
+      cuenta: string;
+      codigo_cuenta: string;
+      saldo: number;
+    }>;
+    no_corrientes: Array<{
+      cuenta: string;
+      codigo_cuenta: string;
+      saldo: number;
+    }>;
+    total_corrientes: number;
+    total_no_corrientes: number;
+    total_pasivos: number;
+  };
+  patrimonio?: {
+    capital: number;
+    reservas: number;
+    utilidades_retenidas: number;
+    utilidad_ejercicio: number;
+    total_patrimonio: number;
+  };
+}
+
+// Resultado de reporte de Estado de Resultados (Income Statement)
+export interface IncomeStatementReportResult {
+  date_from: string;
+  date_to: string;
+  revenue: {
+    sales: number;
+    other_income: number;
+    total_revenue: number;
+  };
+  cost_of_sales: {
+    direct_costs: number;
+    total_cost_of_sales: number;
+  };
+  gross_profit: number;
+  operating_expenses: {
+    administrative: number;
+    sales_expenses: number;
+    total_operating_expenses: number;
+  };
+  operating_income: number;
+  other_income_expenses: {
+    financial_income: number;
+    financial_expenses: number;
+    total_other: number;
+  };
+  net_income: number;
+  ingresos?: {
+    ventas_brutas: number;
+    devoluciones: number;
+    descuentos: number;
+    ventas_netas: number;
+  };
+  costo_ventas?: {
+    inventario_inicial: number;
+    compras: number;
+    inventario_final: number;
+    total_costo_ventas: number;
+  };
+  utilidad_bruta?: number;
+  gastos_operacionales?: {
+    administracion: number;
+    ventas: number;
+    total: number;
+  };
+  utilidad_operacional?: number;
+  otros_ingresos?: number;
+  otros_gastos?: number;
+  utilidad_antes_impuestos?: number;
+  impuesto_renta?: number;
+  utilidad_neta?: number;
+}
+
+// Resultado de reporte de Flujo de Caja (Cash Flow)
+export interface CashFlowReportResult {
+  date_from: string;
+  date_to: string;
+  operating_activities: {
+    cash_from_sales: number;
+    cash_paid_suppliers: number;
+    net_operating_cash: number;
+  };
+  investing_activities: {
+    purchase_assets: number;
+    sale_assets: number;
+    net_investing_cash: number;
+  };
+  financing_activities: {
+    loans_received: number;
+    loans_paid: number;
+    net_financing_cash: number;
+  };
+  net_cash_flow: number;
+  beginning_cash: number;
+  ending_cash: number;
+  actividades_operacion?: {
+    utilidad_neta: number;
+    ajustes: Array<{
+      concepto: string;
+      monto: number;
+    }>;
+    cambios_capital_trabajo: Array<{
+      concepto: string;
+      monto: number;
+    }>;
+    total: number;
+  };
+  actividades_inversion?: {
+    compra_activos: number;
+    venta_activos: number;
+    total: number;
+  };
+  actividades_financiacion?: {
+    prestamos_recibidos: number;
+    pago_prestamos: number;
+    aportes_capital: number;
+    dividendos_pagados: number;
+    total: number;
+  };
+  efectivo_inicial?: number;
+  efectivo_final?: number;
+  variacion_efectivo?: number;
+}
+
+// Resultado de reporte de Retención en la Fuente
+export interface RetencionFuenteReportResult {
+  date_from: string;
+  date_to: string;
+  total_base: number;
+  total_retenido: number;
+  retenciones: Array<{
+    fecha: string;
+    factura: string;
+    base: number;
+    tarifa: number;
+    valor_retenido: number;
+    tercero_identificacion?: string;
+    tercero_nombre?: string;
+    concepto?: string;
+    porcentaje_retencion?: number;
+    numero_factura?: string;
+  }>;
+  resumen_por_concepto?: Array<{
+    concepto: string;
+    cantidad: number;
+    base_total: number;
+    retencion_total: number;
+  }>;
+}
+
+// Resultado de reporte de IVA
+export interface IVAReportResult {
+  date_from: string;
+  date_to: string;
+  ventas: {
+    base_gravada: number;
+    iva_generado: number;
+    ventas_excluidas: number;
+  };
+  compras: {
+    base_gravada: number;
+    iva_descontable: number;
+    compras_excluidas: number;
+  };
+  saldo_a_pagar: number;
+  detalle_por_tarifa: Array<{
+    tarifa: number;
+    base: number;
+    iva: number;
+  }>;
+  iva_generado?: {
+    ventas_19: number;
+    iva_19: number;
+    ventas_5: number;
+    iva_5: number;
+    ventas_exentas: number;
+    ventas_excluidas: number;
+    total_iva_generado: number;
+  };
+  iva_descontable?: {
+    compras_19: number;
+    iva_19: number;
+    compras_5: number;
+    iva_5: number;
+    total_iva_descontable: number;
+  };
+  saldo_favor?: number;
+  saldo_pagar?: number;
+}
+
+// Resultado de reporte de Cartera de Clientes
+export interface CarteraClientesReportResult {
+  as_of_date: string;
+  total_cartera: number;
+  total_vencido: number;
+  cartera: Array<{
+    cliente: string;
+    documento: string;
+    factura: string;
+    fecha_venta: string;
+    valor_total: number;
+    valor_pagado: number;
+    saldo_pendiente: number;
+    dias_vencimiento: number;
+    customer_id?: string;
+    customer_name?: string;
+    identification?: string;
+    total_deuda?: number;
+    facturas_pendientes?: Array<{
+      factura_numero: string;
+      fecha_emision: string;
+      fecha_vencimiento: string;
+      monto_original: number;
+      monto_pendiente: number;
+      dias_vencido: number;
+    }>;
+  }>;
+  resumen?: {
+    total_cartera: number;
+    cartera_vencida: number;
+    cartera_por_vencer: number;
+    cartera_0_30: number;
+    cartera_31_60: number;
+    cartera_61_90: number;
+    cartera_mas_90: number;
+  };
 }

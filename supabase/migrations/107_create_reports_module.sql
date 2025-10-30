@@ -122,10 +122,7 @@ CREATE TABLE report_history (
   -- Metadatos
   generated_at TIMESTAMPTZ DEFAULT NOW(),
   generated_by UUID REFERENCES profiles(id),
-  expires_at TIMESTAMPTZ, -- Fecha de expiración del archivo
-
-  -- Índices
-  CONSTRAINT report_history_company_id_fkey FOREIGN KEY (company_id) REFERENCES companies(id)
+  expires_at TIMESTAMPTZ -- Fecha de expiración del archivo
 );
 
 -- Crear tabla de programación de reportes

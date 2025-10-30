@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,7 +46,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Report, ReportHistory, ReportType } from '@/lib/types/reports';
-import { formatReportType, formatReportStatus, getStatusColor, reportTypeNames } from '@/lib/types/reports';
+import {
+  formatReportType,
+  formatReportStatus,
+  getStatusColor,
+  reportTypeNames,
+} from '@/lib/types/reports';
 import { ReportsService } from '@/lib/services/reports-service';
 import { ReportFormDialog } from '@/components/report-form-dialog';
 import { ReportViewDialog } from '@/components/report-view-dialog';
@@ -63,7 +74,9 @@ export function ReportsPageClient({
   const [reports, setReports] = useState<Report[]>(initialReports);
   const [history, setHistory] = useState<ReportHistory[]>(initialHistory);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [selectedHistory, setSelectedHistory] = useState<ReportHistory | null>(null);
+  const [selectedHistory, setSelectedHistory] = useState<ReportHistory | null>(
+    null
+  );
 
   // Diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -91,14 +104,20 @@ export function ReportsPageClient({
   const loadReports = async () => {
     try {
       setLoading(true);
-      const { reports: newReports } = await ReportsService.getReports(companyId, {
-        query: searchQuery || undefined,
-        report_type: reportTypeFilter !== 'all' ? (reportTypeFilter as ReportType) : undefined,
-        page: 1,
-        limit: 50,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-      });
+      const { reports: newReports } = await ReportsService.getReports(
+        companyId,
+        {
+          query: searchQuery || undefined,
+          report_type:
+            reportTypeFilter !== 'all'
+              ? (reportTypeFilter as ReportType)
+              : undefined,
+          page: 1,
+          limit: 50,
+          sort_by: 'created_at',
+          sort_order: 'desc',
+        }
+      );
       setReports(newReports);
     } catch (error) {
       toast.error('Error al cargar reportes');
@@ -112,15 +131,21 @@ export function ReportsPageClient({
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const { history: newHistory } = await ReportsService.getReportHistory(companyId, {
-        query: searchQuery || undefined,
-        report_type: reportTypeFilter !== 'all' ? (reportTypeFilter as ReportType) : undefined,
-        status: statusFilter !== 'all' ? (statusFilter as any) : undefined,
-        page: 1,
-        limit: 50,
-        sort_by: 'generated_at',
-        sort_order: 'desc',
-      });
+      const { history: newHistory } = await ReportsService.getReportHistory(
+        companyId,
+        {
+          query: searchQuery || undefined,
+          report_type:
+            reportTypeFilter !== 'all'
+              ? (reportTypeFilter as ReportType)
+              : undefined,
+          status: statusFilter !== 'all' ? (statusFilter as any) : undefined,
+          page: 1,
+          limit: 50,
+          sort_by: 'generated_at',
+          sort_order: 'desc',
+        }
+      );
       setHistory(newHistory);
     } catch (error) {
       toast.error('Error al cargar historial');
@@ -170,7 +195,8 @@ export function ReportsPageClient({
       report.report_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesType = reportTypeFilter === 'all' || report.report_type === reportTypeFilter;
+    const matchesType =
+      reportTypeFilter === 'all' || report.report_type === reportTypeFilter;
 
     return matchesSearch && matchesType;
   });
@@ -181,8 +207,10 @@ export function ReportsPageClient({
       !searchQuery ||
       item.report_name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesType = reportTypeFilter === 'all' || item.report_type === reportTypeFilter;
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesType =
+      reportTypeFilter === 'all' || item.report_type === reportTypeFilter;
+    const matchesStatus =
+      statusFilter === 'all' || item.status === statusFilter;
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -205,16 +233,91 @@ export function ReportsPageClient({
         )}
       </div>
 
+      {/* Accesos Rápidos a Visualizaciones */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            Visualización de Reportes
+          </CardTitle>
+          <CardDescription>
+            Accede directamente a las páginas de visualización con gráficas
+            interactivas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 bg-white dark:bg-gray-900"
+              onClick={() =>
+                (window.location.href = '/dashboard/reports/sales')
+              }
+            >
+              <div className="flex flex-col items-start gap-1 text-left">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold">Ventas</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Análisis de ventas, productos y métodos de pago
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 bg-white dark:bg-gray-900"
+              onClick={() =>
+                (window.location.href = '/dashboard/reports/inventory')
+              }
+            >
+              <div className="flex flex-col items-start gap-1 text-left">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold">Inventario</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Análisis de stock, movimientos y valorización
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 bg-white dark:bg-gray-900"
+              onClick={() =>
+                (window.location.href = '/dashboard/reports/accounting')
+              }
+            >
+              <div className="flex flex-col items-start gap-1 text-left">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-purple-600" />
+                  <span className="font-semibold">Contabilidad</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Balance general, estado de resultados y más
+                </span>
+              </div>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Estadísticas rápidas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reportes</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Reportes
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{reports.length}</div>
-            <p className="text-xs text-muted-foreground">Configuraciones guardadas</p>
+            <p className="text-xs text-muted-foreground">
+              Configuraciones guardadas
+            </p>
           </CardContent>
         </Card>
 
@@ -227,7 +330,9 @@ export function ReportsPageClient({
             <div className="text-2xl font-bold">
               {history.filter((h) => h.status === 'COMPLETED').length}
             </div>
-            <p className="text-xs text-muted-foreground">Reportes completados</p>
+            <p className="text-xs text-muted-foreground">
+              Reportes completados
+            </p>
           </CardContent>
         </Card>
 
@@ -238,7 +343,11 @@ export function ReportsPageClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {history.filter((h) => h.status === 'PROCESSING' || h.status === 'PENDING').length}
+              {
+                history.filter(
+                  (h) => h.status === 'PROCESSING' || h.status === 'PENDING'
+                ).length
+              }
             </div>
             <p className="text-xs text-muted-foreground">Reportes pendientes</p>
           </CardContent>
@@ -286,7 +395,10 @@ export function ReportsPageClient({
                     className="pl-9"
                   />
                 </div>
-                <Select value={reportTypeFilter} onValueChange={setReportTypeFilter}>
+                <Select
+                  value={reportTypeFilter}
+                  onValueChange={setReportTypeFilter}
+                >
                   <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue placeholder="Tipo de reporte" />
                   </SelectTrigger>
@@ -299,8 +411,14 @@ export function ReportsPageClient({
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={loadReports} disabled={loading}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <Button
+                  variant="outline"
+                  onClick={loadReports}
+                  disabled={loading}
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                  />
                   Actualizar
                 </Button>
               </div>
@@ -324,20 +442,29 @@ export function ReportsPageClient({
                 <TableBody>
                   {filteredReports.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No hay reportes configurados
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredReports.map((report) => (
                       <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.report_name}</TableCell>
+                        <TableCell className="font-medium">
+                          {report.report_name}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{formatReportType(report.report_type)}</Badge>
+                          <Badge variant="outline">
+                            {formatReportType(report.report_type)}
+                          </Badge>
                         </TableCell>
                         <TableCell>{report.export_format}</TableCell>
                         <TableCell>
-                          <Badge variant={report.is_active ? 'default' : 'secondary'}>
+                          <Badge
+                            variant={report.is_active ? 'default' : 'secondary'}
+                          >
                             {report.is_active ? 'Activo' : 'Inactivo'}
                           </Badge>
                         </TableCell>
@@ -404,7 +531,10 @@ export function ReportsPageClient({
                     className="pl-9"
                   />
                 </div>
-                <Select value={reportTypeFilter} onValueChange={setReportTypeFilter}>
+                <Select
+                  value={reportTypeFilter}
+                  onValueChange={setReportTypeFilter}
+                >
                   <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue placeholder="Tipo" />
                   </SelectTrigger>
@@ -430,8 +560,14 @@ export function ReportsPageClient({
                     <SelectItem value="CANCELLED">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={loadHistory} disabled={loading}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <Button
+                  variant="outline"
+                  onClick={loadHistory}
+                  disabled={loading}
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                  />
                   Actualizar
                 </Button>
               </div>
@@ -455,16 +591,23 @@ export function ReportsPageClient({
                 <TableBody>
                   {filteredHistory.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No hay reportes en el historial
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredHistory.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.report_name}</TableCell>
+                        <TableCell className="font-medium">
+                          {item.report_name}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{formatReportType(item.report_type)}</Badge>
+                          <Badge variant="outline">
+                            {formatReportType(item.report_type)}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(item.status)}>
@@ -475,7 +618,9 @@ export function ReportsPageClient({
                           {new Date(item.generated_at).toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          {item.execution_time_ms ? `${item.execution_time_ms}ms` : '-'}
+                          {item.execution_time_ms
+                            ? `${item.execution_time_ms}ms`
+                            : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -483,7 +628,9 @@ export function ReportsPageClient({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => window.open(item.file_url, '_blank')}
+                                onClick={() =>
+                                  window.open(item.file_url, '_blank')
+                                }
                               >
                                 <Download className="h-4 w-4" />
                               </Button>
@@ -559,7 +706,8 @@ export function ReportsPageClient({
                 Eliminar Reporte
               </CardTitle>
               <CardDescription>
-                ¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.
+                ¿Estás seguro de que deseas eliminar este reporte? Esta acción
+                no se puede deshacer.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -584,7 +732,9 @@ export function ReportsPageClient({
                   onClick={() => handleDelete(selectedReport.id)}
                   disabled={deletingReportId === selectedReport.id}
                 >
-                  {deletingReportId === selectedReport.id ? 'Eliminando...' : 'Eliminar'}
+                  {deletingReportId === selectedReport.id
+                    ? 'Eliminando...'
+                    : 'Eliminar'}
                 </Button>
               </div>
             </CardContent>
