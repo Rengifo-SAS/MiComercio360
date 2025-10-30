@@ -627,6 +627,8 @@ export class ProductsImportService {
   ): Promise<ImportResult> {
     const errors: ImportResult['errors'] = [];
     const warnings: ImportResult['warnings'] = [];
+    let validProductsCount = 0;
+    let updatedProductsCount = 0;
 
     try {
       // Obtener datos existentes de la empresa
@@ -673,6 +675,7 @@ export class ProductsImportService {
       for (let i = 0; i < products.length; i++) {
         const product = products[i];
         const rowNumber = i + 2; // +2 porque empezamos desde fila 2 (después de headers)
+        let hasErrors = false;
 
         // Validación 1: Nombre requerido
         if (!product.name || product.name.trim() === '') {
@@ -682,6 +685,7 @@ export class ProductsImportService {
             message: 'El nombre del producto es requerido',
             data: product
           });
+          hasErrors = true;
           continue;
         }
 
@@ -693,6 +697,7 @@ export class ProductsImportService {
             message: 'El precio de venta debe ser mayor que 0',
             data: product
           });
+          hasErrors = true;
         }
 
         // Validación 3: Precios no pueden ser negativos
@@ -703,6 +708,7 @@ export class ProductsImportService {
             message: 'El precio de costo no puede ser negativo',
             data: product
           });
+          hasErrors = true;
         }
 
         // Validación 4: Cantidades no pueden ser negativas
@@ -713,6 +719,7 @@ export class ProductsImportService {
             message: 'La cantidad disponible no puede ser negativa',
             data: product
           });
+          hasErrors = true;
         }
 
         // Validación 5: Stock mínimo no puede ser mayor que máximo
@@ -732,6 +739,7 @@ export class ProductsImportService {
             message: 'El IVA debe estar entre 0 y 100',
             data: product
           });
+          hasErrors = true;
         }
 
         if (product.ica_rate < 0 || product.ica_rate > 100) {
@@ -741,6 +749,7 @@ export class ProductsImportService {
             message: 'El ICA debe estar entre 0 y 100',
             data: product
           });
+          hasErrors = true;
         }
 
         if (product.retencion_rate < 0 || product.retencion_rate > 100) {
@@ -750,6 +759,7 @@ export class ProductsImportService {
             message: 'La retención debe estar entre 0 y 100',
             data: product
           });
+          hasErrors = true;
         }
 
         // Validación 7: Categoría existe o se puede crear
@@ -761,6 +771,7 @@ export class ProductsImportService {
             message: `La categoría "${product.category_name}" no existe. Active la opción "Crear categorías faltantes" para crearla automáticamente.`,
             data: product
           });
+          hasErrors = true;
         } else if (!categoryExists) {
           warnings.push({
             row: rowNumber,
@@ -779,6 +790,7 @@ export class ProductsImportService {
               message: `La bodega "${product.warehouse_name}" no existe. Active la opción "Crear bodegas faltantes" para crearla automáticamente.`,
               data: product
             });
+            hasErrors = true;
           } else if (!warehouseExists) {
             warnings.push({
               row: rowNumber,
@@ -790,6 +802,7 @@ export class ProductsImportService {
 
         // Validación 9: Producto duplicado por SKU
         const productSku = product.sku.toLowerCase().trim();
+        let isUpdate = false;
         if (existingSkus.has(productSku)) {
           if (config.updateExistingProducts) {
             warnings.push({
@@ -797,6 +810,7 @@ export class ProductsImportService {
               message: `El producto con SKU "${product.sku}" será actualizado`,
               data: product
             });
+            isUpdate = true;
           } else {
             errors.push({
               row: rowNumber,
@@ -804,11 +818,12 @@ export class ProductsImportService {
               message: `Ya existe un producto con SKU "${product.sku}". Active la opción "Actualizar productos existentes" para actualizarlo.`,
               data: product
             });
+            hasErrors = true;
           }
         }
 
         // Validación 10: Producto duplicado por código de barras
-        if (product.barcode) {
+        if (product.barcode && !isUpdate) {
           const productBarcode = product.barcode.toLowerCase().trim();
           if (existingBarcodes.has(productBarcode)) {
             if (config.updateExistingProducts) {
@@ -817,6 +832,7 @@ export class ProductsImportService {
                 message: `El producto con código de barras "${product.barcode}" será actualizado`,
                 data: product
               });
+              isUpdate = true;
             } else {
               errors.push({
                 row: rowNumber,
@@ -824,6 +840,7 @@ export class ProductsImportService {
                 message: `Ya existe un producto con código de barras "${product.barcode}". Active la opción "Actualizar productos existentes" para actualizarlo.`,
                 data: product
               });
+              hasErrors = true;
             }
           }
         }
@@ -836,12 +853,21 @@ export class ProductsImportService {
             data: product
           });
         }
+
+        // Contar productos válidos
+        if (!hasErrors) {
+          if (isUpdate) {
+            updatedProductsCount++;
+          } else {
+            validProductsCount++;
+          }
+        }
       }
 
       return {
         success: errors.length === 0,
-        imported: 0,
-        updated: 0,
+        imported: validProductsCount + updatedProductsCount,
+        updated: updatedProductsCount,
         skipped: errors.length,
         errors,
         warnings
