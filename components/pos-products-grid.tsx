@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Product } from '@/lib/types/products';
 import { formatCurrency } from '@/lib/types/sales';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,13 @@ import {
   Barcode,
   AlertCircle,
   Loader2,
+  Grid3x3,
+  List,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { POSQuickProductDialog } from '@/components/pos-quick-product-dialog';
 import { ProductsService } from '@/lib/services/products-service';
+import { toast } from 'sonner';
 
 // Funciones auxiliares para manejo de unidades de medida
 const getUnitLabel = (unit: string): string => {
@@ -45,6 +48,7 @@ interface POSProductsGridProps {
   loading: boolean;
   companyId: string;
   onProductsReload?: () => void;
+  selectedCategoryId?: string | null;
 }
 
 export function POSProductsGrid({
@@ -54,6 +58,7 @@ export function POSProductsGrid({
   loading,
   companyId,
   onProductsReload,
+  selectedCategoryId,
 }: POSProductsGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
@@ -63,19 +68,66 @@ export function POSProductsGrid({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Actualizar productos filtrados cuando cambien los productos base
+  // Memoizar funciones auxiliares
+  const getCartQuantity = useCallback(
+    (productId: string) => {
+      const cartItem = cart.find((item) => item.product.id === productId);
+      return cartItem?.quantity || 0;
+    },
+    [cart]
+  );
+
+  const getInventoryStatus = useCallback((product: Product) => {
+    const quantity = product.available_quantity || 0;
+    if (quantity === 0)
+      return { text: 'Sin Stock', color: 'bg-red-100 text-red-800' };
+    if (quantity <= 5)
+      return {
+        text: `Inv ${quantity}`,
+        color: 'bg-yellow-100 text-yellow-800',
+      };
+    return { text: `Inv ${quantity}`, color: 'bg-green-100 text-green-800' };
+  }, []);
+
+  const getInventoryBadge = useCallback(
+    (product: Product) => {
+      const status = getInventoryStatus(product);
+      return (
+        <Badge variant="secondary" className={cn('text-xs', status.color)}>
+          {status.text}
+        </Badge>
+      );
+    },
+    [getInventoryStatus]
+  );
+
+  // Actualizar productos filtrados cuando cambien los productos base o la categoría
   useEffect(() => {
-    if (!searchQuery) {
-      setFilteredProducts(products);
+    let filtered = products;
+
+    // Filtrar por categoría si hay una seleccionada
+    if (selectedCategoryId) {
+      filtered = filtered.filter(product => product.category_id === selectedCategoryId);
     }
-  }, [products, searchQuery]);
+
+    // Si no hay búsqueda, mostrar los productos filtrados por categoría
+    if (!searchQuery) {
+      setFilteredProducts(filtered);
+    }
+  }, [products, searchQuery, selectedCategoryId]);
 
   // Función para buscar productos en la base de datos
   const searchProductsInDB = async (searchTerm: string) => {
     if (!searchTerm.trim() || !companyId) {
-      setFilteredProducts(products);
+      // Si no hay búsqueda, aplicar filtro de categoría
+      let filtered = products;
+      if (selectedCategoryId) {
+        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+      }
+      setFilteredProducts(filtered);
       return;
     }
 
@@ -85,16 +137,27 @@ export function POSProductsGrid({
         companyId,
         searchTerm
       );
-      setFilteredProducts(searchResults);
+
+      // Aplicar filtro de categoría a los resultados de búsqueda
+      let filtered = searchResults;
+      if (selectedCategoryId) {
+        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+      }
+      setFilteredProducts(filtered);
     } catch (error) {
       console.error('Error buscando productos:', error);
       // En caso de error, usar búsqueda local como fallback
-      const filtered = products.filter(
+      let filtered = products.filter(
         (product) =>
           product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+      // Aplicar filtro de categoría
+      if (selectedCategoryId) {
+        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+      }
       setFilteredProducts(filtered);
     } finally {
       setIsSearching(false);
@@ -171,44 +234,81 @@ export function POSProductsGrid({
     }
   };
 
-  // Función para manejar la detección de códigos de barras desde el escáner
+  // Función mejorada para manejar la detección de códigos de barras desde el escáner
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Si estamos en modo escáner y se presiona Enter
-      if (isScanning && e.key === 'Enter') {
-        e.preventDefault();
-        const currentValue = searchQuery.trim();
+    let barcodeBuffer = '';
+    let barcodeTimeout: NodeJS.Timeout | null = null;
 
-        if (currentValue && /^\d{8,}$/.test(currentValue)) {
-          // Buscar primero en productos cargados
-          const product = products.find((p) => p.barcode === currentValue);
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Detectar entrada rápida de caracteres (típico de escáneres de códigos de barras)
+      const isAlphanumeric = /^[a-zA-Z0-9]$/.test(e.key);
+
+      if (isAlphanumeric) {
+        // Acumular caracteres
+        barcodeBuffer += e.key;
+
+        // Limpiar buffer después de 100ms de inactividad
+        if (barcodeTimeout) clearTimeout(barcodeTimeout);
+        barcodeTimeout = setTimeout(() => {
+          barcodeBuffer = '';
+        }, 100);
+      }
+
+      // Detectar Enter (fin de escaneo)
+      if (e.key === 'Enter' && barcodeBuffer.length > 0) {
+        e.preventDefault();
+        const scannedCode = barcodeBuffer.trim();
+        barcodeBuffer = '';
+
+        if (barcodeTimeout) clearTimeout(barcodeTimeout);
+
+        // Procesar el código escaneado
+        if (scannedCode.length >= 8) {
+          // Mostrar feedback visual
+          setSearchQuery(scannedCode);
+
+          // Buscar producto por código de barras
+          const product = products.find((p) =>
+            p.barcode === scannedCode || p.sku === scannedCode
+          );
+
           if (product) {
             onAddToCart(product);
             setSearchQuery('');
-            return;
-          }
-
-          // Si no se encuentra, buscar en la base de datos
-          searchProductsInDB(currentValue).then(() => {
-            setTimeout(() => {
-              const foundProduct = filteredProducts.find(
-                (p) => p.barcode === currentValue
-              );
-              if (foundProduct) {
-                onAddToCart(foundProduct);
+            searchInputRef.current?.focus();
+            // Feedback visual de éxito
+            toast.success(`Producto agregado: ${product.name}`);
+          } else {
+            // Si no se encuentra localmente, buscar en la base de datos
+            searchProductsInDB(scannedCode).then(() => {
+              setTimeout(() => {
+                const foundProduct = filteredProducts.find(
+                  (p) => p.barcode === scannedCode || p.sku === scannedCode
+                );
+                if (foundProduct) {
+                  onAddToCart(foundProduct);
+                  toast.success(`Producto agregado: ${foundProduct.name}`);
+                } else {
+                  toast.error('Producto no encontrado');
+                }
                 setSearchQuery('');
-              }
-            }, 100);
-          });
+                searchInputRef.current?.focus();
+              }, 200);
+            });
+          }
         }
       }
     };
 
-    if (isScanning) {
-      document.addEventListener('keydown', handleKeyPress);
-      return () => document.removeEventListener('keydown', handleKeyPress);
-    }
-  }, [isScanning, searchQuery, products, onAddToCart, filteredProducts]);
+    // Siempre escuchar para detección automática de escáner
+    // Los escáneres envían caracteres muy rápido, lo cual podemos detectar
+    document.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      if (barcodeTimeout) clearTimeout(barcodeTimeout);
+    };
+  }, [products, onAddToCart, filteredProducts, searchProductsInDB]);
 
   // Limpiar timeout al desmontar el componente
   useEffect(() => {
@@ -219,123 +319,142 @@ export function POSProductsGrid({
     };
   }, [searchTimeout]);
 
-  const getCartQuantity = (productId: string) => {
-    const cartItem = cart.find((item) => item.product.id === productId);
-    return cartItem?.quantity || 0;
-  };
-
-  const getInventoryStatus = (product: Product) => {
-    const quantity = product.available_quantity || 0;
-    if (quantity === 0)
-      return { text: 'Sin Stock', color: 'bg-red-100 text-red-800' };
-    if (quantity <= 5)
-      return {
-        text: `Inv ${quantity}`,
-        color: 'bg-yellow-100 text-yellow-800',
-      };
-    return { text: `Inv ${quantity}`, color: 'bg-green-100 text-green-800' };
-  };
-
-  const getInventoryBadge = (product: Product) => {
-    const status = getInventoryStatus(product);
-    return (
-      <Badge variant="secondary" className={cn('text-xs', status.color)}>
-        {status.text}
-      </Badge>
-    );
-  };
 
   return (
     <div
-      className="h-full flex flex-col bg-white dark:bg-gray-800"
+      className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
       role="main"
       aria-label="Catálogo de productos"
     >
-      {/* Barra de Búsqueda - Responsiva */}
+      {/* Barra de Búsqueda - Moderna y Profesional */}
       <div
-        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border-b dark:border-gray-700 flex-shrink-0"
+        className="flex items-center gap-2 p-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0"
         role="search"
       >
         <div className="relative flex-1">
-          <Search
-            className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4"
-            aria-hidden="true"
-          />
+          {/* Icono de búsqueda o código de barras según el modo */}
+          {isScanning ? (
+            <Barcode
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-teal-600 h-5 w-5 animate-pulse"
+              aria-hidden="true"
+            />
+          ) : (
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5"
+              aria-hidden="true"
+            />
+          )}
+
           <Input
             ref={searchInputRef}
-            placeholder="Buscar productos..."
+            placeholder={
+              isScanning
+                ? "Escanee el código de barras del producto..."
+                : "Buscar por nombre, código de barras o SKU..."
+            }
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-8 sm:pl-10 pr-4 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-xs sm:text-sm h-8 sm:h-9 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            className={cn(
+              "pl-11 pr-10 text-sm h-10 rounded-lg transition-all",
+              isScanning
+                ? "bg-teal-50 dark:bg-teal-900/20 border-2 border-teal-500 focus:ring-teal-500 focus:border-teal-600"
+                : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            )}
             aria-label="Buscar productos por nombre, SKU o código de barras"
-            aria-describedby="search-help"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
           />
+
+          {/* Indicadores de estado */}
           {isSearching && (
             <Loader2
-              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-400"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-teal-600"
               aria-hidden="true"
             />
           )}
           {searchQuery && !isSearching && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7 p-0 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            <button
+              type="button"
+              className="absolute right-2.5 top-1/2 transform -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
               onClick={() => {
                 setSearchQuery('');
                 setFilteredProducts(products);
+                searchInputRef.current?.focus();
               }}
               aria-label="Limpiar búsqueda"
             >
               ×
-            </Button>
+            </button>
           )}
         </div>
-        <div
-          className="flex gap-1 sm:gap-2 flex-shrink-0"
-          role="group"
-          aria-label="Acciones de productos"
-        >
+        <div className="flex gap-1.5 flex-shrink-0">
+          {/* Toggle de vista */}
+          <div className="hidden md:flex border border-gray-200 dark:border-gray-600 rounded-md overflow-hidden bg-gray-50 dark:bg-gray-700">
+            <button
+              type="button"
+              className={cn(
+                "h-10 w-10 flex items-center justify-center transition-colors border-r border-gray-200 dark:border-gray-600",
+                viewMode === 'grid'
+                  ? 'bg-teal-600 text-white'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+              )}
+              onClick={() => setViewMode('grid')}
+              aria-label="Vista en cuadrícula"
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "h-10 w-10 flex items-center justify-center transition-colors",
+                viewMode === 'compact'
+                  ? 'bg-teal-600 text-white'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+              )}
+              onClick={() => setViewMode('compact')}
+              aria-label="Vista compacta"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Botón de escáner */}
           <Button
             variant={isScanning ? 'default' : 'outline'}
             size="sm"
-            className={`text-xs h-8 sm:h-9 px-1 sm:px-2 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
-              isScanning ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
-            }`}
-            onClick={handleScannerToggle}
-            aria-label={
+            className={cn(
+              "h-10 px-3 rounded-md font-medium transition-all gap-1.5",
               isScanning
-                ? 'Desactivar modo escáner'
-                : 'Activar modo escáner de códigos de barras'
-            }
+                ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md border-teal-600'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+            )}
+            onClick={handleScannerToggle}
+            aria-label={isScanning ? 'Desactivar modo escáner' : 'Activar modo escáner de códigos de barras'}
             aria-pressed={isScanning}
           >
-            <Barcode
-              className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1"
-              aria-hidden="true"
-            />
-            <span className="hidden sm:inline">
-              {isScanning ? 'Escaneando...' : 'Escanear'}
+            <Barcode className={cn("h-4 w-4", isScanning && "animate-pulse")} />
+            <span className="hidden sm:inline text-xs">
+              {isScanning ? 'Escáner ON' : 'Escáner'}
             </span>
           </Button>
+
+          {/* Botón de nuevo producto */}
           <Button
             variant="outline"
             size="sm"
-            className="text-xs h-8 sm:h-9 px-1 sm:px-2 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            className="h-10 px-3 rounded-md font-medium hover:bg-teal-50 hover:text-teal-700 hover:border-teal-400 dark:hover:bg-teal-900/20 dark:hover:border-teal-600 transition-all gap-1.5 text-gray-700 dark:text-gray-300"
             onClick={() => setShowQuickProductDialog(true)}
             aria-label="Crear nuevo producto"
           >
-            <Plus
-              className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1"
-              aria-hidden="true"
-            />
-            <span className="hidden sm:inline">Nuevo</span>
+            <Plus className="h-4 w-4" />
+            <span className="hidden lg:inline text-xs">Nuevo</span>
           </Button>
         </div>
       </div>
 
       {/* Grid de Productos - Solo scroll vertical */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {loading ? (
           <div
             className="flex items-center justify-center h-64"
@@ -365,9 +484,9 @@ export function POSProductsGrid({
               <p className="text-xs">Intenta con otros términos de búsqueda</p>
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 3xl:grid-cols-10 gap-2 p-3"
+            className="flex flex-wrap justify-around align-content-start gap-2 p-4"
             role="grid"
             aria-label="Catálogo de productos"
           >
@@ -377,11 +496,11 @@ export function POSProductsGrid({
               const isOutOfStock = inventoryStatus.text === 'Sin Stock';
 
               return (
-                <Card
+                <div
                   key={product.id}
                   role="gridcell"
                   className={cn(
-                    'cursor-pointer transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800 border dark:border-gray-700 relative focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
+                    'flex flex-col bg-white dark:bg-gray-800 select-none relative cursor-pointer transition-all duration-150 hover:shadow-lg rounded-sm overflow-hidden w-[140px]',
                     isOutOfStock && 'opacity-50 cursor-not-allowed',
                     cartQuantity > 0 && 'ring-2 ring-teal-500'
                   )}
@@ -400,80 +519,110 @@ export function POSProductsGrid({
                   )}, stock: ${product.available_quantity || 0} unidades${
                     isOutOfStock ? ', sin stock' : ''
                   }`}
-                  aria-describedby={`product-${product.id}-info`}
                 >
-                  <CardContent className="p-1.5 sm:p-2">
-                    <div className="space-y-0.5 sm:space-y-1">
-                      {/* Código del producto */}
-                      <div
-                        className="text-xs text-gray-500 dark:text-gray-400 text-left truncate"
-                        id={`product-${product.id}-info`}
-                      >
-                        SKU: {product.sku}
+                  {/* Referencia - Absolute top left */}
+                  {product.sku && (
+                    <p className="absolute top-1 left-1 text-[10px] text-teal-600 dark:text-teal-400 bg-white dark:bg-gray-800 px-1 rounded z-10">
+                      {product.sku}
+                    </p>
+                  )}
+
+                  {/* Badge de cantidad en carrito - Absolute top right */}
+                  {cartQuantity > 0 && (
+                    <div className="absolute -top-1 -right-1 z-10">
+                      <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs font-bold">
+                        {cartQuantity}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* Zona de imagen */}
+                  <div className="relative overflow-hidden h-32 w-full">
+                    {/* Cantidad de inventario - Absolute */}
+                    {!isOutOfStock ? (
+                      <p className="absolute top-1 right-1 m-0 bg-white dark:bg-gray-800 px-1.5 py-0.5 text-[10px] rounded text-gray-700 dark:text-gray-300 z-10">
+                        Inv {product.available_quantity || 0}
+                      </p>
+                    ) : (
+                      <div className="absolute top-1 right-1 flex items-center gap-1 bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded z-10">
+                        <AlertCircle className="h-3 w-3 text-amber-500" />
+                        <p className="text-[9px] text-gray-600 dark:text-gray-400 m-0">Agotado</p>
+                      </div>
+                    )}
+
+                    {/* Icono/imagen del producto */}
+                    <div className="w-full h-full flex items-center justify-center absolute bg-gray-50 dark:bg-gray-700/30">
+                      <Package className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+                    </div>
+                  </div>
+
+                  {/* Nombre del producto */}
+                  <p className="text-center text-xs leading-tight px-2 py-1.5 h-10 flex items-center justify-center overflow-hidden text-gray-900 dark:text-gray-100">
+                    <span className="line-clamp-2">{product.name}</span>
+                  </p>
+
+                  {/* Precio */}
+                  <p className="text-center text-sm font-semibold text-gray-900 dark:text-gray-100 pb-2">
+                    {formatCurrency(parseFloat(product.selling_price.toString()))}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Vista Compacta - Lista */
+          <div className="p-4 sm:p-6 space-y-2" role="list" aria-label="Catálogo de productos">
+            {filteredProducts.map((product) => {
+              const cartQuantity = getCartQuantity(product.id);
+              const inventoryStatus = getInventoryStatus(product);
+              const isOutOfStock = inventoryStatus.text === 'Sin Stock';
+
+              return (
+                <Card
+                  key={product.id}
+                  role="listitem"
+                  className={cn(
+                    'cursor-pointer transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800 border dark:border-gray-700 relative focus:ring-2 focus:ring-teal-500 focus:outline-none',
+                    isOutOfStock && 'opacity-50 cursor-not-allowed',
+                    cartQuantity > 0 && 'ring-2 ring-teal-500 border-teal-300'
+                  )}
+                  onClick={() => !isOutOfStock && onAddToCart(product)}
+                  tabIndex={0}
+                >
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-4">
+                      {/* Icono */}
+                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-lg flex items-center justify-center">
+                        <Package className="h-8 w-8 text-teal-600 dark:text-teal-400" />
                       </div>
 
-                      {/* Icono de etiqueta de precio */}
-                      <div
-                        className="flex items-center justify-center h-8 sm:h-10 w-full bg-gray-100 dark:bg-gray-700 rounded"
-                        aria-hidden="true"
-                      >
-                        <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">
-                          ₡
-                        </span>
-                      </div>
-
-                      {/* Badge de inventario */}
-                      <div className="text-center">
-                        {getInventoryBadge(product)}
-                      </div>
-
-                      {/* Nombre del producto */}
-                      <div className="text-xs font-medium text-center leading-tight h-6 sm:h-8 flex items-center justify-center text-gray-900 dark:text-gray-100">
-                        <span className="line-clamp-2">{product.name}</span>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
+                          #{product.sku}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {getInventoryBadge(product)}
+                          {cartQuantity > 0 && (
+                            <Badge className="bg-teal-600 text-white text-xs">
+                              En carrito: {cartQuantity}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
 
                       {/* Precio */}
-                      <div className="text-center">
-                        <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200">
-                          {formatCurrency(
-                            parseFloat(product.selling_price.toString())
-                          )}
-                        </span>
+                      <div className="flex-shrink-0 text-right">
+                        <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
+                          {formatCurrency(parseFloat(product.selling_price.toString()))}
+                        </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           por {getUnitLabel(product.unit)}
                         </div>
                       </div>
-
-                      {/* Badge de cantidad en carrito */}
-                      {cartQuantity > 0 && (
-                        <div
-                          className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1"
-                          role="status"
-                          aria-live="polite"
-                        >
-                          <Badge
-                            className="bg-teal-600 text-white rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs"
-                            aria-label={`${cartQuantity} unidades en el carrito`}
-                          >
-                            {cartQuantity}
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Indicador de sin stock */}
-                      {isOutOfStock && (
-                        <div
-                          className="absolute inset-0 flex items-center justify-center bg-white/80 rounded"
-                          role="status"
-                          aria-live="polite"
-                        >
-                          <AlertCircle
-                            className="h-4 w-4 sm:h-6 sm:w-6 text-red-500"
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">Producto sin stock</span>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

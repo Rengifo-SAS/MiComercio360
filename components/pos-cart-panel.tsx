@@ -170,85 +170,33 @@ export function POSCartPanel({
 
   return (
     <div
-      className="h-full flex flex-col bg-white dark:bg-gray-800 overflow-hidden"
+      className="h-full flex flex-col bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 overflow-hidden shadow-xl"
       role="complementary"
       aria-label="Panel del carrito de compras"
     >
-      {/* Header - Responsivo */}
-      <header className="flex items-center justify-between p-2 sm:p-3 border-b dark:border-gray-700 flex-shrink-0">
-        <h2 className="flex items-center text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-          <Receipt className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
-          Factura
+      {/* Header - Moderno y Profesional */}
+      <header className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white flex-shrink-0 shadow-md">
+        <h2 className="flex items-center text-base sm:text-lg font-bold">
+          <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 mr-2" aria-hidden="true" />
+          Carrito de Compra
         </h2>
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 sm:h-7 sm:w-7 p-0 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-            aria-label="Opciones de pago"
-          >
-            <CreditCard className="h-3 w-3" aria-hidden="true" />
-          </Button>
+        <div className="flex items-center space-x-2">
+          <Badge className="bg-white/20 text-white border-white/30 px-2 py-1">
+            {totalItems} items
+          </Badge>
         </div>
       </header>
 
-      {/* Configuración - Responsiva */}
+      {/* Configuración - Moderna y compacta */}
       <div
-        className="p-2 border-b dark:border-gray-700 space-y-1.5 flex-shrink-0"
+        className="p-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 space-y-2 flex-shrink-0"
         role="form"
         aria-label="Configuración de la factura"
       >
-        {/* Primera línea: Tipo Factura y Numeración */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="invoice-type" className="text-xs">
-              Lista de precio
-            </Label>
-            <Select value={invoiceType} onValueChange={setInvoiceType}>
-              <SelectTrigger
-                id="invoice-type"
-                className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
-                aria-label="Seleccionar lista de precios"
-              >
-                <SelectValue placeholder="General" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="local">General</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="numeration" className="text-xs">
-              Numeración
-            </Label>
-            <Select
-              value={selectedNumeration?.id || undefined}
-              onValueChange={(value) => {
-                const numeration = numerations.find((n) => n.id === value);
-                onNumerationChange(numeration || null);
-              }}
-            >
-              <SelectTrigger
-                id="numeration"
-                className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
-                aria-label="Seleccionar numeración"
-              >
-                <SelectValue placeholder="Principal" />
-              </SelectTrigger>
-              <SelectContent>
-                {numerations.map((numeration) => (
-                  <SelectItem key={numeration.id} value={numeration.id}>
-                    {numeration.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Segunda línea: Cliente */}
+        {/* Cliente - Destacado */}
         <div>
-          <Label htmlFor="customer" className="text-xs">
+          <Label htmlFor="customer" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1">
+            <User className="h-3 w-3 mr-1" />
             Cliente
           </Label>
           <div className="flex gap-2">
@@ -261,7 +209,7 @@ export function POSCartPanel({
             >
               <SelectTrigger
                 id="customer"
-                className="h-7 sm:h-8 text-xs bg-white dark:bg-gray-700 flex-1 focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
+                className="h-7 text-[11px] bg-gray-50 dark:bg-gray-700 flex-1 focus:ring-2 focus:ring-teal-500 border-gray-200 dark:border-gray-600 rounded-lg"
                 aria-label="Seleccionar cliente"
               >
                 <SelectValue placeholder="Consumidor final" />
@@ -270,10 +218,10 @@ export function POSCartPanel({
                 {customers.map((customer) => (
                   <SelectItem key={customer.id} value={customer.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium text-xs">
+                      <span className="font-medium text-[11px]">
                         {customer.business_name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-[10px] text-gray-500">
                         {customer.identification_type}{' '}
                         {customer.identification_number}
                       </span>
@@ -285,11 +233,60 @@ export function POSCartPanel({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 w-7 sm:h-8 sm:w-8 p-0 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              className="h-7 w-7 p-0 rounded-lg hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 dark:hover:bg-teal-900/20 transition-all"
               aria-label="Agregar nuevo cliente"
             >
-              <Plus className="h-3 w-3" aria-hidden="true" />
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             </Button>
+          </div>
+        </div>
+
+        {/* Numeración y Lista de precio */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="numeration" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1">
+              <Receipt className="h-3 w-3 mr-1" />
+              Numeración
+            </Label>
+            <Select
+              value={selectedNumeration?.id || undefined}
+              onValueChange={(value) => {
+                const numeration = numerations.find((n) => n.id === value);
+                onNumerationChange(numeration || null);
+              }}
+            >
+              <SelectTrigger
+                id="numeration"
+                className="h-7 text-[11px] bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 border-gray-200 dark:border-gray-600 rounded-lg"
+                aria-label="Seleccionar numeración"
+              >
+                <SelectValue placeholder="Principal" />
+              </SelectTrigger>
+              <SelectContent>
+                {numerations.map((numeration) => (
+                  <SelectItem key={numeration.id} value={numeration.id} className="text-[11px]">
+                    {numeration.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="invoice-type" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1 block">
+              Lista precio
+            </Label>
+            <Select value={invoiceType} onValueChange={setInvoiceType}>
+              <SelectTrigger
+                id="invoice-type"
+                className="h-7 text-[11px] bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 border-gray-200 dark:border-gray-600 rounded-lg"
+                aria-label="Seleccionar lista de precios"
+              >
+                <SelectValue placeholder="General" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="local" className="text-[11px]">General</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -315,7 +312,7 @@ export function POSCartPanel({
             </div>
           ) : (
             <div
-              className="flex-1 overflow-y-auto space-y-3"
+              className="flex-1 overflow-y-auto space-y-3 custom-scrollbar"
               role="list"
               aria-label="Productos en el carrito"
             >
@@ -331,33 +328,33 @@ export function POSCartPanel({
                   <Card
                     key={item.product.id}
                     role="listitem"
-                    className={`transition-all duration-200 hover:shadow-md ${
+                    className={`transition-all duration-200 hover:shadow-lg rounded-xl border-2 ${
                       isAtLimit
-                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        ? 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-300 dark:border-red-700'
                         : isNearLimit
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                        ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-300 dark:border-yellow-700'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}
                     aria-label={`Producto: ${item.product.name}, cantidad: ${
                       item.quantity
                     }, precio: ${formatCurrency(totalPrice)}`}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="p-3 sm:p-4">
                       {/* Información del producto */}
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">
                             {item.product.name}
                           </h3>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {item.product.sku && `SKU: ${item.product.sku}`}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
+                            {item.product.sku && `#${item.product.sku}`}
                           </p>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onRemoveItem(item.product.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 focus:ring-2 focus:ring-red-500 rounded-lg transition-all"
                           aria-label={`Eliminar ${item.product.name} del carrito`}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -510,54 +507,56 @@ export function POSCartPanel({
         </div>
       </div>
 
-      {/* Footer - Siempre visible con altura fija */}
+      {/* Footer - Moderno con totales destacados */}
       <footer
-        className="border-t dark:border-gray-700 p-2 flex-shrink-0 bg-white dark:bg-gray-800"
+        className="border-t-2 dark:border-gray-700 p-4 flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg"
         role="contentinfo"
       >
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <p
-              className="text-xs font-medium text-gray-900 dark:text-gray-100"
-              role="status"
-              aria-live="polite"
-            >
-              {totalItems} Productos
-            </p>
+        {/* Resumen de totales */}
+        <div className="mb-4 space-y-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(totals.subtotal)}</span>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              Subtotal: {formatCurrency(totals.subtotal)}
-            </p>
-            <p
-              className="text-sm font-bold text-teal-600"
-              role="status"
-              aria-live="polite"
-            >
-              Total: {formatCurrency(totals.total_amount)}
-            </p>
+          {totals.total_iva > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">IVA:</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(totals.total_iva)}</span>
+            </div>
+          )}
+          <Separator className="my-2" />
+          <div className="flex items-center justify-between">
+            <span className="text-base font-bold text-gray-900 dark:text-gray-100">Total:</span>
+            <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+              {formatCurrency(totals.total_amount)}
+            </span>
+          </div>
+          <div className="text-xs text-center text-gray-500 dark:text-gray-400">
+            {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
           </div>
         </div>
 
+        {/* Botones de acción */}
         <div
-          className="flex gap-2"
+          className="flex gap-3"
           role="group"
           aria-label="Acciones del carrito"
         >
           <Button
             variant="outline"
-            className="flex-1 h-8 sm:h-10 text-xs focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="flex-1 h-12 sm:h-14 text-sm font-semibold rounded-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
             onClick={onClearCart}
             disabled={cart.length === 0 || loading}
             aria-label="Limpiar carrito de compras"
           >
+            <RotateCcw className="h-4 w-4 mr-2" />
             Cancelar
           </Button>
           <Button
-            className={`flex-1 h-8 sm:h-10 text-xs focus:ring-2 focus:ring-offset-2 ${
+            className={`flex-1 h-12 sm:h-14 text-sm font-bold rounded-lg shadow-md transition-all ${
               hasInsufficientInventory || hasOutOfStockItems
-                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                : 'bg-teal-600 hover:bg-teal-700 focus:ring-teal-500'
+                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+                : 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800'
             }`}
             onClick={() => {
               if (hasInsufficientInventory || hasOutOfStockItems) {
@@ -579,11 +578,12 @@ export function POSCartPanel({
                 : 'Procesar venta'
             }
           >
+            <CreditCard className="h-5 w-5 mr-2" />
             {loading
               ? 'Procesando...'
               : hasInsufficientInventory || hasOutOfStockItems
               ? 'Error de Inventario'
-              : 'Vender'}
+              : 'Cobrar'}
           </Button>
         </div>
       </footer>

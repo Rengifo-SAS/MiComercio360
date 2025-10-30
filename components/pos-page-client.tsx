@@ -9,13 +9,14 @@ import { AccountsService } from '@/lib/services/accounts-service';
 import { PaymentMethodsService } from '@/lib/services/payment-methods-service';
 import { NumerationsService } from '@/lib/services/numerations-service';
 import { POSConfigurationService } from '@/lib/services/pos-configuration-service';
+import { CategoriesService } from '@/lib/services/categories-service';
 import { Customer } from '@/lib/types/customers';
 import {
   Sale,
   CreateSaleData,
   CreateSaleItemData,
 } from '@/lib/types/sales';
-import { Product } from '@/lib/types/products';
+import { Product, Category } from '@/lib/types/products';
 import { formatCurrency, calculateSaleTotals } from '@/lib/types/sales';
 import { PendingSaleCartItem } from '@/lib/types/multiventas';
 import { useMultiVentas } from '@/lib/hooks/use-multiventas';
@@ -28,8 +29,9 @@ import { POSShiftIndicator } from './pos-shift-indicator';
 import { POSTerminalSummary } from './pos-terminal-summary';
 import { POSMultiVentasTabs } from './pos-multiventas-tabs';
 import { POSShiftWarningDialog } from './pos-shift-warning-dialog';
+import { POSCategoriesPanel } from './pos-categories-panel';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { PaymentMethod } from '@/lib/types/payment-methods';
@@ -117,6 +119,8 @@ export function POSPageClient() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [numerations, setNumerations] = useState<Numeration[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -221,6 +225,7 @@ export function POSPageClient() {
         accountsData,
         paymentMethodsData,
         numerationsData,
+        categoriesData,
       ] = await Promise.all([
         ProductsService.getProducts(profile.company_id),
         CustomersService.getCustomers(profile.company_id),
@@ -230,6 +235,7 @@ export function POSPageClient() {
           profile.company_id,
           'invoice'
         ),
+        CategoriesService.getCategories(profile.company_id),
       ]);
 
       setProducts(productsData.products);
@@ -239,6 +245,7 @@ export function POSPageClient() {
         paymentMethodsData.filter((method: PaymentMethod) => method.is_active)
       );
       setNumerations(numerationsData);
+      setCategories(categoriesData);
 
       // Cargar configuración guardada del POS
       try {
@@ -579,48 +586,10 @@ export function POSPageClient() {
 
   return (
     <div
-      className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
+      className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden relative"
       role="main"
       aria-label="Sistema de punto de venta"
     >
-      {/* Header Ultra Compacto */}
-      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
-        <div className="flex items-center justify-between px-2 py-1">
-          <div className="flex items-center gap-1">
-            <h1 className="text-xs font-bold text-gray-900 dark:text-white">
-              POS
-            </h1>
-            <div className="hidden xl:flex items-center gap-1">
-              <span className="text-xs text-gray-500">Terminal:</span>
-              <span
-                className="text-xs font-medium text-teal-600"
-                aria-label={`Terminal ${configuration.terminalName}`}
-              >
-                {configuration.terminalName}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {companyId && userId && (
-              <POSShiftIndicator companyId={companyId} userId={userId} />
-            )}
-            {companyId && userId && (
-              <POSTerminalSummary companyId={companyId} userId={userId} />
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConfiguration(true)}
-              className="text-xs h-6 px-1 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-              aria-label="Abrir configuración del POS"
-            >
-              <Settings className="h-3 w-3" aria-hidden="true" />
-              <span className="hidden xl:inline ml-1">Config</span>
-            </Button>
-          </div>
-        </div>
-      </header>
 
       {/* Pestañas de Multiventas */}
       {pendingSales.length > 0 && (
@@ -637,7 +606,7 @@ export function POSPageClient() {
       {/* Layout Principal - Responsivo sin scroll global */}
       {pendingSales.length > 0 && activeSale && (
         <div
-          className="flex-1 flex flex-col xl:flex-row min-h-0"
+          className="flex-1 flex flex-col xl:flex-row min-h-0 relative"
           role="region"
           aria-label="Área principal del POS"
         >
@@ -655,6 +624,7 @@ export function POSPageClient() {
                 loading={loading}
                 companyId={companyId}
                 onProductsReload={loadProducts}
+                selectedCategoryId={selectedCategoryId}
               />
             </section>
 
@@ -680,11 +650,25 @@ export function POSPageClient() {
             </aside>
           </div>
 
-          {/* En desktop: Dos columnas - Sin scroll global */}
-          <div className="hidden xl:flex flex-1 min-h-0">
-            {/* Panel Izquierdo - Grid de Productos (70%) */}
+          {/* En desktop: Tres columnas - Sin scroll global */}
+          <div className="hidden xl:flex flex-1 min-h-0 relative">
+            {/* Panel de Categorías - Lateral Izquierdo */}
+            {categories.length > 0 && (
+              <aside
+                className="flex-shrink-0 relative z-50"
+                aria-label="Panel de categorías"
+              >
+                <POSCategoriesPanel
+                  categories={categories}
+                  selectedCategoryId={selectedCategoryId}
+                  onSelectCategory={setSelectedCategoryId}
+                />
+              </aside>
+            )}
+
+            {/* Panel Central - Grid de Productos */}
             <section
-              className="w-[70%] min-h-0"
+              className="flex-1 min-h-0"
               aria-label="Catálogo de productos"
             >
               <POSProductsGrid
@@ -694,6 +678,7 @@ export function POSPageClient() {
                 loading={loading}
                 companyId={companyId}
                 onProductsReload={loadProducts}
+                selectedCategoryId={selectedCategoryId}
               />
             </section>
 
