@@ -44,8 +44,26 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getClaims() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  // Harden against offline/DNS errors to avoid noisy logs and broken offline UX.
+  let user: Record<string, any> | undefined;
+  let offlineDetected = false;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    user = data?.claims;
+  } catch (err: any) {
+    const msg = String(err?.message || err);
+    const code = String((err as any)?.code || '');
+    const isNetworkLike =
+      code === 'ENOTFOUND' ||
+      /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET/i.test(code) ||
+      /ENOTFOUND|EAI_AGAIN|Failed to fetch|NetworkError|getaddrinfo/i.test(msg);
+    if (isNetworkLike) {
+      offlineDetected = true;
+      console.warn('[middleware] Supabase getClaims() falló por red, permitiendo paso offline:', { code, msg });
+    } else {
+      console.error('[middleware] Error inesperado en getClaims():', err);
+    }
+  }
 
   if (
     request.nextUrl.pathname !== "/" &&
@@ -53,6 +71,10 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {
+    // Si estamos offline, no forzamos redirección a login; dejamos que el cliente gestione el modo offline
+    if (offlineDetected) {
+      return supabaseResponse;
+    }
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

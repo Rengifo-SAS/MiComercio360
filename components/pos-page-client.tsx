@@ -11,15 +11,14 @@ import { NumerationsService } from '@/lib/services/numerations-service';
 import { POSConfigurationService } from '@/lib/services/pos-configuration-service';
 import { CategoriesService } from '@/lib/services/categories-service';
 import { Customer } from '@/lib/types/customers';
-import {
-  Sale,
-  CreateSaleData,
-  CreateSaleItemData,
-} from '@/lib/types/sales';
+import { Sale, CreateSaleData, CreateSaleItemData } from '@/lib/types/sales';
 import { Product, Category } from '@/lib/types/products';
 import { formatCurrency, calculateSaleTotals } from '@/lib/types/sales';
 import { PendingSaleCartItem } from '@/lib/types/multiventas';
 import { useMultiVentas } from '@/lib/hooks/use-multiventas';
+import { useRealtime } from '@/lib/hooks/use-realtime';
+import { isSupabaseReachable } from '@/lib/utils/network';
+import { useConfigCache } from '@/lib/hooks/use-config-cache';
 import { POSProductsGrid } from './pos-products-grid';
 import { POSCartPanel } from './pos-cart-panel';
 import { POSConfigurationDialog } from './pos-configuration-dialog';
@@ -36,6 +35,9 @@ import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { PaymentMethod } from '@/lib/types/payment-methods';
 import { Numeration } from '@/lib/types/numerations';
+import { useOnlineStatus } from '@/lib/hooks/use-online-status';
+import { offlineStorage } from '@/lib/services/offline-storage-service';
+import { syncService } from '@/lib/services/sync-service';
 
 // Funciones auxiliares para manejo de unidades de medida
 const getQuantityStep = (unit: string): number => {
@@ -80,7 +82,7 @@ type CartItem = PendingSaleCartItem;
 
 // Función auxiliar para convertir productos del tipo products.ts al formato esperado por calculateSaleTotals
 const convertProductsForTotals = (products: Product[]): any[] => {
-  return products.map(product => ({
+  return products.map((product) => ({
     ...product,
     iva_rate: product.iva_rate ?? 0,
     ica_rate: product.ica_rate ?? 0,
@@ -120,7 +122,9 @@ export function POSPageClient() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [numerations, setNumerations] = useState<Numeration[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -138,17 +142,74 @@ export function POSPageClient() {
 
   const supabase = createClient();
   const { setIsCollapsed } = useSidebar();
+  const { isOnline } = useOnlineStatus();
+
+  // Hook para caché de configuración
+  const configCacheHook = useConfigCache({
+    companyId,
+    autoRefresh: isOnline,
+  });
+
+  // Hook para actualizaciones en tiempo real
+  const { isConnected: realtimeConnected } = useRealtime({
+    companyId,
+    enabled: isOnline && !!companyId,
+    onProductUpdated: (product) => {
+      // Actualizar producto en el estado local
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, ...product } : p))
+      );
+    },
+    onInventoryUpdated: (inventory) => {
+      // Actualizar cantidad disponible del producto
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === inventory.product_id
+            ? { ...p, available_quantity: inventory.quantity }
+            : p
+        )
+      );
+    },
+  });
 
   useEffect(() => {
     loadInitialData();
     // Contraer la barra lateral solo en el módulo POS
     setIsCollapsed(true);
 
+    // Inicializar sistema de sincronización offline
+    initializeOfflineSystem();
+
     // Restaurar el estado cuando se desmonte el componente
     return () => {
       setIsCollapsed(false);
+      syncService.stopAutoSync();
     };
   }, [setIsCollapsed]);
+
+  // Inicializar sistema offline
+  const initializeOfflineSystem = async () => {
+    try {
+      // Inicializar IndexedDB
+      await offlineStorage.init();
+
+      // Si estamos online, iniciar sincronización automática
+      if (isOnline) {
+        await syncService.startAutoSync(30000); // Cada 30 segundos
+      }
+    } catch (error) {
+      console.error('Error inicializando sistema offline:', error);
+    }
+  };
+
+  // Sincronizar cuando volvemos online
+  useEffect(() => {
+    if (isOnline) {
+      syncService.startAutoSync(30000);
+    } else {
+      syncService.stopAutoSync();
+    }
+  }, [isOnline]);
 
   // Aplicar configuración por defecto cuando activeSale esté disponible
   useEffect(() => {
@@ -218,7 +279,39 @@ export function POSPageClient() {
       setCompanyId(profile.company_id);
       setUserId(user.id);
 
-      // Cargar datos en paralelo
+      // Si estamos offline, intentar cargar desde cache
+      if (!isOnline) {
+        try {
+          const cachedProducts = await offlineStorage.getCachedProducts();
+          const cachedCustomers = await offlineStorage.getCachedCustomers();
+          const cachedNumerations = await offlineStorage.getCachedNumerations(
+            profile.company_id
+          );
+
+          if (cachedProducts.length > 0) {
+            setProducts(cachedProducts);
+          }
+          if (cachedCustomers.length > 0) {
+            setCustomers(cachedCustomers);
+          }
+          if (cachedNumerations.length > 0) {
+            setNumerations(cachedNumerations);
+          }
+
+          toast.info('Modo offline', {
+            description:
+              'Usando datos guardados. Las ventas se sincronizarán cuando vuelva la conexión.',
+            duration: 5000,
+          });
+        } catch (error) {
+          console.error('Error cargando cache:', error);
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // Si estamos online, cargar datos frescos
       const [
         productsData,
         customersData,
@@ -226,6 +319,7 @@ export function POSPageClient() {
         paymentMethodsData,
         numerationsData,
         categoriesData,
+        companyData,
       ] = await Promise.all([
         ProductsService.getProducts(profile.company_id),
         CustomersService.getCustomers(profile.company_id),
@@ -236,6 +330,12 @@ export function POSPageClient() {
           'invoice'
         ),
         CategoriesService.getCategories(profile.company_id),
+        supabase
+          .from('companies')
+          .select('*')
+          .eq('id', profile.company_id)
+          .single()
+          .then((res) => res.data),
       ]);
 
       setProducts(productsData.products);
@@ -246,6 +346,35 @@ export function POSPageClient() {
       );
       setNumerations(numerationsData);
       setCategories(categoriesData);
+
+      // Cachear datos para uso offline
+      // 1) Productos: traer TODOS para cache, no solo la primera página
+      try {
+        const allProducts = await ProductsService.getAllProductsForCache(
+          profile.company_id
+        );
+        await offlineStorage.cacheProducts(allProducts);
+        
+      } catch (e) {
+        
+        await offlineStorage.cacheProducts(productsData.products);
+      }
+      await offlineStorage.cacheCustomers(customersData.customers);
+      await offlineStorage.cacheNumerations(numerationsData); // Cachear numeraciones
+
+      // Cachear datos de la empresa para impresión offline
+      if (companyData) {
+        await offlineStorage.cacheCompany(companyData);
+        
+      } else {
+        
+      }
+
+      await offlineStorage.saveMetadata(
+        'last_data_load',
+        new Date().toISOString()
+      );
+      
 
       // Cargar configuración guardada del POS
       try {
@@ -538,15 +667,202 @@ export function POSPageClient() {
         payment_change: paymentData.change,
       };
 
-      // Crear la venta
-      const createdSale = await SalesService.createSale(companyId, saleData);
+      let createdSale: Sale;
+
+      // Comprobar conectividad real a Supabase con timeout corto para decidir ruta offline/online
+      const supabaseOnline = await isSupabaseReachable(1200);
+
+      // Si estamos offline (hook) o Supabase no es alcanzable, guardar para sincronización posterior
+      if (!isOnline || !supabaseOnline) {
+        const offlineId = `offline_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+
+        // Generar número usando servicio (soporta modo offline con cache)
+        const numerationIdToUse =
+          activeSale?.selectedNumeration?.id ||
+          configuration?.defaultNumerationId;
+        const offlineSaleNumber = await SalesService.generateSaleNumber(
+          companyId,
+          numerationIdToUse
+        );
+
+        const pendingSale = {
+          id: offlineId,
+          sale_data: {
+            ...saleData,
+            company_id: companyId,
+            sale_number: offlineSaleNumber,
+            numeration_id: numerationIdToUse,
+          },
+          created_at: new Date().toISOString(),
+          sync_status: 'pending' as const,
+          sync_attempts: 0,
+        };
+
+        await offlineStorage.savePendingSale(pendingSale);
+
+        // Mapear payment_method a tipo válido para offline
+        const mapPaymentMethod = (
+          paymentType: string
+        ): 'cash' | 'card' | 'transfer' | 'mixed' => {
+          const mapping: {
+            [key: string]: 'cash' | 'card' | 'transfer' | 'mixed';
+          } = {
+            CASH: 'cash',
+            CARD: 'card',
+            TRANSFER: 'transfer',
+            CHECK: 'cash',
+            DIGITAL_WALLET: 'transfer',
+          };
+          return mapping[paymentType] || 'cash';
+        };
+
+        // Crear venta mock para mostrar al usuario
+        createdSale = {
+          id: offlineId,
+          company_id: companyId,
+          customer_id: saleData.customer_id,
+          cashier_id: userId,
+          sale_number: offlineSaleNumber,
+          subtotal: saleData.total_amount,
+          tax_amount: 0,
+          discount_amount: saleData.discount_amount || 0,
+          total_amount: saleData.total_amount,
+          payment_method: mapPaymentMethod(saleData.payment_method),
+          payment_status: 'completed',
+          status: 'completed',
+          notes: saleData.notes,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          items: [],
+        };
+
+        toast.success('Venta guardada (offline)', {
+          description: 'La venta se sincronizará cuando vuelva la conexión.',
+          duration: 5000,
+        });
+      } else {
+        // Si estamos online, crear la venta normalmente
+        try {
+          createdSale = await SalesService.createSale(companyId, saleData);
+          toast.success('Venta procesada exitosamente');
+        } catch (error) {
+          // Si falla por problemas de conexión, guardar como offline
+          console.error('Error creando venta, guardando offline:', error);
+
+          const errorMessage =
+            error instanceof Error ? error.message : 'Error desconocido';
+
+          // Verificar si es un error de conectividad
+          const isNetworkError =
+            errorMessage.includes('Failed to fetch') ||
+            errorMessage.includes('NetworkError') ||
+            errorMessage.includes('ERR_NAME_NOT_RESOLVED') ||
+            errorMessage.includes('conexión');
+
+          const offlineId = `offline_${Date.now()}_${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+
+          const numerationIdToUse2 =
+            activeSale?.selectedNumeration?.id ||
+            configuration?.defaultNumerationId;
+          const offlineSaleNumber2 = await SalesService.generateSaleNumber(
+            companyId,
+            numerationIdToUse2
+          );
+
+          const pendingSale = {
+            id: offlineId,
+            sale_data: {
+              ...saleData,
+              company_id: companyId,
+              sale_number: offlineSaleNumber2,
+              numeration_id: numerationIdToUse2,
+            },
+            created_at: new Date().toISOString(),
+            sync_status: 'pending' as const,
+            sync_attempts: 0,
+          };
+
+          await offlineStorage.savePendingSale(pendingSale);
+
+          if (isNetworkError) {
+            toast.warning('Sin conexión, venta guardada offline', {
+              description:
+                'La venta se sincronizará cuando vuelva la conexión.',
+              duration: 5000,
+            });
+          } else {
+            toast.error('Error al procesar venta', {
+              description: `${errorMessage}. Venta guardada offline para sincronización posterior.`,
+              duration: 8000,
+            });
+          }
+
+          // Mapear payment_method a tipo válido
+          const mapPaymentMethod = (
+            paymentType: string
+          ): 'cash' | 'card' | 'transfer' | 'mixed' => {
+            const mapping: {
+              [key: string]: 'cash' | 'card' | 'transfer' | 'mixed';
+            } = {
+              CASH: 'cash',
+              CARD: 'card',
+              TRANSFER: 'transfer',
+              CHECK: 'cash',
+              DIGITAL_WALLET: 'transfer',
+            };
+            return mapping[paymentType] || 'cash';
+          };
+
+          createdSale = {
+            id: offlineId,
+            company_id: companyId,
+            customer_id: saleData.customer_id,
+            cashier_id: userId,
+            sale_number: offlineSaleNumber2,
+            subtotal: saleData.total_amount,
+            tax_amount: 0,
+            discount_amount: saleData.discount_amount || 0,
+            total_amount: saleData.total_amount,
+            payment_method: mapPaymentMethod(saleData.payment_method),
+            payment_status: 'completed',
+            status: 'completed',
+            notes: saleData.notes,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            // Construir items desde el carrito activo para la impresión
+            items: (activeSale?.cart || []).map((cartItem, index) => ({
+              id: `temp_${offlineId}_${index}`,
+              sale_id: offlineId,
+              product_id: cartItem.product.id,
+              quantity: cartItem.quantity,
+              unit_price: cartItem.product.selling_price,
+              discount_amount: 0,
+              discount_percentage: 0,
+              total_price: cartItem.quantity * cartItem.product.selling_price,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              product: cartItem.product, // Incluir datos completos del producto
+              product_name: cartItem.product.name,
+            })) as any,
+            // Incluir cliente para impresión
+            customer: activeSale?.selectedCustomer || undefined,
+          };
+
+          toast.success('Venta guardada (offline)', {
+            description: 'La venta se sincronizará cuando vuelva la conexión.',
+            duration: 5000,
+          });
+        }
+      }
 
       setLastSale(createdSale);
       setLastChangeAmount(paymentData.change || 0);
       setShowPaymentDialog(false);
       setShowSaleCompleteDialog(true);
-
-      toast.success('Venta procesada exitosamente');
       clearSaleCart(activeSale.id);
     } catch (error) {
       console.error('Error procesando venta:', error);
@@ -590,7 +906,6 @@ export function POSPageClient() {
       role="main"
       aria-label="Sistema de punto de venta"
     >
-
       {/* Pestañas de Multiventas */}
       {pendingSales.length > 0 && (
         <POSMultiVentasTabs
@@ -741,7 +1056,9 @@ export function POSPageClient() {
           return calculateSaleTotals(
             saleItems,
             0,
-            convertProductsForTotals(activeSale.cart.map((item) => item.product))
+            convertProductsForTotals(
+              activeSale.cart.map((item) => item.product)
+            )
           ).total_amount;
         })()}
         paymentMethods={paymentMethods}

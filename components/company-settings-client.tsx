@@ -47,6 +47,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import { DefaultCompanyLogo } from '@/components/default-company-logo';
 
 export function CompanySettingsClient() {
   const router = useRouter();
@@ -591,11 +592,25 @@ export function CompanySettingsClient() {
               {formData.logo_url ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <img
-                      src={formData.logo_url}
-                      alt="Logo de la empresa"
-                      className="h-20 w-20 object-contain border rounded-lg"
-                    />
+                    <div className="relative h-20 w-20 border rounded-lg overflow-hidden">
+                      <img
+                        src={formData.logo_url}
+                        alt="Logo de la empresa"
+                        className="h-full w-full object-contain"
+                        onError={(e) => {
+                          // Si falla la carga, mostrar logo por defecto
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                          if (fallback) {
+                            fallback.style.display = 'block';
+                          }
+                        }}
+                      />
+                      <div className="logo-fallback hidden h-full w-full absolute top-0 left-0">
+                        <DefaultCompanyLogo className="h-full w-full" />
+                      </div>
+                    </div>
                     <div>
                       <p className="text-sm font-medium">Logo actual</p>
                       <p className="text-xs text-muted-foreground">
@@ -630,9 +645,14 @@ export function CompanySettingsClient() {
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Image className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-600 mb-4">
-                    No hay logo subido
+                  <div className="h-24 w-24 mx-auto mb-4">
+                    <DefaultCompanyLogo className="h-full w-full" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2 font-medium">
+                    Logo por defecto
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Sube tu logo para personalizar la aplicación
                   </p>
                   <Button
                     type="button"

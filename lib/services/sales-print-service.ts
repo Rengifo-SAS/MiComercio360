@@ -38,35 +38,51 @@ export class SalesPrintService {
   // Generar HTML para impresión de venta
   static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
     try {
-      console.log('Generando HTML de impresión para venta:', sale.sale_number);
 
-      // Obtener plantilla de impresión
+
+      // Si estamos offline, evitar llamadas de red y usar plantilla por defecto
+      const isBrowser = typeof window !== 'undefined';
+      const isOffline = isBrowser ? !navigator.onLine : false;
+
+      if (isOffline) {
+        return await this.generateDefaultPrintHTML(sale, paperSize);
+      }
+
+      // Obtener plantilla de impresión (intenta red, con fallback interno)
       const template = await this.getInvoiceTemplate(companyId);
-      console.log('Plantilla encontrada:', template ? 'Sí' : 'No');
 
       if (!template) {
-        console.log('Usando plantilla por defecto');
         // Plantilla por defecto si no hay configuración
         return await this.generateDefaultPrintHTML(sale, paperSize);
       }
 
       // Obtener datos de la empresa
-      const { data: company, error: companyError } = await this.supabase
-        .from('companies')
-        .select('*')
-        .eq('id', companyId)
-        .single();
+      let company;
+      try {
+        const { data, error: companyError } = await this.supabase
+          .from('companies')
+          .select('*')
+          .eq('id', companyId)
+          .single();
 
-      if (companyError) {
-        console.error('Error obteniendo datos de empresa:', companyError);
-        throw new Error('No se encontró la información de la empresa');
+        if (companyError) throw companyError;
+        company = data;
+      } catch (error) {
+        // Fallback a caché offline
+        try {
+          const { offlineStorage } = await import('./offline-storage-service');
+          company = await offlineStorage.getCachedCompany(companyId);
+
+        } catch (cacheError) {
+          console.error('Error obteniendo empresa del cache:', cacheError);
+        }
       }
 
       if (!company) {
         throw new Error('No se encontró la información de la empresa');
       }
 
-      console.log('Procesando plantilla personalizada');
+
       // Procesar plantilla con datos de la venta
       return this.processTemplate(template, sale, company, paperSize);
     } catch (error) {
@@ -202,18 +218,43 @@ export class SalesPrintService {
 
   // Generar HTML por defecto si no hay plantilla
   private static async generateDefaultPrintHTML(sale: Sale, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
-    // Obtener datos de la empresa para el formato 80mm
+    // Obtener datos de la empresa con preferencia por cache si estamos offline
     let companyData = null;
-    if (paperSize === 'thermal-80mm') {
+    const isBrowser = typeof window !== 'undefined';
+    const isOffline = isBrowser ? !navigator.onLine : false;
+
+    if (isOffline) {
       try {
-        const { data: company } = await this.supabase
+        const { offlineStorage } = await import('./offline-storage-service');
+        companyData = await offlineStorage.getCachedCompany(sale.company_id);
+
+      } catch (cacheError) {
+        console.error('Error obteniendo empresa del cache:', cacheError);
+      }
+    } else {
+      try {
+        const { data: company, error } = await this.supabase
           .from('companies')
           .select('*')
           .eq('id', sale.company_id)
           .single();
-        companyData = company;
+
+        if (error) throw error;
+
+        if (company) {
+          companyData = company;
+
+        }
       } catch (error) {
-        console.warn('No se pudieron obtener los datos de la empresa:', error);
+
+        // Fallback a caché offline
+        try {
+          const { offlineStorage } = await import('./offline-storage-service');
+          companyData = await offlineStorage.getCachedCompany(sale.company_id);
+
+        } catch (cacheError) {
+          console.error('Error obteniendo empresa del cache:', cacheError);
+        }
       }
     }
     // Estilos CSS optimizados para impresora térmica 80mm con letras MUY grandes y legibles

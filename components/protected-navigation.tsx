@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { useNavigationRestrictions } from '@/lib/hooks/use-offline-restrictions';
 import {
   Collapsible,
   CollapsibleContent,
@@ -252,6 +253,8 @@ export function ProtectedNavigation({
   onItemClick,
 }: ProtectedNavigationProps) {
   const { hasPermission, hasModulePermission, loading } = usePermissions();
+  const { isNavigationAllowed, getNavigationWarning, isOnline } =
+    useNavigationRestrictions();
   const pathname = usePathname();
   const [openCategories, setOpenCategories] = React.useState<
     Record<string, boolean>
@@ -307,12 +310,17 @@ export function ProtectedNavigation({
     });
   };
 
-  // Filtrar categorías basado en permisos
+  // Filtrar categorías basado en permisos y restricciones offline
   const filteredCategories = navigationCategories
     .map((category) => ({
       ...category,
       items: category.items.filter((item) => {
-        // Si no hay permiso específico, verificar por módulo
+        // Primero verificar restricciones offline
+        if (!isNavigationAllowed(item.href, item.module)) {
+          return false;
+        }
+
+        // Luego verificar permisos
         if (item.permission) {
           return hasPermission(item.permission);
         }
@@ -350,157 +358,181 @@ export function ProtectedNavigation({
   }
 
   return (
-    <nav
-      className="flex-1 p-4 space-y-2"
-      role="navigation"
-      aria-label="Navegación principal"
-    >
-      {filteredCategories.map((category) => {
-        const CategoryIcon = category.icon;
-        const isOpen = openCategories[category.title] || false;
+    <div className="flex-1 flex flex-col">
+      {/* Alerta de modo offline */}
+      {!isOnline && (
+        <div className="mx-4 mt-4 mb-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
+            {!isCollapsed && (
+              <div className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                Modo Offline
+              </div>
+            )}
+          </div>
+          {!isCollapsed && (
+            <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+              Solo POS disponible sin conexión
+            </p>
+          )}
+        </div>
+      )}
 
-        // Dashboard, POS y Configuración como elementos normales (sin acordeón)
-        if (
-          category.title === 'Dashboard' ||
-          category.title === 'POS' ||
-          category.title === 'Configuración'
-        ) {
-          const item = category.items[0];
-          const Icon = item.icon;
-          const active = isActive(item.href);
+      <nav
+        className="flex-1 p-4 space-y-2"
+        role="navigation"
+        aria-label="Navegación principal"
+      >
+        {filteredCategories.map((category) => {
+          const CategoryIcon = category.icon;
+          const isOpen = openCategories[category.title] || false;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onItemClick}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
-                'hover:bg-accent hover:text-accent-foreground',
-                active
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground',
-                isCollapsed && 'justify-center'
-              )}
-              aria-current={active ? 'page' : undefined}
-              aria-label={`Navegar a ${item.title}`}
-            >
-              <Icon
+          // Dashboard, POS y Configuración como elementos normales (sin acordeón)
+          if (
+            category.title === 'Dashboard' ||
+            category.title === 'POS' ||
+            category.title === 'Configuración'
+          ) {
+            const item = category.items[0];
+            const Icon = item.icon;
+            const active = isActive(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onItemClick}
                 className={cn(
-                  'h-4 w-4 flex-shrink-0',
-                  isCollapsed && 'mx-auto'
+                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  active
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground',
+                  isCollapsed && 'justify-center'
                 )}
-                aria-hidden="true"
-              />
-              {!isCollapsed && (
-                <>
-                  <span className="truncate">{item.title}</span>
-                  {item.badge && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-auto text-xs"
-                      aria-label={`Notificación: ${item.badge}`}
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </>
-              )}
-            </Link>
-          );
-        }
-
-        // Resto de categorías como acordeones
-        return (
-          <Collapsible
-            key={category.title}
-            open={isOpen}
-            onOpenChange={() => toggleCategory(category.title)}
-          >
-            <div className="space-y-1">
-              {/* Trigger del acordeón */}
-              <CollapsibleTrigger asChild>
-                <button
+                aria-current={active ? 'page' : undefined}
+                aria-label={`Navegar a ${item.title}`}
+              >
+                <Icon
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
-                    'hover:bg-accent hover:text-accent-foreground',
-                    'text-muted-foreground',
-                    isCollapsed && 'justify-center'
+                    'h-4 w-4 flex-shrink-0',
+                    isCollapsed && 'mx-auto'
                   )}
-                  aria-expanded={isOpen}
-                  aria-label={`${isOpen ? 'Contraer' : 'Expandir'} sección ${
-                    category.title
-                  }`}
-                >
-                  <CategoryIcon
-                    className="h-4 w-4 flex-shrink-0"
-                    aria-hidden="true"
-                  />
-                  {!isCollapsed && (
-                    <>
-                      <span className="text-xs font-medium uppercase tracking-wider flex-1 text-left">
-                        {category.title}
-                      </span>
-                      {isOpen ? (
-                        <ChevronDown className="h-3 w-3" aria-hidden="true" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3" aria-hidden="true" />
-                      )}
-                    </>
-                  )}
-                </button>
-              </CollapsibleTrigger>
-
-              {/* Contenido del acordeón */}
-              {!isCollapsed && (
-                <CollapsibleContent
-                  className="space-y-1"
-                  role="group"
-                  aria-label={`Enlaces de ${category.title}`}
-                >
-                  {category.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = isActive(item.href);
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={onItemClick}
-                        className={cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ml-4 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
-                          'hover:bg-accent hover:text-accent-foreground',
-                          active
-                            ? 'bg-accent text-accent-foreground'
-                            : 'text-muted-foreground'
-                        )}
-                        aria-current={active ? 'page' : undefined}
-                        aria-label={`Navegar a ${item.title}`}
+                  aria-hidden="true"
+                />
+                {!isCollapsed && (
+                  <>
+                    <span className="truncate">{item.title}</span>
+                    {item.badge && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-auto text-xs"
+                        aria-label={`Notificación: ${item.badge}`}
                       >
-                        <Icon
-                          className="h-4 w-4 flex-shrink-0"
-                          aria-hidden="true"
-                        />
-                        <span className="truncate">{item.title}</span>
-                        {item.badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto text-xs"
-                            aria-label={`Notificación: ${item.badge}`}
-                          >
-                            {item.badge}
-                          </Badge>
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </Link>
+            );
+          }
+
+          // Resto de categorías como acordeones
+          return (
+            <Collapsible
+              key={category.title}
+              open={isOpen}
+              onOpenChange={() => toggleCategory(category.title)}
+            >
+              <div className="space-y-1">
+                {/* Trigger del acordeón */}
+                <CollapsibleTrigger asChild>
+                  <button
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
+                      'hover:bg-accent hover:text-accent-foreground',
+                      'text-muted-foreground',
+                      isCollapsed && 'justify-center'
+                    )}
+                    aria-expanded={isOpen}
+                    aria-label={`${isOpen ? 'Contraer' : 'Expandir'} sección ${
+                      category.title
+                    }`}
+                  >
+                    <CategoryIcon
+                      className="h-4 w-4 flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    {!isCollapsed && (
+                      <>
+                        <span className="text-xs font-medium uppercase tracking-wider flex-1 text-left">
+                          {category.title}
+                        </span>
+                        {isOpen ? (
+                          <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                        ) : (
+                          <ChevronRight
+                            className="h-3 w-3"
+                            aria-hidden="true"
+                          />
                         )}
-                      </Link>
-                    );
-                  })}
-                </CollapsibleContent>
-              )}
-            </div>
-          </Collapsible>
-        );
-      })}
-    </nav>
+                      </>
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+
+                {/* Contenido del acordeón */}
+                {!isCollapsed && (
+                  <CollapsibleContent
+                    className="space-y-1"
+                    role="group"
+                    aria-label={`Enlaces de ${category.title}`}
+                  >
+                    {category.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = isActive(item.href);
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={onItemClick}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ml-4 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none',
+                            'hover:bg-accent hover:text-accent-foreground',
+                            active
+                              ? 'bg-accent text-accent-foreground'
+                              : 'text-muted-foreground'
+                          )}
+                          aria-current={active ? 'page' : undefined}
+                          aria-label={`Navegar a ${item.title}`}
+                        >
+                          <Icon
+                            className="h-4 w-4 flex-shrink-0"
+                            aria-hidden="true"
+                          />
+                          <span className="truncate">{item.title}</span>
+                          {item.badge && (
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto text-xs"
+                              aria-label={`Notificación: ${item.badge}`}
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </CollapsibleContent>
+                )}
+              </div>
+            </Collapsible>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
 

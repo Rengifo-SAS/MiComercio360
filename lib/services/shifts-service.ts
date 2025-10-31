@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/client';
-import { 
-  Shift, 
-  CreateShiftData, 
-  UpdateShiftData, 
+import {
+  Shift,
+  CreateShiftData,
+  UpdateShiftData,
   CloseShiftData,
-  ShiftFilters, 
+  ShiftFilters,
   ShiftSearchParams,
   ShiftStats,
   ShiftReport,
@@ -22,7 +22,7 @@ export class ShiftsService {
 
   // Obtener todos los turnos con filtros
   static async getShifts(
-    companyId: string, 
+    companyId: string,
     params: ShiftSearchParams = {}
   ): Promise<{ shifts: Shift[]; total: number }> {
     const {
@@ -34,8 +34,7 @@ export class ShiftsService {
       limit = 50
     } = params;
 
-    console.log('🔍 ShiftsService.getShifts - companyId:', companyId);
-    console.log('🔍 ShiftsService.getShifts - params:', params);
+
 
     let queryBuilder = this.supabase
       .from('shifts')
@@ -79,14 +78,14 @@ export class ShiftsService {
 
     const { data, error, count } = await queryBuilder;
 
-    console.log('📊 ShiftsService.getShifts - resultado:', { data, error, count });
+
 
     if (error) {
       console.error('❌ Error obteniendo turnos:', error);
       throw new Error('Error al obtener los turnos');
     }
 
-    console.log('✅ ShiftsService.getShifts - turnos encontrados:', data?.length || 0);
+
 
     return {
       shifts: data || [],
@@ -117,7 +116,7 @@ export class ShiftsService {
   // Obtener turno activo del cajero actual
   static async getActiveShift(companyId: string): Promise<Shift | null> {
     const { data: { user } } = await this.supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('Usuario no autenticado');
     }
@@ -147,11 +146,11 @@ export class ShiftsService {
 
   // Crear un nuevo turno (apertura)
   static async createShift(
-    companyId: string, 
+    companyId: string,
     shiftData: CreateShiftData
   ): Promise<Shift> {
     const { data: { user } } = await this.supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('Usuario no autenticado');
     }
@@ -190,11 +189,11 @@ export class ShiftsService {
 
   // Cerrar un turno
   static async closeShift(
-    shiftId: string, 
+    shiftId: string,
     closeData: CloseShiftData
   ): Promise<Shift> {
     const { data: { user } } = await this.supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('Usuario no autenticado');
     }
@@ -215,7 +214,7 @@ export class ShiftsService {
 
     // Calcular totales de ventas
     const salesSummary = await this.getShiftSalesSummary(shiftId);
-    
+
     const { data, error } = await this.supabase
       .from('shifts')
       .update({
@@ -247,7 +246,7 @@ export class ShiftsService {
     try {
       // Obtener resumen de ventas del turno
       const salesSummary = await this.getShiftSalesSummary(shiftId);
-      
+
       // Actualizar el turno con las nuevas estadísticas
       await this.supabase
         .from('shifts')
@@ -264,7 +263,7 @@ export class ShiftsService {
 
   // Actualizar un turno
   static async updateShift(
-    shiftId: string, 
+    shiftId: string,
     updateData: UpdateShiftData
   ): Promise<Shift> {
     const { data, error } = await this.supabase
@@ -387,7 +386,7 @@ export class ShiftsService {
     movementData: CreateCashMovementData
   ): Promise<CashMovement> {
     const { data: { user } } = await this.supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('Usuario no autenticado');
     }
@@ -442,17 +441,17 @@ export class ShiftsService {
     const total_shifts = shifts.length;
     const open_shifts = shifts.filter(s => s.status === 'open').length;
     const closed_shifts = shifts.filter(s => s.status === 'closed').length;
-    
+
     const total_sales = shifts.reduce((sum, shift) => sum + Number(shift.total_sales), 0);
     const total_transactions = shifts.reduce((sum, shift) => sum + Number(shift.total_transactions), 0);
-    
+
     // Calcular duración promedio
     const closedShiftsWithDuration = shifts
       .filter(s => s.status === 'closed' && s.end_time)
       .map(s => calculateShiftDuration(s.start_time, s.end_time!))
       .filter(d => d !== null) as number[];
-    
-    const average_shift_duration = closedShiftsWithDuration.length > 0 
+
+    const average_shift_duration = closedShiftsWithDuration.length > 0
       ? closedShiftsWithDuration.reduce((sum, duration) => sum + duration, 0) / closedShiftsWithDuration.length
       : 0;
 
@@ -485,7 +484,7 @@ export class ShiftsService {
 
     const salesSummary = await this.getShiftSalesSummary(shiftId);
     const cashSummary = await this.getShiftCashSummary(shiftId);
-    
+
     const duration = calculateShiftDuration(shift.start_time, shift.end_time);
     const duration_formatted = duration ? formatShiftDuration(duration) : undefined;
 
@@ -495,8 +494,8 @@ export class ShiftsService {
       sales_summary: {
         total_sales: salesSummary.total_sales,
         total_transactions: salesSummary.total_transactions,
-        average_sale: salesSummary.total_transactions > 0 
-          ? salesSummary.total_sales / salesSummary.total_transactions 
+        average_sale: salesSummary.total_transactions > 0
+          ? salesSummary.total_sales / salesSummary.total_transactions
           : 0,
         payment_methods: salesSummary.payment_methods
       },

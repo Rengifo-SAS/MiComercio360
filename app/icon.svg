@@ -1,0 +1,64 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con degradado -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado -->
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+
+  <!-- Edificio de tienda (POS) -->
+  <g transform="translate(24, 28)">
+    <!-- Estructura principal -->
+    <rect x="10" y="24" width="60" height="60" rx="4" fill="white" opacity="0.95"/>
+
+    <!-- Toldo característico -->
+    <path d="M 5 24 L 10 18 L 70 18 L 75 24 Z" fill="url(#accent)"/>
+    <rect x="5" y="24" width="70" height="6" fill="url(#accent)" opacity="0.9"/>
+
+    <!-- Rayas del toldo -->
+    <line x1="15" y1="18" x2="15" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+    <line x1="25" y1="18" x2="25" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+    <line x1="35" y1="18" x2="35" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+    <line x1="45" y1="18" x2="45" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+    <line x1="55" y1="18" x2="55" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+    <line x1="65" y1="18" x2="65" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+
+    <!-- Ventanas -->
+    <rect x="18" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
+    <rect x="34" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
+    <rect x="50" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
+
+    <!-- Marco de ventanas -->
+    <line x1="24" y1="34" x2="24" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="18" y1="40" x2="30" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="40" y1="34" x2="40" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="34" y1="40" x2="46" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="56" y1="34" x2="56" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="50" y1="40" x2="62" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Puerta principal -->
+    <rect x="30" y="56" width="20" height="28" rx="3" fill="url(#accent)"/>
+
+    <!-- Marco de la puerta -->
+    <line x1="40" y1="56" x2="40" y2="84" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <rect x="30" y="69" width="20" height="1.5" fill="white" opacity="0.5"/>
+
+    <!-- Manija de la puerta -->
+    <circle cx="46" cy="70" r="2" fill="white" opacity="0.9"/>
+
+    <!-- Símbolo $ en la puerta -->
+    <text x="35" y="65" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" opacity="0.7">$</text>
+  </g>
+
+  <!-- Badge POS en esquina -->
+  <circle cx="100" cy="28" r="16" fill="white" opacity="0.95"/>
+  <text x="100" y="33" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2563eb" text-anchor="middle">POS</text>
+</svg>

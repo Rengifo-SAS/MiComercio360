@@ -19,7 +19,6 @@
 # Next.js
 /.next/
 /out/
-/next-env.d.ts
 
 # Production builds
 /build
@@ -90,8 +89,8 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
-.next
+# Next.js build output - ya está en línea 20
+# .next
 
 # Nuxt.js build / generate output
 .nuxt
@@ -99,7 +98,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - NO ignorar, Next.js necesita esta carpeta
 
 # Storybook build outputs
 .out
@@ -161,7 +160,7 @@ Temporary Items
 *.sublime-workspace
 
 # TypeScript
-*.tsbuildinfo
+# *.tsbuildinfo - movido a sección de Cache de Next.js
 
 # Vercel
 .vercel
@@ -198,9 +197,78 @@ Temporary Items
 *.p12
 *.pfx
 
-# Lock files (keep package-lock.json but ignore others)
+# Lock files - IMPORTANTE: Mantener pnpm-lock.yaml para Railway
+# NO ignorar pnpm-lock.yaml - es necesario para builds reproducibles
 yarn.lock
-pnpm-lock.yaml
 
 # Local configuration files
 config.local.*
+
+# Railway
+.railway/
+
+# Scripts de limpieza temporales (si se generan)
+scripts/*.log
+
+# Archivos de depuración
+debug/
+*.debug
+
+# Archivos de monitoreo y diagnóstico temporal
+diagnostic-*.json
+health-check-*.log
+
+# Cache de Next.js y TypeScript
+.next/cache/
+.tsbuildinfo
+next-env.d.ts
+
+# PWA y Service Workers
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+public/worker-*.js.map
+
+# Archivos de configuración local de IDE
+*.code-workspace
+.history/
+
+# Archivos temporales de Office
+~$*.xlsx
+~$*.docx
+~$*.pptx
+
+# Carpetas de análisis de bundle
+.next/analyze/
+bundle-analyzer/
+
+# Archivos de profiling
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# Archivos de respaldo de base de datos
+*.dump
+*.sql.gz
+
+# Logs específicos de la aplicación
+logs/
+*.log.*
+combined.log
+error.log
+access.log
+
+# Archivos de configuración sensibles
+credentials.json
+service-account*.json
+firebase-adminsdk*.json
+
+# Archivos de testing locales
+*.test.local.*
+test-results.json
+
+# Archivos generados por builds
+build-stats.json
+bundle-stats.json

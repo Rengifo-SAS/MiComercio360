@@ -1,11 +1,11 @@
 import { supabase } from '@/lib/supabase';
-import { 
-  Numeration, 
-  NumerationHistory, 
-  CreateNumerationData, 
-  UpdateNumerationData, 
+import {
+  Numeration,
+  NumerationHistory,
+  CreateNumerationData,
+  UpdateNumerationData,
   NumerationSummary,
-  DocumentType 
+  DocumentType
 } from '@/lib/types/numerations';
 
 export class NumerationsService {
@@ -166,7 +166,7 @@ export class NumerationsService {
     try {
       // Validar si se puede eliminar
       const validation = await this.getDeletionValidationInfo(id);
-      
+
       if (!validation.canDelete) {
         return {
           success: false,
@@ -181,7 +181,7 @@ export class NumerationsService {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       return {
         success: true,
         message: 'Numeración eliminada exitosamente'
@@ -197,8 +197,8 @@ export class NumerationsService {
 
   // Obtener el siguiente número de una numeración
   static async getNextNumber(
-    companyId: string, 
-    documentType: DocumentType, 
+    companyId: string,
+    documentType: DocumentType,
     name?: string
   ): Promise<string> {
     const { data, error } = await supabase.rpc('get_next_number', {
@@ -264,14 +264,14 @@ export class NumerationsService {
 
   // Resetear una numeración (solo si no ha sido utilizada)
   static async resetNumeration(
-    id: string, 
-    newNumber: number = 0, 
+    id: string,
+    newNumber: number = 0,
     reason: string = 'Reseteo manual'
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Verificar si la numeración ha sido utilizada
       const isUsed = await this.isNumerationUsed(id);
-      
+
       if (isUsed) {
         return {
           success: false,
@@ -287,7 +287,7 @@ export class NumerationsService {
       });
 
       if (error) throw error;
-      
+
       return {
         success: data,
         message: data ? 'Numeración reseteada exitosamente' : 'Error al resetear la numeración'
@@ -310,27 +310,27 @@ export class NumerationsService {
       .order('changed_at', { ascending: false });
 
     if (error) throw error;
-    
+
     // Obtener información de usuarios por separado si hay registros
     if (data && data.length > 0) {
       const userIds = [...new Set(data.map(record => record.changed_by).filter(Boolean))];
-      
+
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name')
           .in('id', userIds);
-        
+
         // Mapear la información de usuarios a los registros
         const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        
+
         return data.map(record => ({
           ...record,
           changed_by_user: record.changed_by ? profilesMap.get(record.changed_by) : null
         }));
       }
     }
-    
+
     return data || [];
   }
 
@@ -374,7 +374,7 @@ export class NumerationsService {
 
   // Obtener numeraciones activas por tipo de documento
   static async getActiveNumerationsByType(
-    companyId: string, 
+    companyId: string,
     documentType: DocumentType
   ): Promise<Numeration[]> {
     const { data, error } = await supabase
@@ -392,7 +392,7 @@ export class NumerationsService {
   // Duplicar una numeración
   static async duplicateNumeration(id: string, newName: string): Promise<Numeration> {
     const originalNumeration = await this.getNumeration(id);
-    
+
     const duplicateData: CreateNumerationData = {
       document_type: originalNumeration.document_type,
       name: newName,
@@ -409,8 +409,8 @@ export class NumerationsService {
 
   // Validar si existe una numeración con el mismo nombre y tipo
   static async checkNumerationExists(
-    companyId: string, 
-    documentType: DocumentType, 
+    companyId: string,
+    documentType: DocumentType,
     name: string,
     excludeId?: string
   ): Promise<boolean> {
@@ -447,7 +447,7 @@ export class NumerationsService {
       return [];
     }
 
-    console.log(`Buscando numeraciones por defecto para companyId: ${companyId}`);
+
 
     try {
       // Primero verificar si existen numeraciones para esta empresa
@@ -468,14 +468,14 @@ export class NumerationsService {
         return [];
       }
 
-      console.log(`Numeraciones encontradas para la empresa:`, allNumerations);
+
 
       // Buscar la numeración específica "Facturas de Venta Principal"
       const specificNumeration = allNumerations?.find(n => n.name === 'Facturas de Venta Principal');
-      
+
       if (specificNumeration) {
-        console.log('Encontrada numeración específica:', specificNumeration);
-        
+
+
         // Obtener los datos completos de la numeración específica
         const { data: fullData, error: fullError } = await supabase
           .from('numerations')
@@ -497,13 +497,13 @@ export class NumerationsService {
       }
 
       // Si no se encuentra la numeración específica, buscar cualquier numeración activa
-      console.log('No se encontró numeración "Facturas de Venta Principal", buscando numeraciones activas...');
-      
+
+
       const activeNumerations = allNumerations?.filter(n => n.is_active) || [];
-      
+
       if (activeNumerations.length > 0) {
-        console.log('Numeraciones activas encontradas:', activeNumerations);
-        
+
+
         // Obtener los datos completos de la primera numeración activa
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('numerations')
@@ -524,7 +524,7 @@ export class NumerationsService {
         return [fallbackData];
       }
 
-      console.log('No se encontraron numeraciones activas para la empresa');
+
       return [];
     } catch (error) {
       console.error('Error in getDefaultNumerations:', {
@@ -572,7 +572,7 @@ export class NumerationsService {
 
     // Calcular estadísticas
     const totalNumbersGenerated = history?.length || 0;
-    
+
     // Agrupar por tipo de documento
     const typeStats = history?.reduce((acc, record) => {
       const numeration = Array.isArray(record.numerations) ? record.numerations[0] : record.numerations;
@@ -592,13 +592,13 @@ export class NumerationsService {
     }, {} as Record<string, { count: number; last_used: string; name: string }>) || {};
 
     const typeEntries = Object.entries(typeStats);
-    const mostUsedType = typeEntries.reduce((max, [type, stats]) => 
-      stats.count > max.count ? { type: type as DocumentType, ...stats } : max, 
+    const mostUsedType = typeEntries.reduce((max, [type, stats]) =>
+      stats.count > max.count ? { type: type as DocumentType, ...stats } : max,
       { type: null as DocumentType | null, count: 0, last_used: '', name: '' }
     );
 
-    const leastUsedType = typeEntries.reduce((min, [type, stats]) => 
-      stats.count < min.count ? { type: type as DocumentType, ...stats } : min, 
+    const leastUsedType = typeEntries.reduce((min, [type, stats]) =>
+      stats.count < min.count ? { type: type as DocumentType, ...stats } : min,
       { type: null as DocumentType | null, count: Infinity, last_used: '', name: '' }
     );
 

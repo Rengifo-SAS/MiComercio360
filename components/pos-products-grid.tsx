@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils';
 import { POSQuickProductDialog } from '@/components/pos-quick-product-dialog';
 import { ProductsService } from '@/lib/services/products-service';
 import { toast } from 'sonner';
+import { OfflineIndicator } from '@/components/offline-indicator';
+import { useOnlineStatus } from '@/lib/hooks/use-online-status';
+import { offlineStorage } from '@/lib/services/offline-storage-service';
 
 // Funciones auxiliares para manejo de unidades de medida
 const getUnitLabel = (unit: string): string => {
@@ -70,6 +73,7 @@ export function POSProductsGrid({
   );
   const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { isOnline } = useOnlineStatus();
 
   // Memoizar funciones auxiliares
   const getCartQuantity = useCallback(
@@ -110,7 +114,9 @@ export function POSProductsGrid({
 
     // Filtrar por categoría si hay una seleccionada
     if (selectedCategoryId) {
-      filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+      filtered = filtered.filter(
+        (product) => product.category_id === selectedCategoryId
+      );
     }
 
     // Si no hay búsqueda, mostrar los productos filtrados por categoría
@@ -125,43 +131,87 @@ export function POSProductsGrid({
       // Si no hay búsqueda, aplicar filtro de categoría
       let filtered = products;
       if (selectedCategoryId) {
-        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+        filtered = filtered.filter(
+          (product) => product.category_id === selectedCategoryId
+        );
       }
       setFilteredProducts(filtered);
       return;
     }
 
     setIsSearching(true);
+
+    // ESTRATEGIA: Intentar caché primero (más rápido y funciona offline)
+    // Solo ir a red si caché falla o está vacío
     try {
-      const searchResults = await ProductsService.searchProducts(
-        companyId,
-        searchTerm
-      );
+      const cached = await offlineStorage.getCachedProducts();
 
-      // Aplicar filtro de categoría a los resultados de búsqueda
-      let filtered = searchResults;
-      if (selectedCategoryId) {
-        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
-      }
-      setFilteredProducts(filtered);
-    } catch (error) {
-      console.error('Error buscando productos:', error);
-      // En caso de error, usar búsqueda local como fallback
-      let filtered = products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      if (cached && cached.length > 0) {
+        // Tenemos caché, usarlo directamente sin intentar red
+        let filtered = cached.filter(
+          (product: Product) =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
-      // Aplicar filtro de categoría
-      if (selectedCategoryId) {
-        filtered = filtered.filter(product => product.category_id === selectedCategoryId);
+        // Aplicar filtro de categoría si corresponde
+        if (selectedCategoryId) {
+          filtered = filtered.filter(
+            (p) => p.category_id === selectedCategoryId
+          );
+        }
+
+        setFilteredProducts(filtered);
+        setIsSearching(false);
+        return;
       }
-      setFilteredProducts(filtered);
-    } finally {
-      setIsSearching(false);
+    } catch (cacheError) {
+      // Si falla el caché, continuar para intentar red
+      console.warn(
+        'Cache no disponible, intentando búsqueda online:',
+        cacheError
+      );
     }
+
+    // Si no hay caché O estamos online, intentar búsqueda en servidor
+    if (isOnline) {
+      try {
+        const searchResults = await ProductsService.searchProducts(
+          companyId,
+          searchTerm
+        );
+
+        // Aplicar filtro de categoría a los resultados de búsqueda
+        let filtered = searchResults;
+        if (selectedCategoryId) {
+          filtered = filtered.filter(
+            (product) => product.category_id === selectedCategoryId
+          );
+        }
+        setFilteredProducts(filtered);
+        setIsSearching(false);
+        return;
+      } catch (error) {
+        console.warn('Error en búsqueda online, usando fallback:', error);
+      }
+    }
+
+    // Fallback final: usar los productos actualmente en estado
+    let filtered = products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (selectedCategoryId) {
+      filtered = filtered.filter(
+        (product) => product.category_id === selectedCategoryId
+      );
+    }
+    setFilteredProducts(filtered);
+    setIsSearching(false);
   };
 
   // Auto-focus en el campo de búsqueda para códigos de barras
@@ -268,8 +318,8 @@ export function POSProductsGrid({
           setSearchQuery(scannedCode);
 
           // Buscar producto por código de barras
-          const product = products.find((p) =>
-            p.barcode === scannedCode || p.sku === scannedCode
+          const product = products.find(
+            (p) => p.barcode === scannedCode || p.sku === scannedCode
           );
 
           if (product) {
@@ -319,7 +369,6 @@ export function POSProductsGrid({
     };
   }, [searchTimeout]);
 
-
   return (
     <div
       className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
@@ -331,6 +380,8 @@ export function POSProductsGrid({
         className="flex items-center gap-2 p-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0"
         role="search"
       >
+        {/* Indicador de estado offline */}
+        <OfflineIndicator />
         <div className="relative flex-1">
           {/* Icono de búsqueda o código de barras según el modo */}
           {isScanning ? (
@@ -349,16 +400,16 @@ export function POSProductsGrid({
             ref={searchInputRef}
             placeholder={
               isScanning
-                ? "Escanee el código de barras del producto..."
-                : "Buscar por nombre, código de barras o SKU..."
+                ? 'Escanee el código de barras del producto...'
+                : 'Buscar por nombre, código de barras o SKU...'
             }
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={cn(
-              "pl-11 pr-10 text-sm h-10 rounded-lg transition-all",
+              'pl-11 pr-10 text-sm h-10 rounded-lg transition-all',
               isScanning
-                ? "bg-teal-50 dark:bg-teal-900/20 border-2 border-teal-500 focus:ring-teal-500 focus:border-teal-600"
-                : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                ? 'bg-teal-50 dark:bg-teal-900/20 border-2 border-teal-500 focus:ring-teal-500 focus:border-teal-600'
+                : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
             )}
             aria-label="Buscar productos por nombre, SKU o código de barras"
             autoComplete="off"
@@ -394,7 +445,7 @@ export function POSProductsGrid({
             <button
               type="button"
               className={cn(
-                "h-10 w-10 flex items-center justify-center transition-colors border-r border-gray-200 dark:border-gray-600",
+                'h-10 w-10 flex items-center justify-center transition-colors border-r border-gray-200 dark:border-gray-600',
                 viewMode === 'grid'
                   ? 'bg-teal-600 text-white'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -407,7 +458,7 @@ export function POSProductsGrid({
             <button
               type="button"
               className={cn(
-                "h-10 w-10 flex items-center justify-center transition-colors",
+                'h-10 w-10 flex items-center justify-center transition-colors',
                 viewMode === 'compact'
                   ? 'bg-teal-600 text-white'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -424,16 +475,20 @@ export function POSProductsGrid({
             variant={isScanning ? 'default' : 'outline'}
             size="sm"
             className={cn(
-              "h-10 px-3 rounded-md font-medium transition-all gap-1.5",
+              'h-10 px-3 rounded-md font-medium transition-all gap-1.5',
               isScanning
                 ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md border-teal-600'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             )}
             onClick={handleScannerToggle}
-            aria-label={isScanning ? 'Desactivar modo escáner' : 'Activar modo escáner de códigos de barras'}
+            aria-label={
+              isScanning
+                ? 'Desactivar modo escáner'
+                : 'Activar modo escáner de códigos de barras'
+            }
             aria-pressed={isScanning}
           >
-            <Barcode className={cn("h-4 w-4", isScanning && "animate-pulse")} />
+            <Barcode className={cn('h-4 w-4', isScanning && 'animate-pulse')} />
             <span className="hidden sm:inline text-xs">
               {isScanning ? 'Escáner ON' : 'Escáner'}
             </span>
@@ -445,7 +500,13 @@ export function POSProductsGrid({
             size="sm"
             className="h-10 px-3 rounded-md font-medium hover:bg-teal-50 hover:text-teal-700 hover:border-teal-400 dark:hover:bg-teal-900/20 dark:hover:border-teal-600 transition-all gap-1.5 text-gray-700 dark:text-gray-300"
             onClick={() => setShowQuickProductDialog(true)}
-            aria-label="Crear nuevo producto"
+            disabled={!isOnline}
+            aria-label={
+              isOnline
+                ? 'Crear nuevo producto'
+                : 'Crear producto no disponible sin conexión'
+            }
+            title={!isOnline ? 'Esta función requiere conexión a internet' : ''}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden lg:inline text-xs">Nuevo</span>
@@ -546,7 +607,9 @@ export function POSProductsGrid({
                     ) : (
                       <div className="absolute top-1 right-1 flex items-center gap-1 bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded z-10">
                         <AlertCircle className="h-3 w-3 text-amber-500" />
-                        <p className="text-[9px] text-gray-600 dark:text-gray-400 m-0">Agotado</p>
+                        <p className="text-[9px] text-gray-600 dark:text-gray-400 m-0">
+                          Agotado
+                        </p>
                       </div>
                     )}
 
@@ -563,7 +626,9 @@ export function POSProductsGrid({
 
                   {/* Precio */}
                   <p className="text-center text-sm font-semibold text-gray-900 dark:text-gray-100 pb-2">
-                    {formatCurrency(parseFloat(product.selling_price.toString()))}
+                    {formatCurrency(
+                      parseFloat(product.selling_price.toString())
+                    )}
                   </p>
                 </div>
               );
@@ -571,7 +636,11 @@ export function POSProductsGrid({
           </div>
         ) : (
           /* Vista Compacta - Lista */
-          <div className="p-4 sm:p-6 space-y-2" role="list" aria-label="Catálogo de productos">
+          <div
+            className="p-4 sm:p-6 space-y-2"
+            role="list"
+            aria-label="Catálogo de productos"
+          >
             {filteredProducts.map((product) => {
               const cartQuantity = getCartQuantity(product.id);
               const inventoryStatus = getInventoryStatus(product);
@@ -617,7 +686,9 @@ export function POSProductsGrid({
                       {/* Precio */}
                       <div className="flex-shrink-0 text-right">
                         <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
-                          {formatCurrency(parseFloat(product.selling_price.toString()))}
+                          {formatCurrency(
+                            parseFloat(product.selling_price.toString())
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           por {getUnitLabel(product.unit)}

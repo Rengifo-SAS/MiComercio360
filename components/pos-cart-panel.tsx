@@ -177,7 +177,10 @@ export function POSCartPanel({
       {/* Header - Moderno y Profesional */}
       <header className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white flex-shrink-0 shadow-md">
         <h2 className="flex items-center text-base sm:text-lg font-bold">
-          <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 mr-2" aria-hidden="true" />
+          <ShoppingCart
+            className="h-5 w-5 sm:h-6 sm:w-6 mr-2"
+            aria-hidden="true"
+          />
           Carrito de Compra
         </h2>
         <div className="flex items-center space-x-2">
@@ -195,7 +198,10 @@ export function POSCartPanel({
       >
         {/* Cliente - Destacado */}
         <div>
-          <Label htmlFor="customer" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1">
+          <Label
+            htmlFor="customer"
+            className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1"
+          >
             <User className="h-3 w-3 mr-1" />
             Cliente
           </Label>
@@ -244,7 +250,10 @@ export function POSCartPanel({
         {/* Numeración y Lista de precio */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="numeration" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1">
+            <Label
+              htmlFor="numeration"
+              className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 flex items-center mb-1"
+            >
               <Receipt className="h-3 w-3 mr-1" />
               Numeración
             </Label>
@@ -264,7 +273,11 @@ export function POSCartPanel({
               </SelectTrigger>
               <SelectContent>
                 {numerations.map((numeration) => (
-                  <SelectItem key={numeration.id} value={numeration.id} className="text-[11px]">
+                  <SelectItem
+                    key={numeration.id}
+                    value={numeration.id}
+                    className="text-[11px]"
+                  >
                     {numeration.name}
                   </SelectItem>
                 ))}
@@ -272,7 +285,10 @@ export function POSCartPanel({
             </Select>
           </div>
           <div>
-            <Label htmlFor="invoice-type" className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1 block">
+            <Label
+              htmlFor="invoice-type"
+              className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1 block"
+            >
               Lista precio
             </Label>
             <Select value={invoiceType} onValueChange={setInvoiceType}>
@@ -284,7 +300,9 @@ export function POSCartPanel({
                 <SelectValue placeholder="General" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="local" className="text-[11px]">General</SelectItem>
+                <SelectItem value="local" className="text-[11px]">
+                  General
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -516,17 +534,23 @@ export function POSCartPanel({
         <div className="mb-4 space-y-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(totals.subtotal)}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {formatCurrency(totals.subtotal)}
+            </span>
           </div>
-          {totals.total_iva > 0 && (
+          {totals.iva_amount > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">IVA:</span>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(totals.total_iva)}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {formatCurrency(totals.iva_amount)}
+              </span>
             </div>
           )}
           <Separator className="my-2" />
           <div className="flex items-center justify-between">
-            <span className="text-base font-bold text-gray-900 dark:text-gray-100">Total:</span>
+            <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Total:
+            </span>
             <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
               {formatCurrency(totals.total_amount)}
             </span>

@@ -58,49 +58,36 @@ export function SalesChart({ companyId }: SalesChartProps) {
   const fetchSalesData = async (periodType: PeriodType) => {
     setLoading(true);
     try {
-      // Calcular fechas según el período específico
+      // Calcular fechas según el período
       const now = new Date();
       let fromDate: Date;
       let toDate: Date = new Date();
 
       switch (periodType) {
         case 'week':
-          // Semana actual (lunes a domingo)
           const startOfWeek = new Date(now);
           const dayOfWeek = now.getDay();
-          const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Si es domingo, retroceder 6 días
+          const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
           startOfWeek.setDate(now.getDate() + daysToMonday);
           startOfWeek.setHours(0, 0, 0, 0);
           fromDate = startOfWeek;
-
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(startOfWeek.getDate() + 6);
-          endOfWeek.setHours(23, 59, 59, 999);
-          toDate = endOfWeek;
           break;
 
         case 'month':
-          // Mes actual (primer día al último día del mes)
           fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
           fromDate.setHours(0, 0, 0, 0);
-
-          toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          toDate.setHours(23, 59, 59, 999);
           break;
 
         case 'year':
-          // Año actual (1 enero al 31 diciembre)
           fromDate = new Date(now.getFullYear(), 0, 1);
           fromDate.setHours(0, 0, 0, 0);
-
-          toDate = new Date(now.getFullYear(), 11, 31);
-          toDate.setHours(23, 59, 59, 999);
           break;
 
         default:
-          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
+      // Consulta optimizada - solo traer datos necesarios
       const { data: sales, error } = await supabase
         .from('sales')
         .select('total_amount, created_at')
@@ -115,9 +102,9 @@ export function SalesChart({ companyId }: SalesChartProps) {
         return;
       }
 
-      // Agrupar datos según el período específico
+      // Agrupar datos eficientemente
       const groupedData: {
-        [key: string]: { sales: number; amount: number; transactions: number };
+        [key: string]: { amount: number; count: number };
       } = {};
 
       sales?.forEach((sale) => {
@@ -126,15 +113,10 @@ export function SalesChart({ companyId }: SalesChartProps) {
 
         switch (periodType) {
           case 'week':
-            // Agrupar por día de la semana
-            key = date.toISOString().split('T')[0];
-            break;
           case 'month':
-            // Agrupar por día del mes
             key = date.toISOString().split('T')[0];
             break;
           case 'year':
-            // Agrupar por mes del año
             key = date.toISOString().substring(0, 7); // YYYY-MM
             break;
           default:
@@ -142,21 +124,20 @@ export function SalesChart({ companyId }: SalesChartProps) {
         }
 
         if (!groupedData[key]) {
-          groupedData[key] = { sales: 0, amount: 0, transactions: 0 };
+          groupedData[key] = { amount: 0, count: 0 };
         }
 
-        groupedData[key].sales += Number(sale.total_amount);
         groupedData[key].amount += Number(sale.total_amount);
-        groupedData[key].transactions += 1;
+        groupedData[key].count += 1;
       });
 
-      // Convertir a array y ordenar
+      // Convertir a array
       const chartDataArray = Object.entries(groupedData)
         .map(([date, data]) => ({
           date,
-          sales: data.sales,
+          sales: data.amount,
           amount: data.amount,
-          transactions: data.transactions,
+          transactions: data.count,
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
 

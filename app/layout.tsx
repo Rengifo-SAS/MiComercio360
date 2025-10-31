@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: 'Sistema POS - Colombia',
   description: 'Sistema de Punto de Venta para empresas colombianas',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Sistema POS',
+  },
 };
 
 const geistSans = Geist({

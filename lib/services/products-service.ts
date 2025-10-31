@@ -110,6 +110,57 @@ export class ProductsService {
   }
 
   /**
+   * Obtiene TODOS los productos de la empresa en páginas para cache offline.
+   * Selecciona sólo los campos necesarios para POS y cálculo.
+   */
+  static async getAllProductsForCache(companyId: string): Promise<Product[]> {
+    const PAGE_SIZE = 500; // tamaño grande para reducir rondas
+    let offset = 0;
+    let all: any[] = [];
+
+    try {
+      while (true) {
+        const { data, error } = await this.supabase
+          .from('products')
+          .select(`
+            id, sku, barcode, name, description,
+            cost_price, selling_price, unit,
+            iva_rate, ica_rate, retencion_rate,
+            fiscal_classification, excise_tax,
+            category_id, warehouse_id, cost_center_id,
+            is_active, created_at, updated_at, company_id,
+            inventory:inventory(quantity)
+          `)
+          .eq('company_id', companyId)
+          .order('name', { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error('Error paginando productos para cache:', error);
+          break;
+        }
+
+        const page = (data || []).map((p: any) => ({
+          ...p,
+          available_quantity: p.inventory?.reduce((s: number, inv: any) => s + (inv.quantity || 0), 0) || 0,
+        }));
+
+        all = all.concat(page);
+
+        if (!data || data.length < PAGE_SIZE) {
+          break; // última página
+        }
+        offset += PAGE_SIZE;
+      }
+
+      return all as Product[];
+    } catch (e) {
+      console.error('Error obteniendo productos para cache:', e);
+      return all as Product[];
+    }
+  }
+
+  /**
    * Obtiene un producto por ID con todas sus relaciones
    */
   static async getProductById(id: string, companyId?: string): Promise<Product | null> {

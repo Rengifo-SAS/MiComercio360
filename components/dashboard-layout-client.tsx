@@ -4,6 +4,7 @@ import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
 import { AuthButtonClient } from '@/components/auth-button-client';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { OfflineNavigationGuard } from '@/components/offline-navigation-guard';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { LogOut, User, Settings, Bell } from 'lucide-react';
+import { LogOut, User, Settings, Building2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { DefaultCompanyLogo } from '@/components/default-company-logo';
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
@@ -32,6 +35,7 @@ function DashboardContent({
   userRole,
 }: DashboardLayoutClientProps) {
   const { isCollapsed, isHovered } = useSidebar();
+  const pathname = usePathname();
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,9 +53,9 @@ function DashboardContent({
       >
         {/* Top Bar */}
         <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex h-14 items-center justify-between px-6">
-            {/* Left side - Page title and breadcrumb */}
-            <div className="flex items-center gap-3">
+          <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+            {/* Left side - Page title */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <PageTitle />
             </div>
 
@@ -64,7 +68,10 @@ function DashboardContent({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          {children}
+          <OfflineNavigationGuard currentPath={pathname} />
+        </main>
       </div>
     </div>
   );
@@ -101,17 +108,16 @@ function PageTitle() {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <h1 className="text-lg font-semibold text-foreground">
-        {getPageTitle(pathname)}
-      </h1>
-    </div>
+    <h1 className="text-lg font-semibold text-foreground truncate">
+      {getPageTitle(pathname)}
+    </h1>
   );
 }
 
 // Componente para el menú de usuario
 function UserMenu() {
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -125,19 +131,21 @@ function UserMenu() {
       setUser(userData.user);
 
       if (userData.user) {
-        // Obtener perfil del usuario
-        const { data: profile } = await supabase
+        // Obtener perfil del usuario con más información
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('company_id')
+          .select('company_id, full_name, role')
           .eq('id', userData.user.id)
           .single();
 
-        if (profile?.company_id) {
+        setProfile(profileData);
+
+        if (profileData?.company_id) {
           // Obtener datos de la empresa incluyendo el logo
           const { data: companyData } = await supabase
             .from('companies')
-            .select('name, logo_url')
-            .eq('id', profile.company_id)
+            .select('name, logo_url, tax_id')
+            .eq('id', profileData.company_id)
             .single();
 
           setCompany(companyData);
@@ -165,58 +173,138 @@ function UserMenu() {
   };
 
   if (loading) {
-    return <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />;
+    return <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />;
   }
 
   if (!user) {
     return null;
   }
 
-  const userInitials = user.email?.charAt(0).toUpperCase() || 'U';
-  const companyInitials = company?.name?.charAt(0).toUpperCase() || 'E';
+  const userName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+  const userInitials = userName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const getRoleBadge = (role: string) => {
+    const roles: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+      admin: { label: 'Administrador', variant: 'default' },
+      manager: { label: 'Gerente', variant: 'secondary' },
+      employee: { label: 'Empleado', variant: 'outline' },
+    };
+    return roles[role] || { label: 'Usuario', variant: 'outline' };
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-10 gap-2 px-2 hover:bg-accent">
+          <Avatar className="h-8 w-8 border-2 border-primary/20">
             <AvatarImage
-              src={company?.logo_url || user.user_metadata?.avatar_url}
-              alt={company?.name || user.email}
+              src={user.user_metadata?.avatar_url}
+              alt={userName}
             />
-            <AvatarFallback className="text-xs">
-              {company?.logo_url ? companyInitials : userInitials}
+            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+              {userInitials}
             </AvatarFallback>
           </Avatar>
+          <div className="hidden sm:flex flex-col items-start">
+            <span className="text-sm font-medium">{userName}</span>
+            <span className="text-xs text-muted-foreground">
+              {profile?.role ? getRoleBadge(profile.role).label : 'Usuario'}
+            </span>
+          </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-72" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.email}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.user_metadata?.full_name || 'Usuario'}
-            </p>
-            {company?.name && (
-              <p className="text-xs leading-none text-muted-foreground">
-                {company.name}
+          <div className="flex items-center gap-3 p-2">
+            <Avatar className="h-12 w-12 border-2 border-primary/20">
+              <AvatarImage
+                src={user.user_metadata?.avatar_url}
+                alt={userName}
+              />
+              <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col space-y-1 flex-1 min-w-0">
+              <p className="text-sm font-semibold leading-none truncate">
+                {userName}
               </p>
-            )}
+              <p className="text-xs leading-none text-muted-foreground truncate">
+                {user.email}
+              </p>
+              {profile?.role && (
+                <Badge
+                  variant={getRoleBadge(profile.role).variant}
+                  className="w-fit text-xs mt-1"
+                >
+                  {getRoleBadge(profile.role).label}
+                </Badge>
+              )}
+            </div>
           </div>
         </DropdownMenuLabel>
+
+        {company && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-4 py-2 bg-muted/50">
+              <div className="flex items-center gap-2">
+                {company.logo_url ? (
+                  <div className="relative h-8 w-8 rounded overflow-hidden bg-background border">
+                    <img
+                      src={company.logo_url}
+                      alt={company.name}
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        // Si falla la carga, mostrar logo por defecto
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback = target.parentElement?.querySelector('.company-logo-fallback') as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = 'block';
+                        }
+                      }}
+                    />
+                    <div className="company-logo-fallback hidden h-full w-full absolute top-0 left-0">
+                      <DefaultCompanyLogo className="h-full w-full" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-8 w-8 rounded overflow-hidden">
+                    <DefaultCompanyLogo className="h-full w-full" />
+                  </div>
+                )}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <p className="text-xs font-medium truncate">{company.name}</p>
+                  {company.tax_id && (
+                    <p className="text-xs text-muted-foreground">
+                      NIT: {company.tax_id}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleProfileClick}>
           <User className="mr-2 h-4 w-4" />
-          <span>Perfil</span>
+          <span>Mi Perfil</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSettingsClick}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Configuración</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
+        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Cerrar sesión</span>
+          <span>Cerrar Sesión</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

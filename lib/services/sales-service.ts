@@ -185,8 +185,61 @@ export class SalesService {
 
     const totals = calculateSaleTotals(items, saleInfo.discount_amount || 0, productsForCalculation);
 
+    // Si no se proporciona customer_id, obtener cliente "Consumidor Final/Contado" por defecto
+    let customerIdToUse = saleInfo.customer_id;
+    if (!customerIdToUse) {
+      try {
+        // Intentar buscar por varios nombres comunes de cliente por defecto
+        const searchTerms = ['%consumidor%final%', '%contado%', '%generico%', '%general%', '%publico%'];
+        let defaultCustomer = null;
+
+        for (const term of searchTerms) {
+          const { data } = await this.supabase
+            .from('customers')
+            .select('id')
+            .eq('company_id', companyId)
+            .ilike('name', term)
+            .limit(1)
+            .maybeSingle();
+
+          if (data?.id) {
+            defaultCustomer = data;
+            break;
+          }
+        }
+
+        if (defaultCustomer?.id) {
+          customerIdToUse = defaultCustomer.id;
+        }
+      } catch (err) {
+
+      }
+    }
+
+    // Si no se proporciona numeration_id, obtener la numeración por defecto del servidor
+    let numerationIdToUse = saleInfo.numeration_id;
+    if (!numerationIdToUse) {
+      try {
+        const { data: defaultNumeration } = await this.supabase
+          .from('numerations')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('type', 'invoice')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (defaultNumeration?.id) {
+          numerationIdToUse = defaultNumeration.id;
+        }
+      } catch (err) {
+
+      }
+    }
+
     // Generar número de venta usando la numeración específica si se proporciona
-    const saleNumber = await this.generateSaleNumber(companyId, saleInfo.numeration_id);
+    const saleNumber = await this.generateSaleNumber(companyId, numerationIdToUse);
 
     // Mapear payment_type a valores válidos para la tabla sales
     const mapPaymentMethod = (paymentType: string): string => {
@@ -205,6 +258,8 @@ export class SalesService {
       company_id: companyId,
       shift_id: activeShift?.id, // Asociar con el turno activo
       sale_number: saleNumber,
+      customer_id: customerIdToUse, // Usar el cliente obtenido o proporcionado
+      numeration_id: numerationIdToUse, // Usar la numeración obtenida o proporcionada
       subtotal: totals.subtotal,
       tax_amount: totals.tax_amount,
       discount_amount: totals.discount_amount,
@@ -216,6 +271,14 @@ export class SalesService {
       payment_change: saleInfo.payment_change
     };
 
+    // Eliminar customer_id y numeration_id si quedaron undefined (para evitar error de FK)
+    if (!saleInsertData.customer_id) {
+      delete (saleInsertData as any).customer_id;
+    }
+    if (!saleInsertData.numeration_id) {
+      delete (saleInsertData as any).numeration_id;
+    }
+
     // Crear la venta
     const { data: sale, error: saleError } = await this.supabase
       .from('sales')
@@ -225,7 +288,18 @@ export class SalesService {
 
     if (saleError) {
       console.error('Error creando venta:', saleError);
-      throw new Error('Error al crear la venta');
+
+      // Verificar si es un error de conectividad
+      if (saleError.message && (
+        saleError.message.includes('Failed to fetch') ||
+        saleError.message.includes('NetworkError') ||
+        saleError.message.includes('ERR_NAME_NOT_RESOLVED') ||
+        saleError.code === 'PGRST301' // Connection timeout
+      )) {
+        throw new Error('Error de conexión: No se pudo conectar al servidor');
+      }
+
+      throw new Error(`Error al crear la venta: ${saleError.message}`);
     }
 
     // Crear los items de la venta
@@ -297,7 +371,7 @@ export class SalesService {
           throw txError;
         }
       } else {
-        console.warn('No se encontró cuenta Efectivo POS para registrar el ingreso.');
+
       }
     } catch (txError) {
       console.error('Error registrando transacción de cuenta para la venta:', txError);
@@ -649,31 +723,119 @@ export class SalesService {
     }));
   }
 
-  // Generar número de venta usando el servicio de numeraciones
-  private static async generateSaleNumber(companyId: string, numerationId?: string): Promise<string> {
+  // Generar número de venta usando el servicio de numeraciones (disponible para uso desde POS offline)
+  public static async generateSaleNumber(companyId: string, numerationId?: string): Promise<string> {
     try {
       if (numerationId) {
-        // Usar la numeración específica proporcionada
-        const numeration = await NumerationsService.getNumeration(numerationId);
-        const saleNumber = await NumerationsService.getNextNumber(
-          companyId,
-          'invoice', // Tipo de documento para ventas
-          numeration.name
-        );
-        return saleNumber;
+        // Usar la numeración específica proporcionada si existe
+        try {
+          const numeration = await NumerationsService.getNumeration(numerationId);
+          const saleNumber = await NumerationsService.getNextNumber(
+            companyId,
+            'invoice', // Tipo de documento para ventas
+            numeration.name
+          );
+          return saleNumber;
+        } catch (e: any) {
+          // Si no existe (0 rows / PGRST116) o 406, intentar usar cache offline
+          const code = e?.code || '';
+          const msg = e?.message || '';
+          const isNoRows = code === 'PGRST116' || /0 rows|Cannot coerce/i.test(msg);
+          const is406 = msg.includes('406') || code === '406';
+          const isOffline = msg.includes('Failed to fetch') || code === '';
+
+          if (isNoRows || is406 || isOffline) {
+
+            // Intentar generar número desde cache offline
+            const offlineNumber = await this.generateOfflineSaleNumber(companyId, numerationId);
+            if (offlineNumber) {
+              return offlineNumber;
+            }
+
+            // Si no hay cache, usar fallback
+
+          } else {
+
+          }
+
+          // Último fallback: timestamp
+          return `SALE-${Date.now()}`;
+        }
       } else {
         // Usar la numeración por defecto
-        const saleNumber = await NumerationsService.getNextNumber(
-          companyId,
-          'invoice', // Tipo de documento para ventas
-          'Facturas de Venta Principal' // Nombre de la numeración por defecto
-        );
-        return saleNumber;
+        try {
+          const saleNumber = await NumerationsService.getNextNumber(
+            companyId,
+            'invoice', // Tipo de documento para ventas
+            'Facturas de Venta Principal' // Nombre de la numeración por defecto
+          );
+          return saleNumber;
+        } catch (error: any) {
+          const msg = error?.message || '';
+          const isOffline = msg.includes('Failed to fetch') || error?.code === '';
+
+          if (isOffline) {
+            const offlineNumber = await this.generateOfflineSaleNumber(companyId);
+            if (offlineNumber) {
+              return offlineNumber;
+            }
+          }
+
+          console.error('Error generando número de venta:', error);
+          return `SALE-${Date.now()}`;
+        }
       }
     } catch (error) {
       console.error('Error generando número de venta:', error);
       // Fallback: usar timestamp si hay error
       return `SALE-${Date.now()}`;
+    }
+  }
+
+  /**
+   * Genera un número de venta usando numeraciones cacheadas (modo offline)
+   */
+  private static async generateOfflineSaleNumber(
+    companyId: string,
+    numerationId?: string
+  ): Promise<string | null> {
+    try {
+      const { offlineStorage } = await import('./offline-storage-service');
+
+      let numeration: any = null;
+
+      if (numerationId) {
+        // Buscar la numeración específica en cache
+        numeration = await offlineStorage.getCachedNumeration(numerationId);
+      } else {
+        // Buscar la primera numeración activa de tipo invoice
+        const numerations = await offlineStorage.getCachedNumerations(companyId);
+        numeration = numerations.find(
+          (n) => n.type === 'invoice' && n.is_active === true
+        );
+      }
+
+      if (!numeration) {
+        return null;
+      }
+
+      // Obtener el siguiente número
+      const currentNumber = numeration.offline_counter || numeration.current_number || 0;
+      const nextNumber = currentNumber + 1;
+
+      // Formatear el número según la configuración de la numeración
+      const prefix = numeration.prefix || 'FAC';
+      const paddedNumber = String(nextNumber).padStart(6, '0');
+      const saleNumber = `${prefix}${paddedNumber}`;
+
+      // Actualizar el contador en el cache
+      await offlineStorage.updateNumerationCounter(numeration.id, nextNumber);
+
+
+      return saleNumber;
+    } catch (error) {
+      console.error('Error generando número offline:', error);
+      return null;
     }
   }
 
