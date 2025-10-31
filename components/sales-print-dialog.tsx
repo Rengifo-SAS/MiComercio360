@@ -34,7 +34,7 @@ interface SalesPrintDialogProps {
   companyId: string;
 }
 
-type PaperSize = 'letter' | 'thermal-80mm';
+type PaperSize = 'letter' | 'thermal-80mm' | 'half-letter';
 
 export function SalesPrintDialog({
   open,
@@ -44,7 +44,7 @@ export function SalesPrintDialog({
 }: SalesPrintDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paperSize, setPaperSize] = useState<PaperSize>('letter');
+  const [paperSize, setPaperSize] = useState<PaperSize>('thermal-80mm');
 
   if (!sale) return null;
 
@@ -56,6 +56,8 @@ export function SalesPrintDialog({
 
     try {
       await SalesPrintService.printSale(sale, companyId, paperSize);
+      // Cerrar el diálogo después de imprimir exitosamente
+      onOpenChange(false);
     } catch (err) {
       console.error('Error imprimiendo venta:', err);
       setError(
@@ -111,6 +113,8 @@ export function SalesPrintDialog({
 
     try {
       await SalesPrintService.generatePDF(sale, companyId, paperSize);
+      // Cerrar el diálogo después de descargar exitosamente
+      onOpenChange(false);
     } catch (err) {
       console.error('Error descargando factura:', err);
       setError(
@@ -180,7 +184,7 @@ export function SalesPrintDialog({
               onValueChange={(value: string) =>
                 setPaperSize(value as PaperSize)
               }
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              className="grid grid-cols-1 md:grid-cols-3 gap-4"
             >
               <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer">
                 <RadioGroupItem value="letter" id="letter" />
@@ -190,7 +194,22 @@ export function SalesPrintDialog({
                     <div>
                       <div className="font-medium">Tamaño Carta</div>
                       <div className="text-sm text-muted-foreground">
-                        8.5" x 11" - Para impresoras estándar
+                        8.5" x 11" - Impresoras estándar
+                      </div>
+                    </div>
+                  </div>
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer">
+                <RadioGroupItem value="half-letter" id="half-letter" />
+                <Label htmlFor="half-letter" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-purple-600" />
+                    <div>
+                      <div className="font-medium">Media Carta</div>
+                      <div className="text-sm text-muted-foreground">
+                        5.5" x 8.5" - Formato compacto
                       </div>
                     </div>
                   </div>
@@ -203,9 +222,9 @@ export function SalesPrintDialog({
                   <div className="flex items-center gap-3">
                     <Receipt className="h-5 w-5 text-green-600" />
                     <div>
-                      <div className="font-medium">Terminal de 80mm</div>
+                      <div className="font-medium">Ticket 80mm</div>
                       <div className="text-sm text-muted-foreground">
-                        80mm x ∞ - Para impresoras térmicas
+                        80mm x ∞ - Impresoras térmicas
                       </div>
                     </div>
                   </div>
@@ -288,15 +307,16 @@ export function SalesPrintDialog({
               • La impresión utilizará la plantilla configurada para facturas
             </p>
             <p>
-              • Si no hay plantilla configurada, se usará el formato por defecto
+              • Si no hay plantilla configurada, se usará el formato profesional por defecto
             </p>
             <p>
-              • <strong>Tamaño Carta:</strong> Ideal para facturas detalladas
-              con toda la información
+              • <strong>Tamaño Carta:</strong> Ideal para facturas detalladas con toda la información
             </p>
             <p>
-              • <strong>Terminal 80mm:</strong> Perfecto para tickets rápidos y
-              comprobantes
+              • <strong>Media Carta:</strong> Formato compacto para facturas estándar
+            </p>
+            <p>
+              • <strong>Ticket 80mm:</strong> Perfecto para tickets rápidos y comprobantes POS
             </p>
             <p>
               • Asegúrate de que tu impresora esté configurada correctamente

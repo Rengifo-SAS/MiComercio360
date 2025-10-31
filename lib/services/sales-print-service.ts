@@ -36,7 +36,7 @@ export class SalesPrintService {
   }
 
   // Generar HTML para impresión de venta
-  static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
+  static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<string> {
     try {
 
 
@@ -93,7 +93,7 @@ export class SalesPrintService {
   }
 
   // Procesar plantilla con datos de la venta
-  private static processTemplate(template: PrintTemplate, sale: Sale, company: any, paperSize: 'letter' | 'thermal-80mm' = 'letter'): string {
+  private static processTemplate(template: PrintTemplate, sale: Sale, company: any, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): string {
     let html = template.body_template || '';
 
     // Reemplazar variables de la empresa
@@ -217,7 +217,7 @@ export class SalesPrintService {
   }
 
   // Generar HTML por defecto si no hay plantilla
-  private static async generateDefaultPrintHTML(sale: Sale, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
+  private static async generateDefaultPrintHTML(sale: Sale, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<string> {
     // Obtener datos de la empresa con preferencia por cache si estamos offline
     let companyData = null;
     const isBrowser = typeof window !== 'undefined';
@@ -257,261 +257,1339 @@ export class SalesPrintService {
         }
       }
     }
-    // Estilos CSS optimizados para impresora térmica 80mm con letras MUY grandes y legibles
+    // Estilos CSS profesionales y optimizados según el tamaño de papel
     const styles = paperSize === 'thermal-80mm' ? `
-      body {
-        font-family: 'Courier New', monospace;
+      /* ===== ESTILOS PROFESIONALES PARA TICKET TÉRMICO 80MM ===== */
+      * {
         margin: 0;
-        padding: 2px;
-        color: #000;
-        font-size: 16px;
-        line-height: 1.4;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', 'Helvetica', sans-serif;
+        width: 80mm;
         max-width: 80mm;
         margin: 0 auto;
+        padding: 3mm;
+        color: #000;
+        background: #fff;
+        font-size: 9pt;
+        line-height: 1.4;
       }
-      
-      /* Header optimizado */
+
+      /* Header profesional */
       .header {
         text-align: center;
-        margin-bottom: 12px;
+        margin-bottom: 8mm;
+        padding-bottom: 4mm;
+        border-bottom: 2px dashed #333;
       }
-      
-      /* Información de empresa optimizada con letras MUY grandes */
+
+      /* Logo placeholder */
+      .logo-space {
+        height: 15mm;
+        margin-bottom: 3mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Información de empresa */
       .company-info {
         text-align: center;
-        margin-bottom: 12px;
-        font-size: 16px;
-        line-height: 1.3;
+        margin-bottom: 3mm;
       }
-      .company-info div {
-        margin-bottom: 3px;
-      }
+
       .company-name {
-        font-size: 24px;
+        font-size: 13pt;
         font-weight: bold;
-        margin-bottom: 6px;
+        margin-bottom: 2mm;
         text-transform: uppercase;
-        letter-spacing: 2px;
-      }
-      .company-names {
-        font-size: 16px;
-        margin-bottom: 4px;
-        font-weight: bold;
-      }
-      .company-num {
-        font-size: 16px;
-        margin-bottom: 4px;
-        font-weight: bold;
-      }
-      .company-address {
-        font-size: 15px;
-        margin-bottom: 3px;
+        letter-spacing: 0.5px;
         line-height: 1.2;
       }
+
+      .company-nit {
+        font-size: 9pt;
+        font-weight: 600;
+        margin-bottom: 1.5mm;
+      }
+
+      .company-address,
       .company-contact {
-        font-size: 15px;
-        margin-bottom: 3px;
+        font-size: 8pt;
+        line-height: 1.3;
+        margin-bottom: 1mm;
+        color: #333;
       }
+
       .company-regime {
-        font-size: 15px;
-        margin-bottom: 8px;
-        font-weight: bold;
+        font-size: 8pt;
+        margin-top: 2mm;
+        padding: 1.5mm 0;
+        background: #f5f5f5;
+        font-weight: 600;
       }
-      
-      /* Información de venta optimizada */
-      .sale-info {
-        margin-bottom: 12px;
-        font-size: 16px;
+
+      /* Información de factura */
+      .invoice-box {
+        border: 3px solid #000;
+        padding: 3mm;
+        margin: 3mm 0;
         text-align: center;
+        border-radius: 2mm;
       }
-      .sale-info div {
-        margin-bottom: 4px;
-      }
-      .sale-number {
-        font-size: 22px;
+
+      .invoice-title {
+        font-size: 10pt;
         font-weight: bold;
-        margin-bottom: 6px;
+        margin-bottom: 1mm;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        color: #000;
       }
-      .sale-date {
-        font-size: 16px;
-      }
-      
-      /* Información de cliente optimizada */
-      .client-info {
-        margin-bottom: 12px;
-        font-size: 16px;
-        text-align: center;
-      }
-      .client-info div {
-        margin-bottom: 4px;
-      }
-      .client-label {
+
+      .invoice-number {
+        font-size: 14pt;
         font-weight: bold;
+        letter-spacing: 1px;
+        color: #000;
       }
-      
-      /* Tabla optimizada para 80mm con letras MUY grandes */
+
+      .invoice-date {
+        font-size: 8pt;
+        margin-top: 1.5mm;
+        color: #333;
+      }
+
+      /* Información de cliente */
+      .client-section {
+        margin: 4mm 0;
+        padding: 2.5mm;
+        background: #f9f9f9;
+        border-left: 3px solid #333;
+      }
+
+      .client-title {
+        font-size: 8pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 2mm;
+        color: #555;
+      }
+
+      .client-info {
+        font-size: 8.5pt;
+        line-height: 1.4;
+      }
+
+      .client-info div {
+        margin-bottom: 1mm;
+      }
+
+      .client-label {
+        font-weight: 600;
+        display: inline-block;
+        min-width: 20mm;
+      }
+
+      /* Separador */
+      .separator {
+        border: none;
+        border-top: 1px dashed #999;
+        margin: 3mm 0;
+      }
+
+      .separator-solid {
+        border-top: 2px solid #000;
+      }
+
+      /* Tabla de productos mejorada */
+      .items-section {
+        margin: 4mm 0;
+      }
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 12px 0;
-        font-size: 14px;
+        font-size: 8pt;
       }
-      .items-table th,
-      .items-table td {
-        border: 1px solid #000;
-        padding: 6px 3px;
+
+      .items-table thead {
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+      }
+
+      .items-table th {
+        padding: 2mm 1mm;
         text-align: left;
+        font-weight: bold;
+        font-size: 8pt;
+        text-transform: uppercase;
+        color: #000;
+      }
+
+      .items-table th.text-center {
+        text-align: center;
+      }
+
+      .items-table th.text-right {
+        text-align: right;
+      }
+
+      .items-table td {
+        padding: 2mm 1mm;
+        border-bottom: 1px solid #ddd;
         vertical-align: top;
       }
-      .items-table th {
-        background-color: #f0f0f0;
-        font-weight: bold;
-        font-size: 13px;
-        padding: 7px 3px;
+
+      .items-table tbody tr:last-child td {
+        border-bottom: 2px solid #333;
       }
-      .items-table .number {
-        text-align: right;
-        width: 15%;
-        font-size: 14px;
-        font-weight: bold;
-      }
+
       .items-table .description {
-        font-size: 13px;
+        font-weight: 500;
         line-height: 1.3;
-        width: 70%;
-        word-wrap: break-word;
-        word-break: break-all;
       }
-      .items-table .total-col {
-        width: 15%;
-        font-size: 14px;
-        font-weight: bold;
+
+      .items-table .description small {
+        display: block;
+        font-size: 7pt;
+        color: #666;
+        margin-top: 0.5mm;
       }
-      
-      /* Totales optimizados con letras MUY grandes */
-      .totals {
-        margin-top: 12px;
+
+      .items-table .text-center {
+        text-align: center;
+        font-weight: 600;
+      }
+
+      .items-table .text-right {
         text-align: right;
-        font-size: 16px;
-        line-height: 1.4;
-      }
-      .totals div {
-        margin-bottom: 4px;
-      }
-      .total-row {
         font-weight: bold;
-        font-size: 22px;
-        border-top: 3px solid #000;
-        border-bottom: 3px solid #000;
-        padding: 10px 0;
-        margin-top: 10px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
       }
-      
-      /* Información de pago optimizada */
+
+      /* Totales mejorados */
+      .totals-section {
+        margin: 4mm 0;
+      }
+
+      .totals {
+        font-size: 9pt;
+      }
+
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 1.5mm 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .totals-row:last-child {
+        border-bottom: none;
+      }
+
+      .totals-label {
+        font-weight: 500;
+        color: #555;
+      }
+
+      .totals-value {
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .total-final {
+        border-top: 3px double #000;
+        border-bottom: 3px double #000;
+        padding: 3mm;
+        margin-top: 2mm;
+        font-size: 11pt;
+      }
+
+      .total-final .totals-label {
+        color: #000;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      .total-final .totals-value {
+        font-weight: bold;
+        font-size: 13pt;
+        letter-spacing: 0.5px;
+        color: #000;
+      }
+
+      /* Información de pago */
+      .payment-section {
+        margin: 4mm 0;
+        padding: 2.5mm;
+        background: #f9f9f9;
+        border-radius: 2mm;
+      }
+
+      .payment-title {
+        font-size: 8pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 2mm;
+        text-align: center;
+        color: #555;
+      }
+
       .payment-info {
-        margin-top: 12px;
-        border-top: 2px solid #000;
-        padding-top: 8px;
-        font-size: 15px;
-        line-height: 1.4;
+        font-size: 8.5pt;
+        line-height: 1.5;
       }
-      .payment-info .payment-title {
-        font-weight: bold;
-        margin-bottom: 6px;
-        text-align: center;
-        text-transform: uppercase;
-        font-size: 16px;
-      }
+
       .payment-info div {
-        margin-bottom: 3px;
+        display: flex;
+        justify-content: space-between;
+        padding: 1mm 0;
       }
-      
-      /* Footer optimizado */
+
+      .payment-label {
+        font-weight: 500;
+        color: #666;
+      }
+
+      .payment-value {
+        font-weight: 600;
+      }
+
+      /* Footer profesional */
       .footer {
-        margin-top: 12px;
+        margin-top: 6mm;
+        padding-top: 3mm;
+        border-top: 2px dashed #333;
         text-align: center;
-        font-size: 16px;
+      }
+
+      .footer-message {
+        font-size: 10pt;
         font-weight: bold;
+        margin-bottom: 2mm;
+      }
+
+      .footer-legal {
+        font-size: 7pt;
+        color: #666;
+        line-height: 1.3;
+        margin-top: 2mm;
+      }
+
+      .footer-tech {
+        font-size: 6.5pt;
+        color: #999;
+        margin-top: 3mm;
+        font-style: italic;
+      }
+
+      /* Estilos de impresión */
+      @media print {
+        body {
+          margin: 0;
+          padding: 3mm;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .separator,
+        .header {
+          page-break-inside: avoid;
+        }
+      }
+
+      /* Vista previa en pantalla */
+      @media screen {
+        body {
+          background: #fff;
+          box-shadow: 0 0 10mm rgba(0,0,0,0.1);
+          margin: 5mm auto;
+        }
+      }
+    ` : paperSize === 'half-letter' ? `
+      /* ===== ESTILOS ESTILO ALEGRA PARA MEDIA CARTA ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      @page {
+        size: 5.5in 8.5in;
+        margin: 0;
+      }
+
+      body {
+        font-family: 'Arial', 'Helvetica', sans-serif;
+        width: 5.5in;
+        margin: 0 auto;
+        padding: 8mm;
+        color: #000;
+        background: #fff;
+        font-size: 7pt;
+        line-height: 1.2;
+      }
+
+      /* Header limpio estilo Alegra */
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 3mm;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .header-left {
+        flex: 1;
+        max-width: 55%;
+      }
+
+      .header-right {
+        width: 65mm;
+        text-align: right;
+        padding: 0;
+        background: none;
+        box-shadow: none;
+        border-radius: 0;
+        color: #000;
+      }
+
+      /* Información de empresa estilo Alegra */
+      .company-logo {
+        max-width: 50mm;
+        max-height: 18mm;
+        margin-bottom: 2mm;
+      }
+
+      .company-name {
+        font-size: 11pt;
+        font-weight: bold;
+        color: #000;
+        margin-bottom: 1mm;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        line-height: 1.2;
+      }
+
+      .company-nit {
+        font-size: 8pt;
+        font-weight: normal;
+        color: #000;
+        margin-bottom: 1.5mm;
+      }
+
+      .company-details {
+        font-size: 7.5pt;
         color: #000;
         line-height: 1.4;
       }
-      
-      /* Separadores visuales */
-      .separator {
-        border-top: 2px solid #000;
-        margin: 8px 0;
+
+      .company-details div {
+        margin-bottom: 0.5mm;
       }
-      
+
+      .company-regime {
+        margin-top: 1.5mm;
+        padding: 0;
+        font-weight: normal;
+        color: #000;
+        font-size: 7.5pt;
+      }
+
+      /* Box de factura estilo Alegra */
+      .invoice-box {
+        text-align: right;
+      }
+
+      .invoice-title {
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 1mm;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #000;
+      }
+
+      .invoice-number {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 2mm;
+        letter-spacing: 0.4px;
+        color: #000;
+      }
+
+      .invoice-meta {
+        font-size: 7pt;
+        line-height: 1.5;
+        color: #000;
+      }
+
+      .invoice-meta div {
+        margin-bottom: 0.8mm;
+      }
+
+      .invoice-label {
+        font-weight: normal;
+        display: inline;
+        text-align: right;
+      }
+
+      /* Información del cliente estilo Alegra */
+      .client-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        background: #d9d9d9;
+        border: 1px solid #999;
+        min-height: 7mm;
+      }
+
+      .client-row + .client-row {
+        border-top: none;
+      }
+
+      .client-label {
+        background: #d9d9d9;
+        padding: 1.5mm 2.5mm;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+        font-size: 7.5pt;
+        border-right: 1px solid #999;
+        display: flex;
+        align-items: center;
+      }
+
+      .client-value {
+        background: #fff;
+        padding: 1.5mm 2.5mm;
+        color: #000;
+        display: flex;
+        align-items: center;
+        font-weight: normal;
+        font-size: 7.5pt;
+      }
+
+      .date-label {
+        background: #d9d9d9;
+        padding: 1.5mm 2.5mm;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+        font-size: 7.5pt;
+        border-right: 1px solid #999;
+        border-left: 1px solid #999;
+        display: flex;
+        align-items: center;
+      }
+
+      .date-value {
+        background: #fff;
+        padding: 1.5mm 2.5mm;
+        color: #000;
+        display: flex;
+        align-items: center;
+        font-size: 7.5pt;
+      }
+
+      .section-title {
+        display: none;
+      }
+
+      .client-grid {
+        display: block;
+      }
+
+      .client-field {
+        display: none;
+      }
+
+      .field-label {
+        display: none;
+      }
+
+      .field-value {
+        display: none;
+      }
+
+      /* Tabla de productos estilo Alegra */
+      .items-section {
+        margin: 4mm 0;
+      }
+
+      .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 7.5pt;
+        border: 1px solid #999;
+      }
+
+      .items-table thead {
+        background: #d9d9d9;
+        color: #000;
+      }
+
+      .items-table th {
+        padding: 1.5mm 1.5mm;
+        text-align: left;
+        font-weight: bold;
+        font-size: 7.5pt;
+        text-transform: uppercase;
+        border: 1px solid #999;
+        background: #d9d9d9;
+      }
+
+      .items-table th.text-center { text-align: center; }
+      .items-table th.text-right { text-align: right; }
+
+      .items-table tbody tr {
+        border: none;
+      }
+
+      .items-table tbody tr:nth-child(even) {
+        background: #fff;
+      }
+
+      .items-table tbody tr:hover {
+        background: inherit;
+      }
+
+      .items-table td {
+        padding: 1.5mm 1.5mm;
+        vertical-align: top;
+        border: 1px solid #999;
+        background: #fff;
+      }
+
+      .items-table .description {
+        font-weight: normal;
+        color: #000;
+        line-height: 1.2;
+      }
+
+      .items-table .description small {
+        display: block;
+        font-size: 7pt;
+        color: #666;
+        margin-top: 0.4mm;
+        font-weight: normal;
+      }
+
+      .items-table .text-center {
+        text-align: center;
+        font-weight: normal;
+      }
+
+      .items-table .text-right {
+        text-align: right;
+        font-weight: normal;
+        color: #000;
+      }
+
+      .items-table .item-id {
+        text-align: center;
+        font-weight: normal;
+        width: 7mm;
+      }
+
+      /* Total en letras */
+      .total-words {
+        font-size: 7.5pt;
+        color: #000;
+        margin: 4mm 0;
+        padding: 1.5mm 0;
+        font-weight: normal;
+      }
+
+      /* Totales estilo Alegra */
+      .totals-section {
+        margin-top: 4mm;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .totals-box {
+        width: 50mm;
+        background: #fff;
+        border: none;
+        border-radius: 0;
+        overflow: visible;
+        box-shadow: none;
+      }
+
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 1.5mm 0;
+        font-size: 8pt;
+        border-bottom: none;
+      }
+
+      .totals-row:last-child {
+        border-bottom: none;
+      }
+
+      .totals-label {
+        font-weight: normal;
+        color: #000;
+      }
+
+      .totals-value {
+        font-weight: normal;
+        color: #000;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .total-final {
+        background: #d9d9d9;
+        color: #000;
+        padding: 1.5mm 2.5mm;
+        margin-top: 1mm;
+        border: 1px solid #999;
+      }
+
+      .total-final .totals-label {
+        color: #000;
+        font-weight: bold;
+        text-transform: none;
+        font-size: 8pt;
+        letter-spacing: 0;
+      }
+
+      .total-final .totals-value {
+        font-weight: bold;
+        font-size: 8pt;
+        color: #000;
+        letter-spacing: 0;
+      }
+
+      .total-lines {
+        font-size: 7pt;
+        color: #000;
+        margin-top: 2mm;
+        text-align: right;
+      }
+
+      /* Información de pago */
+      .payment-section {
+        display: none;
+      }
+
+      .payment-title {
+        display: none;
+      }
+
+      .payment-grid {
+        display: none;
+      }
+
+      .payment-item {
+        display: none;
+      }
+
+      .payment-label {
+        display: none;
+      }
+
+      .payment-value {
+        display: none;
+      }
+
+      /* Footer estilo Alegra */
+      .footer {
+        margin-top: 8mm;
+        padding-top: 0;
+        border-top: none;
+      }
+
+      .footer-message {
+        display: none;
+      }
+
+      .footer-legal {
+        font-size: 6.5pt;
+        color: #000;
+        line-height: 1.3;
+        text-align: justify;
+        margin-bottom: 4mm;
+        padding: 0;
+      }
+
+      .footer-signatures {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15mm;
+        margin-top: 12mm;
+        padding: 0;
+      }
+
+      .signature-box {
+        text-align: center;
+      }
+
+      .signature-line {
+        border-top: 1px solid #000;
+        margin-bottom: 1.5mm;
+        padding-top: 0;
+        min-height: 12mm;
+      }
+
+      .signature-label {
+        font-size: 7pt;
+        font-weight: normal;
+        text-transform: uppercase;
+        color: #000;
+        letter-spacing: 0;
+      }
+
+      .footer-tech {
+        text-align: center;
+        font-size: 6pt;
+        color: #666;
+        margin-top: 4mm;
+        font-style: normal;
+      }
+
+      .qr-section {
+        margin: 4mm 0;
+        text-align: left;
+        font-size: 6.5pt;
+        line-height: 1.4;
+        color: #000;
+      }
+
+      .cufe-text {
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 6pt;
+      }
+
+      /* Estilos de impresión */
       @media print {
-        body { 
-          margin: 0; 
-          padding: 2px; 
-          font-size: 15px;
-        }
-        .no-print { display: none; }
-      }
-      @media screen {
         body {
-          background: white;
-          box-shadow: 0 0 10px rgba(0,0,0,0.1);
-          border-radius: 5px;
-          padding: 12px;
+          margin: 0;
+          padding: 12mm;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .items-table tbody tr:hover {
+          background: inherit;
         }
       }
     ` : `
+      /* ===== ESTILOS ESTILO ALEGRA PARA TAMAÑO CARTA ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      @page {
+        size: letter;
+        margin: 0;
+      }
+
       body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        color: #333;
+        font-family: 'Arial', 'Helvetica', sans-serif;
+        width: 8.5in;
+        margin: 0 auto;
+        padding: 8mm;
+        color: #000;
+        background: #fff;
+        font-size: 7.5pt;
+        line-height: 1.2;
       }
-      .header {
-        text-align: center;
-        border-bottom: 2px solid #333;
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-      }
-      .company-info {
-        margin-bottom: 20px;
-      }
-      .sale-info {
+
+      /* Header limpio estilo Alegra */
+      .page-header {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 30px;
+        align-items: flex-start;
+        margin-bottom: 4mm;
+        padding-bottom: 0;
+        border-bottom: none;
       }
+
+      .header-left {
+        flex: 1;
+        max-width: 55%;
+      }
+
+      .header-right {
+        width: 75mm;
+        text-align: right;
+        padding: 0;
+        background: none;
+        box-shadow: none;
+        border-radius: 0;
+        color: #000;
+      }
+
+      /* Información de empresa estilo Alegra */
+      .company-logo {
+        max-width: 50mm;
+        max-height: 16mm;
+        margin-bottom: 2mm;
+      }
+
+      .company-name {
+        font-size: 10pt;
+        font-weight: bold;
+        color: #000;
+        margin-bottom: 0.5mm;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+        line-height: 1.2;
+      }
+
+      .company-nit {
+        font-size: 7.5pt;
+        font-weight: normal;
+        color: #000;
+        margin-bottom: 1mm;
+      }
+
+      .company-details {
+        font-size: 7pt;
+        color: #000;
+        line-height: 1.3;
+      }
+
+      .company-details div {
+        margin-bottom: 0.3mm;
+      }
+
+      .company-regime {
+        margin-top: 1mm;
+        padding: 0;
+        font-weight: normal;
+        color: #000;
+        font-size: 7pt;
+      }
+
+      /* Box de factura estilo Alegra */
+      .invoice-box {
+        text-align: right;
+      }
+
+      .invoice-title {
+        font-size: 9pt;
+        font-weight: bold;
+        margin-bottom: 0.5mm;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #000;
+      }
+
+      .invoice-number {
+        font-size: 13pt;
+        font-weight: bold;
+        margin-bottom: 1mm;
+        letter-spacing: 0.3px;
+        color: #000;
+      }
+
+      .invoice-meta {
+        font-size: 7pt;
+        line-height: 1.4;
+        color: #000;
+      }
+
+      .invoice-meta div {
+        margin-bottom: 0.5mm;
+      }
+
+      .invoice-label {
+        font-weight: normal;
+        display: inline;
+        text-align: right;
+      }
+
+      /* Información del cliente estilo Alegra */
+      .client-section {
+        background: none;
+        padding: 0;
+        margin: 3mm 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 0;
+        font-size: 7.5pt;
+      }
+
+      .client-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        background: #d9d9d9;
+        border: 1px solid #999;
+        min-height: 6mm;
+      }
+
+      .client-row + .client-row {
+        border-top: none;
+      }
+
+      .client-label {
+        background: #d9d9d9;
+        padding: 1.5mm 2mm;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+        font-size: 7pt;
+        border-right: 1px solid #999;
+        display: flex;
+        align-items: center;
+      }
+
+      .client-value {
+        background: #fff;
+        padding: 1.5mm 2mm;
+        color: #000;
+        display: flex;
+        align-items: center;
+        font-weight: normal;
+        font-size: 7pt;
+      }
+
+      .date-label {
+        background: #d9d9d9;
+        padding: 1.5mm 2mm;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+        font-size: 7pt;
+        border-right: 1px solid #999;
+        border-left: 1px solid #999;
+        display: flex;
+        align-items: center;
+      }
+
+      .date-value {
+        background: #fff;
+        padding: 1.5mm 2mm;
+        color: #000;
+        display: flex;
+        align-items: center;
+        font-size: 7pt;
+      }
+
+      .section-title {
+        display: none;
+      }
+
+      .client-grid {
+        display: block;
+      }
+
+      .client-field {
+        display: none;
+      }
+
+      .field-label {
+        display: none;
+      }
+
+      .field-value {
+        display: none;
+      }
+
+      /* Tabla de productos estilo Alegra */
+      .items-section {
+        margin: 3mm 0;
+      }
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 20px 0;
+        font-size: 7pt;
+        border: 1px solid #999;
       }
-      .items-table th,
-      .items-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
+
+      .items-table thead {
+        background: #d9d9d9;
+        color: #000;
       }
+
       .items-table th {
-        background-color: #f5f5f5;
-      }
-      .items-table .number {
-        text-align: right;
-      }
-      .totals {
-        margin-top: 20px;
-        text-align: right;
-      }
-      .total-row {
+        padding: 1mm 1.5mm;
+        text-align: left;
         font-weight: bold;
-        font-size: 1.1em;
-        border-top: 2px solid #333;
-        padding-top: 10px;
+        font-size: 7pt;
+        text-transform: uppercase;
+        border: 1px solid #999;
+        background: #d9d9d9;
       }
+
+      .items-table th.text-center { text-align: center; }
+      .items-table th.text-right { text-align: right; }
+
+      .items-table tbody tr {
+        border: none;
+      }
+
+      .items-table tbody tr:nth-child(even) {
+        background: #fff;
+      }
+
+      .items-table tbody tr:hover {
+        background: inherit;
+      }
+
+      .items-table tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      .items-table td {
+        padding: 1mm 1.5mm;
+        vertical-align: top;
+        border: 1px solid #999;
+        background: #fff;
+      }
+
+      .items-table .description {
+        font-weight: normal;
+        color: #000;
+        line-height: 1.2;
+      }
+
+      .items-table .description small {
+        display: block;
+        font-size: 6.5pt;
+        color: #666;
+        margin-top: 0.3mm;
+        font-weight: normal;
+      }
+
+      .items-table .text-center {
+        text-align: center;
+        font-weight: normal;
+      }
+
+      .items-table .text-right {
+        text-align: right;
+        font-weight: normal;
+        color: #000;
+      }
+
+      .items-table .item-id {
+        text-align: center;
+        font-weight: normal;
+        width: 6mm;
+      }
+
+      /* Totales estilo Alegra */
+      .totals-section {
+        margin-top: 3mm;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .totals-box {
+        width: 50mm;
+        background: #fff;
+        border: none;
+        border-radius: 0;
+        overflow: visible;
+        box-shadow: none;
+      }
+
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 1mm 0;
+        font-size: 7.5pt;
+        border-bottom: none;
+      }
+
+      .totals-row:last-child {
+        border-bottom: none;
+      }
+
+      .totals-label {
+        font-weight: normal;
+        color: #000;
+      }
+
+      .totals-value {
+        font-weight: normal;
+        color: #000;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .total-final {
+        background: #d9d9d9;
+        color: #000;
+        padding: 1.5mm 2mm;
+        margin-top: 1mm;
+        border: 1px solid #999;
+      }
+
+      .total-final .totals-label {
+        color: #000;
+        font-weight: bold;
+        text-transform: none;
+        font-size: 7.5pt;
+        letter-spacing: 0;
+      }
+
+      .total-final .totals-value {
+        font-weight: bold;
+        font-size: 7.5pt;
+        color: #000;
+        letter-spacing: 0;
+      }
+
+      .total-lines {
+        font-size: 6.5pt;
+        color: #000;
+        margin-top: 1mm;
+        text-align: right;
+      }
+
+      /* Información de pago */
+      .payment-section {
+        display: none;
+      }
+
+      .payment-title {
+        display: none;
+      }
+
+      .payment-grid {
+        display: none;
+      }
+
+      .payment-item {
+        display: none;
+      }
+
+      .payment-label {
+        display: none;
+      }
+
+      .payment-value {
+        display: none;
+      }
+
+      /* Total en letras */
+      .total-words {
+        font-size: 7pt;
+        color: #000;
+        margin: 3mm 0;
+        padding: 1mm 0;
+        font-weight: normal;
+      }
+
+      /* Footer estilo Alegra */
+      .footer {
+        margin-top: 6mm;
+        padding-top: 0;
+        border-top: none;
+      }
+
+      .footer-message {
+        display: none;
+      }
+
+      .footer-legal {
+        font-size: 6pt;
+        color: #000;
+        line-height: 1.3;
+        text-align: justify;
+        margin-bottom: 3mm;
+        padding: 0;
+      }
+
+      .footer-signatures {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15mm;
+        margin-top: 10mm;
+        padding: 0;
+      }
+
+      .signature-box {
+        text-align: center;
+      }
+
+      .signature-line {
+        border-top: 1px solid #000;
+        margin-bottom: 1.5mm;
+        padding-top: 0;
+        min-height: 12mm;
+      }
+
+      .signature-label {
+        font-size: 6.5pt;
+        font-weight: normal;
+        text-transform: uppercase;
+        color: #000;
+        letter-spacing: 0;
+      }
+
+      .footer-tech {
+        text-align: center;
+        font-size: 5.5pt;
+        color: #666;
+        margin-top: 3mm;
+        font-style: normal;
+      }
+
+      .qr-section {
+        margin: 5mm 0;
+        text-align: left;
+        font-size: 7pt;
+        line-height: 1.5;
+        color: #000;
+      }
+
+      .cufe-text {
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 6.5pt;
+      }
+
+      /* Numeración de páginas */
+      .page-number {
+        position: fixed;
+        bottom: 8mm;
+        right: 15mm;
+        font-size: 8pt;
+        color: #999;
+      }
+
+      /* Estilos de impresión */
       @media print {
-        body { margin: 0; }
-        .no-print { display: none; }
+        body {
+          margin: 0;
+          padding: 15mm;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .items-table tbody tr:hover {
+          background: inherit;
+        }
+        .page-header,
+        .items-section {
+          page-break-inside: avoid;
+        }
+      }
+
+      /* Vista previa en pantalla */
+      @media screen {
+        body {
+          background: #f5f5f5;
+          box-shadow: 0 0 10mm rgba(0,0,0,0.1);
+          margin: 10mm auto;
+        }
       }
     `;
 
@@ -528,203 +1606,377 @@ export class SalesPrintService {
       </head>
       <body>
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Formato optimizado para impresora térmica 80mm -->
+        <!-- ============================================ -->
+        <!-- FORMATO PROFESIONAL PARA TICKET TÉRMICO 80MM -->
+        <!-- ============================================ -->
+
         <div class="header">
           <div class="company-info">
-            <div class="company-name">${companyData?.name || 'EMPRESA'}</div>
-            ${companyData?.business_name ? `<div class="company-names">${companyData.business_name}</div>` : ''}
-            <div class="company-num">NIT ${companyData?.tax_id || '0000000000-0'}</div>
+            <div class="company-name">${companyData?.name || 'NOMBRE DE EMPRESA'}</div>
+            ${companyData?.tax_id ? `<div class="company-nit">NIT: ${companyData.tax_id}</div>` : ''}
             ${companyData?.address ? `<div class="company-address">${companyData.address}</div>` : ''}
-            ${companyData?.city || companyData?.state ? `<div class="company-address">${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
+            ${companyData?.city || companyData?.state ? `<div class="company-contact">${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
             ${companyData?.phone ? `<div class="company-contact">Tel: ${companyData.phone}</div>` : ''}
             ${companyData?.email ? `<div class="company-contact">${companyData.email}</div>` : ''}
-            ${companyData?.regimen_tributario ? `<div class="company-regime">Régimen: ${companyData.regimen_tributario}</div>` : ''}
+            ${companyData?.regimen_tributario ? `<div class="company-regime">${companyData.regimen_tributario}</div>` : ''}
           </div>
-          
-          <div class="separator"></div>
-          
-          <div class="sale-info">
-            <div class="sale-number">N° ${sale.sale_number}</div>
-            <div class="sale-date">Fecha: ${this.formatDate(sale.created_at)}</div>
-          </div>
-          
-          <div class="separator"></div>
-          
+        </div>
+
+        <div class="invoice-box">
+          <div class="invoice-title">Factura de Venta</div>
+          <div class="invoice-number">${sale.sale_number || '0000'}</div>
+          <div class="invoice-date">Fecha: ${this.formatDate(sale.created_at)}</div>
+        </div>
+
+        <div class="client-section">
+          <div class="client-title">Información del Cliente</div>
           <div class="client-info">
             <div><span class="client-label">Cliente:</span> ${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</div>
-            ${sale.customer?.identification_number ? `<div>NIT: ${sale.customer.identification_number}</div>` : ''}
+            ${sale.customer?.identification_number ? `<div><span class="client-label">${sale.customer?.identification_type || 'CC'}:</span> ${sale.customer.identification_number}</div>` : ''}
+            ${sale.customer?.phone ? `<div><span class="client-label">Tel:</span> ${sale.customer.phone}</div>` : ''}
+          </div>
+        </div>
+
+        <hr class="separator" />
+        ` : paperSize === 'half-letter' ? `
+        <!-- ============================================ -->
+        <!-- FORMATO PROFESIONAL PARA MEDIA CARTA -->
+        <!-- ============================================ -->
+
+        <div class="page-header">
+          <div class="header-left">
+            <div class="company-name">${companyData?.name || 'NOMBRE DE EMPRESA'}</div>
+            ${companyData?.tax_id ? `<div class="company-nit">NIT: ${companyData.tax_id}</div>` : ''}
+            <div class="company-details">
+              ${companyData?.address ? `<div>${companyData.address}</div>` : ''}
+              ${companyData?.city || companyData?.state ? `<div>${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
+              ${companyData?.phone ? `<div>Tel: ${companyData.phone}</div>` : ''}
+              ${companyData?.email ? `<div>${companyData.email}</div>` : ''}
+            </div>
+            ${companyData?.regimen_tributario ? `<div class="company-regime">${companyData.regimen_tributario}</div>` : ''}
+          </div>
+
+          <div class="header-right">
+            <div class="invoice-box">
+              <div class="invoice-title">Factura de Venta</div>
+              <div class="invoice-number">${sale.sale_number || '0000'}</div>
+              <div class="invoice-meta">
+                <div><span class="invoice-label">Fecha de Expedición:</span> ${this.formatDate(sale.created_at)}</div>
+                <div><span class="invoice-label">Fecha de Vencimiento:</span> ${this.formatDate(sale.created_at)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="client-section">
+          <div class="section-title">Cliente</div>
+          <div class="client-grid">
+            <div class="client-field">
+              <span class="field-label">Nombre/Razón Social</span>
+              <span class="field-value">${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</span>
+            </div>
+            <div class="client-field">
+              <span class="field-label">Identificación</span>
+              <span class="field-value">${sale.customer?.identification_type || 'CC'}: ${sale.customer?.identification_number || 'N/A'}</span>
+            </div>
+            ${sale.customer?.address ? `
+            <div class="client-field">
+              <span class="field-label">Dirección</span>
+              <span class="field-value">${sale.customer.address}</span>
+            </div>` : ''}
+            ${sale.customer?.phone ? `
+            <div class="client-field">
+              <span class="field-label">Teléfono</span>
+              <span class="field-value">${sale.customer.phone}</span>
+            </div>` : ''}
+            ${sale.customer?.email ? `
+            <div class="client-field">
+              <span class="field-label">Email</span>
+              <span class="field-value">${sale.customer.email}</span>
+            </div>` : ''}
           </div>
         </div>
         ` : `
-        <!-- Formato para tamaño carta -->
-        <div class="header">
-          <h1>FACTURA DE VENTA</h1>
-          <h2>N° ${sale.sale_number}</h2>
+        <!-- ============================================ -->
+        <!-- FORMATO PROFESIONAL PARA TAMAÑO CARTA -->
+        <!-- ============================================ -->
+
+        <div class="page-header">
+          <div class="header-left">
+            <div class="company-name">${companyData?.name || 'NOMBRE DE EMPRESA'}</div>
+            ${companyData?.tax_id ? `<div class="company-nit">NIT: ${companyData.tax_id}</div>` : ''}
+            <div class="company-details">
+              ${companyData?.address ? `<div>${companyData.address}</div>` : ''}
+              ${companyData?.city || companyData?.state ? `<div>${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
+              ${companyData?.phone ? `<div>Tel: ${companyData.phone}</div>` : ''}
+              ${companyData?.email ? `<div>${companyData.email}</div>` : ''}
+            </div>
+            ${companyData?.regimen_tributario ? `<div class="company-regime">Régimen: ${companyData.regimen_tributario}</div>` : ''}
+          </div>
+
+          <div class="header-right">
+            <div class="invoice-box">
+              <div class="invoice-title">Factura de Venta</div>
+              <div class="invoice-number">${sale.sale_number || '0000'}</div>
+              <div class="invoice-meta">
+                <div><span class="invoice-label">Fecha de Expedición:</span> ${this.formatDate(sale.created_at)}</div>
+                <div><span class="invoice-label">Fecha de Vencimiento:</span> ${this.formatDate(sale.created_at)}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="sale-info">
-          <div>
-            <strong>Fecha:</strong> ${this.formatDate(sale.created_at)}
-          </div>
-          <div>
-            <strong>Cliente:</strong> ${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}
-            ${sale.customer?.identification_number ? ` (${sale.customer.identification_type || 'CC'}: ${sale.customer.identification_number})` : ''}
-          </div>
+        <!-- Sección de cliente estilo Alegra -->
+        <div class="client-row">
+          <div class="client-label">SEÑOR(ES)</div>
+          <div class="client-value">${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</div>
+          <div class="date-label">FECHA DEL DOCUMENTO (DD/MM/AA)</div>
+          <div class="date-value">${this.formatDate(sale.created_at)}</div>
+        </div>
+        <div class="client-row">
+          <div class="client-label">DIRECCIÓN</div>
+          <div class="client-value">${sale.customer?.address || ''}</div>
+          <div class="date-label">FECHA DE VENCIMIENTO</div>
+          <div class="date-value">${this.formatDate(sale.created_at)}</div>
+        </div>
+        <div class="client-row">
+          <div class="client-label">TELÉFONO</div>
+          <div class="client-value">${sale.customer?.phone || ''}</div>
+          <div class="date-label">${sale.customer?.identification_type || 'NIT'}</div>
+          <div class="date-value">${sale.customer?.identification_number || ''}</div>
         </div>
         `}
 
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Tabla optimizada para 80mm -->
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th class="description">Descripción</th>
-              <th class="number">Cant.</th>
-              <th class="total-col">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(sale.items || []).map(item => {
-      const itemSubtotal = item.quantity * item.unit_price;
-      const discount = item.discount_amount || 0;
-      const itemTotal = itemSubtotal - discount;
+        <!-- Tabla de Productos para 80mm -->
+        <div class="items-section">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th class="text-center">Cant</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(sale.items || []).map(item => {
+        const itemSubtotal = item.quantity * item.unit_price;
+        const discount = item.discount_amount || 0;
+        const itemTotal = itemSubtotal - discount;
 
-      // Obtener información del producto optimizada
-      let productName = 'Producto/Servicio';
-      let productSku = '';
+        let productName = 'Producto/Servicio';
+        let productSku = '';
 
-      if (item.product && item.product.name) {
-        // Truncar nombre de producto largo para mejor visualización
-        productName = item.product.name.length > 30 ?
-          item.product.name.substring(0, 27) + '...' :
-          item.product.name;
-
-        if (item.product.sku) {
-          // Truncar SKU largo para mejor visualización
-          const sku = item.product.sku.length > 20 ?
-            item.product.sku.substring(0, 17) + '...' :
-            item.product.sku;
-          productSku = `SKU: ${sku}`;
+        if (item.product && item.product.name) {
+          productName = item.product.name.length > 35 ?
+            item.product.name.substring(0, 32) + '...' :
+            item.product.name;
+          if (item.product.sku) {
+            productSku = item.product.sku;
+          }
+        } else if (item.product_name) {
+          productName = item.product_name.length > 35 ?
+            item.product_name.substring(0, 32) + '...' :
+            item.product_name;
         }
-      } else if (item.product_name) {
-        productName = item.product_name.length > 30 ?
-          item.product_name.substring(0, 27) + '...' :
-          item.product_name;
-      }
 
-      // Formato optimizado para mostrar nombre y SKU en líneas separadas
-      const productDisplay = productSku ?
-        `${productName}<br/>${productSku}` :
-        productName;
-
-      return `
+        return `
                 <tr>
-                  <td class="description">${productDisplay}</td>
-                  <td class="number">${item.quantity}</td>
-                  <td class="total-col">${this.formatCurrencyCompact(itemTotal)}</td>
-                </tr>
-              `;
-    }).join('')}
-          </tbody>
-        </table>
+                  <td class="description">
+                    ${productName}
+                    ${productSku ? `<small>SKU: ${productSku}</small>` : ''}
+                  </td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">${this.formatCurrencyCompact(itemTotal)}</td>
+                </tr>`;
+      }).join('')}
+            </tbody>
+          </table>
+        </div>
         ` : `
-        <!-- Tabla completa para tamaño carta -->
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th class="number">Cantidad</th>
-              <th class="number">Precio Unit.</th>
-              <th class="number">Descuento</th>
-              <th class="number">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(sale.items || []).map(item => {
-      const itemSubtotal = item.quantity * item.unit_price;
-      const discount = item.discount_amount || 0;
-      const itemTotal = itemSubtotal - discount;
+        <!-- Tabla de Productos estilo Alegra para Letter/Half-Letter -->
+        <div class="items-section">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th class="item-id">ID</th>
+                <th>Ítem</th>
+                <th class="text-center">Unidad</th>
+                <th class="text-right">Precio</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-right">Descuento</th>
+                <th class="text-right">Impuesto</th>
+                <th class="text-right">Total con impuestos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(sale.items || []).map((item, index) => {
+        const itemSubtotal = item.quantity * item.unit_price;
+        const discount = item.discount_amount || 0;
+        const itemTotal = itemSubtotal - discount;
 
-      // Obtener información del producto
-      let productName = 'Producto/Servicio';
-      let productSku = '';
+        let productName = 'Producto/Servicio';
+        let productSku = '';
 
-      if (item.product && item.product.name) {
-        productName = item.product.name;
-        if (item.product.sku) {
-          productSku = `SKU: ${item.product.sku}`;
+        if (item.product && item.product.name) {
+          productName = item.product.name;
+          if (item.product.sku) {
+            productSku = item.product.sku;
+          }
+        } else if (item.product_name) {
+          productName = item.product_name;
         }
-      } else if (item.product_name) {
-        productName = item.product_name;
-      }
 
-      const productDisplay = productSku ? `${productName} - ${productSku}` : productName;
-
-      return `
+        return `
                 <tr>
-                  <td>${productDisplay}</td>
-                  <td class="number">${item.quantity}</td>
-                  <td class="number">${this.formatCurrency(item.unit_price)}</td>
-                  <td class="number">${discount > 0 ? this.formatCurrency(discount) : '-'}</td>
-                  <td class="number">${this.formatCurrency(itemTotal)}</td>
-                </tr>
-              `;
-    }).join('')}
-          </tbody>
-        </table>
+                  <td class="item-id">${index + 1}</td>
+                  <td class="description">
+                    ${productName}
+                    ${productSku ? `<small>(${productName}) - Ref: ${productSku}</small>` : ''}
+                  </td>
+                  <td class="text-center">Unidad</td>
+                  <td class="text-right">${this.formatCurrency(item.unit_price)}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">${discount > 0 ? this.formatCurrency(discount) : '-'}</td>
+                  <td class="text-right">-</td>
+                  <td class="text-right">${this.formatCurrency(itemTotal)}</td>
+                </tr>`;
+      }).join('')}
+            </tbody>
+          </table>
+        </div>
         `}
 
         ${paperSize === 'thermal-80mm' ? `
-        <div class="totals">
-          <div>Subtotal: ${this.formatCurrencyCompact(sale.subtotal || 0)}</div>
-          ${sale.discount_amount && sale.discount_amount > 0 ? `<div>Descuento: -${this.formatCurrencyCompact(sale.discount_amount)}</div>` : ''}
-          ${sale.iva_amount && sale.iva_amount > 0 ? `<div>IVA: ${this.formatCurrencyCompact(sale.iva_amount)}</div>` : ''}
-          ${sale.ica_amount && sale.ica_amount > 0 ? `<div>ICA: ${this.formatCurrencyCompact(sale.ica_amount)}</div>` : ''}
-          ${sale.retencion_amount && sale.retencion_amount > 0 ? `<div>Retención: -${this.formatCurrencyCompact(sale.retencion_amount)}</div>` : ''}
-          ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `<div>Impuestos: ${this.formatCurrencyCompact(sale.tax_amount)}</div>` : ''}
-          <div class="total-row">TOTAL: ${this.formatCurrencyCompact(sale.total_amount || 0)}</div>
+        <!-- Totales para 80mm -->
+        <div class="totals-section">
+          <div class="totals">
+            <div class="totals-row">
+              <span class="totals-label">Subtotal:</span>
+              <span class="totals-value">${this.formatCurrencyCompact(sale.subtotal || 0)}</span>
+            </div>
+            ${sale.discount_amount && sale.discount_amount > 0 ? `
+            <div class="totals-row">
+              <span class="totals-label">Descuento:</span>
+              <span class="totals-value">-${this.formatCurrencyCompact(sale.discount_amount)}</span>
+            </div>` : ''}
+            ${sale.iva_amount && sale.iva_amount > 0 ? `
+            <div class="totals-row">
+              <span class="totals-label">IVA (19%):</span>
+              <span class="totals-value">${this.formatCurrencyCompact(sale.iva_amount)}</span>
+            </div>` : ''}
+            ${sale.ica_amount && sale.ica_amount > 0 ? `
+            <div class="totals-row">
+              <span class="totals-label">ICA:</span>
+              <span class="totals-value">${this.formatCurrencyCompact(sale.ica_amount)}</span>
+            </div>` : ''}
+            ${sale.retencion_amount && sale.retencion_amount > 0 ? `
+            <div class="totals-row">
+              <span class="totals-label">Retención:</span>
+              <span class="totals-value">-${this.formatCurrencyCompact(sale.retencion_amount)}</span>
+            </div>` : ''}
+            ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `
+            <div class="totals-row">
+              <span class="totals-label">Impuestos:</span>
+              <span class="totals-value">${this.formatCurrencyCompact(sale.tax_amount)}</span>
+            </div>` : ''}
+          </div>
+          <div class="total-final">
+            <div class="totals-row">
+              <span class="totals-label">Total a Pagar:</span>
+              <span class="totals-value">${this.formatCurrencyCompact(sale.total_amount || 0)}</span>
+            </div>
+          </div>
         </div>
         ` : `
-        <div class="totals">
-          <div>Subtotal: ${this.formatCurrency(sale.subtotal || 0)}</div>
-          ${sale.discount_amount && sale.discount_amount > 0 ? `<div>Descuento: -${this.formatCurrency(sale.discount_amount)}</div>` : ''}
-          ${sale.iva_amount && sale.iva_amount > 0 ? `<div>IVA: ${this.formatCurrency(sale.iva_amount)}</div>` : ''}
-          ${sale.ica_amount && sale.ica_amount > 0 ? `<div>ICA: ${this.formatCurrency(sale.ica_amount)}</div>` : ''}
-          ${sale.retencion_amount && sale.retencion_amount > 0 ? `<div>Retención: -${this.formatCurrency(sale.retencion_amount)}</div>` : ''}
-          ${sale.tax_amount && sale.tax_amount > 0 && (!sale.iva_amount && !sale.ica_amount && !sale.retencion_amount) ? `<div>Impuestos: ${this.formatCurrency(sale.tax_amount)}</div>` : ''}
-          <div class="total-row">TOTAL: ${this.formatCurrency(sale.total_amount || 0)}</div>
+        <!-- Total en letras estilo Alegra -->
+        <div class="total-words">
+          ${this.numberToWords(sale.total_amount || 0)}
+        </div>
+
+        <!-- Totales estilo Alegra para Letter/Half-Letter -->
+        <div class="totals-section">
+          <div class="totals-box">
+            <div class="totals-row">
+              <span class="totals-label">Subtotal</span>
+              <span class="totals-value">${this.formatCurrency(sale.subtotal || 0)}</span>
+            </div>
+            <div class="total-final">
+              <div class="totals-row">
+                <span class="totals-label">Total</span>
+                <span class="totals-value">${this.formatCurrency(sale.total_amount || 0)}</span>
+              </div>
+            </div>
+            <div class="total-lines">
+              <div>Total de líneas: ${(sale.items || []).length}</div>
+              <div>Cantidad total: ${(sale.items || []).reduce((sum, item) => sum + item.quantity, 0)}</div>
+            </div>
+          </div>
         </div>
         `}
         
         ${paperSize === 'thermal-80mm' ? `
-        <!-- Información de pago optimizada para 80mm -->
-        <div class="payment-info">
-          <div class="payment-title">INFORMACIÓN DE PAGO</div>
-          <div>Método: ${this.getPaymentMethodName(sale.payment_method)}</div>
-          ${sale.payment_reference ? `<div>Referencia: ${sale.payment_reference}</div>` : ''}
-          ${sale.payment_amount_received ? `<div>Recibido: ${this.formatCurrencyCompact(sale.payment_amount_received)}</div>` : ''}
-          ${sale.payment_change !== undefined && sale.payment_change !== null ? `<div>Cambio: ${this.formatCurrencyCompact(sale.payment_change)}</div>` : ''}
-        </div>
-        ` : `
-        <!-- Información de pago para tamaño carta -->
-          <div style="margin-top: 15px; border-top: 1px solid #000; padding-top: 10px;">
-            <div style="font-weight: bold; margin-bottom: 5px;">INFORMACIÓN DE PAGO</div>
-            <div>Método: ${this.getPaymentMethodName(sale.payment_method)}</div>
-            ${sale.payment_reference ? `<div>Referencia: ${sale.payment_reference}</div>` : ''}
-            ${sale.payment_amount_received ? `<div>Recibido: ${this.formatCurrency(sale.payment_amount_received)}</div>` : ''}
-            ${sale.payment_change !== undefined && sale.payment_change !== null ? `<div>Cambio: ${this.formatCurrency(sale.payment_change)}</div>` : ''}
+        <!-- Información de Pago para 80mm -->
+        <div class="payment-section">
+          <div class="payment-title">Información de Pago</div>
+          <div class="payment-info">
+            <div>
+              <span class="payment-label">Método de Pago:</span>
+              <span class="payment-value">${this.getPaymentMethodName(sale.payment_method)}</span>
+            </div>
+            ${sale.payment_reference ? `
+            <div>
+              <span class="payment-label">Referencia:</span>
+              <span class="payment-value">${sale.payment_reference}</span>
+            </div>` : ''}
+            ${sale.payment_amount_received ? `
+            <div>
+              <span class="payment-label">Pago Recibido:</span>
+              <span class="payment-value">${this.formatCurrencyCompact(sale.payment_amount_received)}</span>
+            </div>` : ''}
+            ${sale.payment_change !== undefined && sale.payment_change !== null && sale.payment_change > 0 ? `
+            <div>
+              <span class="payment-label">Cambio:</span>
+              <span class="payment-value">${this.formatCurrencyCompact(sale.payment_change)}</span>
+            </div>` : ''}
           </div>
-        `}
+        </div>
 
-        ${paperSize === 'thermal-80mm' ? `
-        <!-- Footer optimizado para 80mm -->
+        <!-- Footer para 80mm -->
         <div class="footer">
-          ¡Gracias por su compra!
+          <div class="footer-message">¡Gracias por su compra!</div>
+          <div class="footer-legal">
+            Este documento es válido como comprobante de pago. Conserve para cualquier reclamación o garantía.
+          </div>
+          <div class="footer-tech">
+            Powered by Sistema POS • ${new Date().toLocaleString('es-CO')}
+          </div>
         </div>
         ` : `
-        <!-- Footer para tamaño carta -->
-        <div style="margin-top: 50px; text-align: center; font-size: 0.9em; color: #666;">
-          <p>Gracias por su compra</p>
+        <!-- Footer estilo Alegra para Letter/Half-Letter -->
+        <div class="footer">
+          <div class="footer-legal">
+            Con esta factura de venta el comprador declara haber recibido de forma real y materialmente las mercancías y/o servicios descritos en este título valor.
+          </div>
+
+          <div class="footer-legal" style="margin-top: 3mm;">
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobrarán intereses por mora.
+          </div>
+
+          <div class="footer-signatures">
+            <div class="signature-box">
+              <div class="signature-line"></div>
+              <div class="signature-label">ELABORADO POR</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-line"></div>
+              <div class="signature-label">ACEPTADA, FIRMA Y/O SELLO Y FECHA</div>
+            </div>
+          </div>
+
+          <div class="footer-tech">
+            Proveedor tecnológico: Soluciones Alegra S.A.S - Software: Alegra - NIT 900.559.088-2
+          </div>
         </div>
         `}
       </body>
@@ -787,7 +2039,7 @@ export class SalesPrintService {
   }
 
   // Imprimir venta
-  static async printSale(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
+  static async printSale(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<void> {
     try {
       const html = await this.generatePrintHTML(sale, companyId, paperSize);
 
@@ -817,7 +2069,7 @@ export class SalesPrintService {
   }
 
   // Generar PDF de la venta
-  static async generatePDF(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
+  static async generatePDF(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<void> {
     try {
       console.log('Generando PDF para venta:', sale.sale_number);
 
@@ -857,8 +2109,14 @@ export class SalesPrintService {
         margin: 5,
         customWidth: 80,
         customHeight: 200
+      } : paperSize === 'half-letter' ? {
+        format: 'custom' as const,
+        orientation: 'portrait' as const,
+        margin: 15,
+        customWidth: 139.7,  // 5.5 pulgadas
+        customHeight: 215.9  // 8.5 pulgadas
       } : {
-        format: 'a4' as const,
+        format: 'letter' as const,
         orientation: 'portrait' as const,
         margin: 20
       };
@@ -882,7 +2140,7 @@ export class SalesPrintService {
 
 
   // Generar PDF como buffer para envío por correo (versión para cliente)
-  static async generatePDFBuffer(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<Buffer> {
+  static async generatePDFBuffer(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<Buffer> {
     try {
       console.log('Generando PDF buffer para venta:', sale.sale_number);
 
@@ -920,8 +2178,14 @@ export class SalesPrintService {
         margin: 5,
         customWidth: 80,
         customHeight: 200
+      } : paperSize === 'half-letter' ? {
+        format: 'custom' as const,
+        orientation: 'portrait' as const,
+        margin: 15,
+        customWidth: 139.7,  // 5.5 pulgadas
+        customHeight: 215.9  // 8.5 pulgadas
       } : {
-        format: 'a4' as const,
+        format: 'letter' as const,
         orientation: 'portrait' as const,
         margin: 20
       };
@@ -942,5 +2206,78 @@ export class SalesPrintService {
 
       throw new Error(errorMessage);
     }
+  }
+
+  /**
+   * Convierte números a palabras en español (formato Alegra)
+   */
+  private static numberToWords(num: number): string {
+    if (num === 0) return 'Cero pesos';
+
+    const units = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+    const teens = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+    const twenties = ['veinte', 'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve'];
+    const tens = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+    const hundreds = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+
+    const convertLessThanThousand = (n: number): string => {
+      if (n === 0) return '';
+      if (n === 100) return 'cien';
+
+      let result = '';
+      const h = Math.floor(n / 100);
+      const remainder = n % 100;
+
+      if (h > 0) {
+        result += hundreds[h];
+        if (remainder > 0) result += ' ';
+      }
+
+      if (remainder >= 10 && remainder < 20) {
+        result += teens[remainder - 10];
+      } else if (remainder >= 20 && remainder < 30) {
+        result += twenties[remainder - 20];
+      } else if (remainder >= 30) {
+        const t = Math.floor(remainder / 10);
+        const u = remainder % 10;
+        result += tens[t];
+        if (u > 0) result += ' y ' + units[u];
+      } else if (remainder > 0) {
+        result += units[remainder];
+      }
+
+      return result;
+    };
+
+    const floorNum = Math.floor(num);
+
+    if (floorNum >= 1000000) {
+      const millions = Math.floor(floorNum / 1000000);
+      const remainder = floorNum % 1000000;
+      let result = millions === 1 ? 'Un millón' : this.capitalize(convertLessThanThousand(millions)) + ' millones';
+      if (remainder > 0) {
+        const remainderWords = this.numberToWords(remainder);
+        result += ' ' + remainderWords.replace(' pesos', '');
+      }
+      return result + ' pesos';
+    }
+
+    if (floorNum >= 1000) {
+      const thousands = Math.floor(floorNum / 1000);
+      const remainder = floorNum % 1000;
+      let result = thousands === 1 ? 'Mil' : this.capitalize(convertLessThanThousand(thousands)) + ' mil';
+      if (remainder > 0) result += ' ' + convertLessThanThousand(remainder);
+      return this.capitalize(result) + ' pesos';
+    }
+
+    return this.capitalize(convertLessThanThousand(floorNum)) + ' pesos';
+  }
+
+  /**
+   * Capitaliza la primera letra de una cadena
+   */
+  private static capitalize(str: string): string {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

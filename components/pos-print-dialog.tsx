@@ -20,7 +20,7 @@ interface POSPrintDialogProps {
   onOpenChange: (open: boolean) => void;
   saleId: string | null;
   companyId: string;
-  defaultPaperSize?: 'letter' | 'thermal-80mm';
+  defaultPaperSize?: 'letter' | 'thermal-80mm' | 'half-letter';
 }
 
 export function POSPrintDialog({
@@ -30,7 +30,7 @@ export function POSPrintDialog({
   companyId,
   defaultPaperSize = 'thermal-80mm',
 }: POSPrintDialogProps) {
-  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm'>(
+  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm' | 'half-letter'>(
     defaultPaperSize
   );
   const [loading, setLoading] = useState(false);
@@ -133,7 +133,7 @@ export function POSPrintDialog({
               </span>
             </div>
             <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-              Tamaño: {paperSize === 'thermal-80mm' ? '80mm Térmica' : 'Carta'}
+              Tamaño: {paperSize === 'thermal-80mm' ? '80mm Térmica' : paperSize === 'half-letter' ? 'Media Carta' : 'Carta'}
             </div>
           </div>
 

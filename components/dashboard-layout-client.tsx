@@ -19,14 +19,97 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { LogOut, User, Settings, Building2 } from 'lucide-react';
+import { LogOut, User, Settings, Building2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DefaultCompanyLogo } from '@/components/default-company-logo';
+import { POSShiftIndicator } from '@/components/pos-shift-indicator';
+import { POSConfigurationDialog } from '@/components/pos-configuration-dialog';
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
   companyName?: string;
   userRole?: string;
+}
+
+// Componente para las acciones específicas del módulo POS
+function POSHeaderActions() {
+  const [showConfiguration, setShowConfiguration] = useState(false);
+  const [configuration, setConfiguration] = useState<any>({
+    defaultAccountId: '',
+    defaultCustomerId: '',
+    terminalName: 'Terminal Principal',
+    printPaperSize: 'thermal-80mm',
+  });
+  const [companyId, setCompanyId] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [numerations, setNumerations] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadPOSData();
+  }, []);
+
+  const loadPOSData = async () => {
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (userData?.user) {
+        setUserId(userData.user.id);
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (profile?.company_id) {
+          setCompanyId(profile.company_id);
+
+          // Cargar configuración guardada
+          const savedConfig = localStorage.getItem('pos-configuration');
+          if (savedConfig) {
+            setConfiguration(JSON.parse(savedConfig));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando datos POS:', error);
+    }
+  };
+
+  return (
+    <>
+      {/* Indicador de turno */}
+      <POSShiftIndicator companyId={companyId} userId={userId} />
+
+      {/* Botón de configuración */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setShowConfiguration(true)}
+        className="h-9"
+      >
+        <Settings className="h-4 w-4" />
+      </Button>
+
+      {/* Diálogo de configuración */}
+      <POSConfigurationDialog
+        open={showConfiguration}
+        onOpenChange={setShowConfiguration}
+        configuration={configuration}
+        onConfigurationChange={(newConfig) => {
+          setConfiguration(newConfig);
+          localStorage.setItem('pos-configuration', JSON.stringify(newConfig));
+        }}
+        accounts={accounts}
+        customers={customers}
+        numerations={numerations}
+        companyId={companyId}
+      />
+    </>
+  );
 }
 
 function DashboardContent({
@@ -61,6 +144,9 @@ function DashboardContent({
 
             {/* Right side - Actions */}
             <div className="flex items-center gap-2">
+              {/* Botones específicos para el módulo POS */}
+              {pathname === '/dashboard/pos' && <POSHeaderActions />}
+
               <ThemeSwitcher />
               <UserMenu />
             </div>
