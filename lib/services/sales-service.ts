@@ -115,17 +115,23 @@ export class SalesService {
   }
 
   // Obtener una venta por ID
-  static async getSaleById(saleId: string): Promise<Sale | null> {
-    const { data, error } = await this.supabase
+  // Accepts an optional Supabase client for server-side usage
+  static async getSaleById(
+    saleId: string,
+    supabaseClient?: any
+  ): Promise<Sale | null> {
+    const client = supabaseClient || this.supabase;
+    
+    const { data, error } = await client
       .from('sales')
       .select(`
         *,
-        customer:customers(*),
-        cashier:profiles(*),
-        shift:shifts(*),
+        customer:customers!sales_customer_id_fkey(*),
+        cashier:profiles!sales_cashier_id_fkey(*),
+        shift:shifts!sales_shift_id_fkey(*),
         items:sale_items(
           *,
-          product:products(*)
+          product:products!sale_items_product_id_fkey(*)
         )
       `)
       .eq('id', saleId)

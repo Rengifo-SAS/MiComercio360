@@ -2,14 +2,14 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { RouteGuard } from '@/components/route-guard';
-import { AccountingReportsClient } from '@/components/accounting-reports-client';
+import { PurchasesReportClient } from '@/components/purchases-report-client';
 
 export const metadata = {
-  title: 'Reportes Contables | POS-SRSAS',
-  description: 'Reportes contables',
+  title: 'Compras | POS-SRSAS',
+  description: 'Reporte de compras',
 };
 
-export default async function AccountingReportsPage() {
+export default async function PurchasesReportPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,10 +32,11 @@ export default async function AccountingReportsPage() {
 
   return (
     <RouteGuard requiredPermission="reports.read">
-      <AccountingReportsClient
+      <PurchasesReportClient
         companyId={setupStatus.company.id}
         userId={user.id}
       />
     </RouteGuard>
   );
 }
+

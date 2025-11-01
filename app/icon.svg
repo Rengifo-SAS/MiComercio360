@@ -1,64 +1,94 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Fondo con degradado -->
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+    <!-- Gradiente azul oscuro a azul -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e40af;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+
+    <!-- Gradiente para la caja registradora -->
+    <linearGradient id="boxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
     </linearGradient>
+
+    <!-- Gradiente para pantalla -->
+    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Sombra suave -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="3" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Fondo redondeado -->
-  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <!-- Fondo circular con gradiente azul -->
+  <circle cx="64" cy="64" r="64" fill="url(#bgGradient)"/>
 
-  <!-- Edificio de tienda (POS) -->
-  <g transform="translate(24, 28)">
-    <!-- Estructura principal -->
-    <rect x="10" y="24" width="60" height="60" rx="4" fill="white" opacity="0.95"/>
+  <!-- Caja registradora moderna -->
+  <g filter="url(#shadow)">
+    <!-- Pantalla superior de la caja -->
+    <g transform="translate(64, 38)">
+      <!-- Soporte de la pantalla -->
+      <rect x="-3" y="0" width="6" height="12" rx="1" fill="url(#boxGradient)" opacity="0.9"/>
 
-    <!-- Toldo característico -->
-    <path d="M 5 24 L 10 18 L 70 18 L 75 24 Z" fill="url(#accent)"/>
-    <rect x="5" y="24" width="70" height="6" fill="url(#accent)" opacity="0.9"/>
+      <!-- Pantalla digital -->
+      <rect x="-20" y="-14" width="40" height="16" rx="3" fill="url(#screenGradient)"/>
 
-    <!-- Rayas del toldo -->
-    <line x1="15" y1="18" x2="15" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
-    <line x1="25" y1="18" x2="25" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
-    <line x1="35" y1="18" x2="35" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
-    <line x1="45" y1="18" x2="45" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
-    <line x1="55" y1="18" x2="55" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
-    <line x1="65" y1="18" x2="65" y2="24" stroke="white" stroke-width="1" opacity="0.4"/>
+      <!-- Display LED (números) -->
+      <text x="0" y="-2" font-family="monospace" font-size="10" font-weight="bold" fill="#22d3ee" text-anchor="middle">$0.00</text>
+    </g>
 
-    <!-- Ventanas -->
-    <rect x="18" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
-    <rect x="34" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
-    <rect x="50" y="34" width="12" height="12" rx="2" fill="url(#accent)"/>
+    <!-- Cuerpo principal de la caja registradora -->
+    <rect x="28" y="50" width="72" height="48" rx="6" fill="url(#boxGradient)"/>
 
-    <!-- Marco de ventanas -->
-    <line x1="24" y1="34" x2="24" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <line x1="18" y1="40" x2="30" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <line x1="40" y1="34" x2="40" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <line x1="34" y1="40" x2="46" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <line x1="56" y1="34" x2="56" y2="46" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <line x1="50" y1="40" x2="62" y2="40" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <!-- Borde superior oscuro -->
+    <rect x="30" y="50" width="68" height="4" rx="2" fill="#1e293b" opacity="0.3"/>
 
-    <!-- Puerta principal -->
-    <rect x="30" y="56" width="20" height="28" rx="3" fill="url(#accent)"/>
+    <!-- Cajón de dinero (indicador) -->
+    <rect x="32" y="85" width="64" height="8" rx="2" fill="#1e293b" opacity="0.4"/>
+    <circle cx="64" cy="89" r="2" fill="#64748b"/>
 
-    <!-- Marco de la puerta -->
-    <line x1="40" y1="56" x2="40" y2="84" stroke="white" stroke-width="1.5" opacity="0.6"/>
-    <rect x="30" y="69" width="20" height="1.5" fill="white" opacity="0.5"/>
+    <!-- Teclas del teclado numérico (3x3) -->
+    <g transform="translate(42, 58)">
+      <!-- Fila 1 -->
+      <rect x="0" y="0" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="14" y="0" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="28" y="0" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
 
-    <!-- Manija de la puerta -->
-    <circle cx="46" cy="70" r="2" fill="white" opacity="0.9"/>
+      <!-- Fila 2 -->
+      <rect x="0" y="9" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="14" y="9" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="28" y="9" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
 
-    <!-- Símbolo $ en la puerta -->
-    <text x="35" y="65" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" opacity="0.7">$</text>
+      <!-- Fila 3 -->
+      <rect x="0" y="18" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="14" y="18" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+      <rect x="28" y="18" width="10" height="6" rx="1.5" fill="#2563eb" opacity="0.6"/>
+    </g>
+
+    <!-- Papel de recibo saliendo -->
+    <g transform="translate(64, 48)">
+      <rect x="-8" y="-6" width="16" height="10" rx="1" fill="white" opacity="0.95"/>
+      <!-- Líneas del recibo -->
+      <line x1="-6" y1="-3" x2="6" y2="-3" stroke="#94a3b8" stroke-width="0.5" opacity="0.5"/>
+      <line x1="-6" y1="0" x2="6" y2="0" stroke="#94a3b8" stroke-width="0.5" opacity="0.5"/>
+      <line x1="-6" y1="3" x2="4" y2="3" stroke="#94a3b8" stroke-width="0.5" opacity="0.5"/>
+    </g>
   </g>
 
-  <!-- Badge POS en esquina -->
-  <circle cx="100" cy="28" r="16" fill="white" opacity="0.95"/>
-  <text x="100" y="33" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2563eb" text-anchor="middle">POS</text>
+  <!-- Acento circular decorativo -->
+  <circle cx="64" cy="64" r="60" stroke="white" stroke-width="1" fill="none" opacity="0.1"/>
+  <circle cx="64" cy="64" r="56" stroke="white" stroke-width="0.5" fill="none" opacity="0.05"/>
 </svg>

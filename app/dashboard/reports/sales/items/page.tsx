@@ -2,14 +2,14 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { RouteGuard } from '@/components/route-guard';
-import { AccountingReportsClient } from '@/components/accounting-reports-client';
+import { SalesByItemReportClient } from '@/components/sales-by-item-report-client';
 
 export const metadata = {
-  title: 'Reportes Contables | POS-SRSAS',
-  description: 'Reportes contables',
+  title: 'Ventas por Ítem | Reportes',
+  description: 'Reporte de ventas por ítem inventariable',
 };
 
-export default async function AccountingReportsPage() {
+export default async function SalesByItemReportPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,17 +22,13 @@ export default async function AccountingReportsPage() {
 
   const setupStatus = await checkCompanySetup(user.id);
 
-  if (!setupStatus.isSetupComplete) {
-    redirect('/protected');
-  }
-
-  if (!setupStatus.company) {
+  if (!setupStatus.isSetupComplete || !setupStatus.company) {
     redirect('/protected');
   }
 
   return (
     <RouteGuard requiredPermission="reports.read">
-      <AccountingReportsClient
+      <SalesByItemReportClient
         companyId={setupStatus.company.id}
         userId={user.id}
       />
