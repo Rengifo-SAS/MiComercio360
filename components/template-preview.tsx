@@ -501,10 +501,6 @@ export function TemplatePreview({
                 <div class="signature-line">ACEPTADA, FIRMA Y/O SELLO Y FECHA</div>
             </div>
         </div>
-
-        <div style="text-align: center; margin-top: 30px; font-size: 10px; color: #999;">
-            Elaborado en Soluciones Alegra S.A.S NIT 900.559.088-2 / www.alegra.com
-        </div>
     </div>
 
     <script>
@@ -997,14 +993,6 @@ export function TemplatePreview({
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div
-                  className="text-center mt-8"
-                  style={{ fontSize: '10px', color: '#999' }}
-                >
-                  Elaborado en Soluciones Alegra S.A.S NIT 900.559.088-2 /
-                  www.alegra.com
-                </div>
               </div>
             </div>
           </div>

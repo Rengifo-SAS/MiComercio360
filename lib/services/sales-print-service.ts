@@ -258,8 +258,30 @@ export class SalesPrintService {
       }
     }
     // Estilos CSS profesionales y optimizados según el tamaño de papel
+    // Mejorados con técnicas de PDF.js para mejor legibilidad y accesibilidad
     const styles = paperSize === 'thermal-80mm' ? `
       /* ===== ESTILOS PROFESIONALES PARA TICKET TÉRMICO 80MM ===== */
+      :root {
+        --invoice-primary-color: #000;
+        --invoice-secondary-color: #333;
+        --invoice-tertiary-color: #666;
+        --invoice-border-color: #999;
+        --invoice-bg-light: #f9f9f9;
+        --invoice-bg-medium: #f5f5f5;
+        --invoice-separator-color: #ddd;
+        --invoice-table-header-bg: #000;
+        --invoice-table-header-color: #fff;
+        --invoice-table-border: #ddd;
+        --invoice-text-primary: #000;
+        --invoice-text-secondary: #333;
+        --invoice-text-tertiary: #666;
+        --invoice-spacing-xs: 1mm;
+        --invoice-spacing-sm: 2mm;
+        --invoice-spacing-md: 3mm;
+        --invoice-spacing-lg: 4mm;
+        --invoice-font-family: 'Arial', 'Helvetica', sans-serif;
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -267,15 +289,17 @@ export class SalesPrintService {
       }
 
       body {
-        font-family: 'Arial', 'Helvetica', sans-serif;
+        font-family: var(--invoice-font-family);
         width: 80mm;
         max-width: 80mm;
         margin: 0 auto;
-        padding: 3mm;
-        color: #000;
+        padding: var(--invoice-spacing-md);
+        color: var(--invoice-text-primary);
         background: #fff;
         font-size: 9pt;
         line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       /* Header profesional */
@@ -416,8 +440,9 @@ export class SalesPrintService {
       }
 
       .items-table thead {
-        border-top: 2px solid #000;
-        border-bottom: 2px solid #000;
+        border-top: 2px solid var(--invoice-table-header-bg);
+        border-bottom: 2px solid var(--invoice-table-header-bg);
+        background-color: var(--invoice-table-header-bg);
       }
 
       .items-table th {
@@ -426,7 +451,9 @@ export class SalesPrintService {
         font-weight: bold;
         font-size: 8pt;
         text-transform: uppercase;
-        color: #000;
+        color: var(--invoice-table-header-color);
+        background-color: var(--invoice-table-header-bg);
+        border-bottom: 2px solid var(--invoice-table-header-bg);
       }
 
       .items-table th.text-center {
@@ -439,8 +466,13 @@ export class SalesPrintService {
 
       .items-table td {
         padding: 2mm 1mm;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid var(--invoice-table-border);
         vertical-align: top;
+        background-color: #fff;
+      }
+
+      .items-table tbody tr:nth-child(even) td {
+        background-color: var(--invoice-bg-medium);
       }
 
       .items-table tbody tr:last-child td {
@@ -462,11 +494,15 @@ export class SalesPrintService {
       .items-table .text-center {
         text-align: center;
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .items-table .text-right {
         text-align: right;
         font-weight: bold;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       /* Totales mejorados */
@@ -497,6 +533,8 @@ export class SalesPrintService {
       .totals-value {
         font-weight: 600;
         text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .total-final {
@@ -610,6 +648,28 @@ export class SalesPrintService {
       }
     ` : paperSize === 'half-letter' ? `
       /* ===== ESTILOS ESTILO ALEGRA PARA MEDIA CARTA ===== */
+      :root {
+        --invoice-primary-color: #000;
+        --invoice-secondary-color: #333;
+        --invoice-tertiary-color: #666;
+        --invoice-border-color: #999;
+        --invoice-bg-light: #f9f9f9;
+        --invoice-bg-medium: #d9d9d9;
+        --invoice-separator-color: #ddd;
+        --invoice-table-header-bg: #d9d9d9;
+        --invoice-table-header-color: #000;
+        --invoice-table-border: #999;
+        --invoice-text-primary: #000;
+        --invoice-text-secondary: #333;
+        --invoice-text-tertiary: #666;
+        --invoice-spacing-xs: 1mm;
+        --invoice-spacing-sm: 1.5mm;
+        --invoice-spacing-md: 2mm;
+        --invoice-spacing-lg: 3mm;
+        --invoice-spacing-xl: 4mm;
+        --invoice-font-family: 'Arial', 'Helvetica', sans-serif;
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -622,14 +682,16 @@ export class SalesPrintService {
       }
 
       body {
-        font-family: 'Arial', 'Helvetica', sans-serif;
+        font-family: var(--invoice-font-family);
         width: 5.5in;
         margin: 0 auto;
         padding: 8mm;
-        color: #000;
+        color: var(--invoice-text-primary);
         background: #fff;
         font-size: 7pt;
         line-height: 1.2;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       /* Header limpio estilo Alegra */
@@ -880,18 +942,24 @@ export class SalesPrintService {
       .items-table .text-center {
         text-align: center;
         font-weight: normal;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .items-table .text-right {
         text-align: right;
         font-weight: normal;
-        color: #000;
+        color: var(--invoice-text-primary);
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .items-table .item-id {
         text-align: center;
         font-weight: normal;
         width: 7mm;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       /* Total en letras */
@@ -938,21 +1006,22 @@ export class SalesPrintService {
 
       .totals-value {
         font-weight: normal;
-        color: #000;
+        color: var(--invoice-text-primary);
         font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
         text-align: right;
       }
 
       .total-final {
-        background: #d9d9d9;
-        color: #000;
-        padding: 1.5mm 2.5mm;
-        margin-top: 1mm;
-        border: 1px solid #999;
+        background: var(--invoice-bg-medium);
+        color: var(--invoice-text-primary);
+        padding: var(--invoice-spacing-md) var(--invoice-spacing-lg);
+        margin-top: var(--invoice-spacing-sm);
+        border: 1px solid var(--invoice-table-border);
       }
 
       .total-final .totals-label {
-        color: #000;
+        color: var(--invoice-text-primary);
         font-weight: bold;
         text-transform: none;
         font-size: 8pt;
@@ -962,8 +1031,10 @@ export class SalesPrintService {
       .total-final .totals-value {
         font-weight: bold;
         font-size: 8pt;
-        color: #000;
+        color: var(--invoice-text-primary);
         letter-spacing: 0;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .total-lines {
@@ -1082,6 +1153,28 @@ export class SalesPrintService {
       }
     ` : `
       /* ===== ESTILOS ESTILO ALEGRA PARA TAMAÑO CARTA ===== */
+      :root {
+        --invoice-primary-color: #000;
+        --invoice-secondary-color: #333;
+        --invoice-tertiary-color: #666;
+        --invoice-border-color: #999;
+        --invoice-bg-light: #f9f9f9;
+        --invoice-bg-medium: #d9d9d9;
+        --invoice-separator-color: #ddd;
+        --invoice-table-header-bg: #d9d9d9;
+        --invoice-table-header-color: #000;
+        --invoice-table-border: #999;
+        --invoice-text-primary: #000;
+        --invoice-text-secondary: #333;
+        --invoice-text-tertiary: #666;
+        --invoice-spacing-xs: 0.5mm;
+        --invoice-spacing-sm: 1mm;
+        --invoice-spacing-md: 1.5mm;
+        --invoice-spacing-lg: 2mm;
+        --invoice-spacing-xl: 3mm;
+        --invoice-font-family: 'Arial', 'Helvetica', sans-serif;
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -1094,14 +1187,16 @@ export class SalesPrintService {
       }
 
       body {
-        font-family: 'Arial', 'Helvetica', sans-serif;
+        font-family: var(--invoice-font-family);
         width: 8.5in;
         margin: 0 auto;
         padding: 8mm;
-        color: #000;
+        color: var(--invoice-text-primary);
         background: #fff;
         font-size: 7.5pt;
         line-height: 1.2;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       /* Header limpio estilo Alegra */
@@ -1312,18 +1407,27 @@ export class SalesPrintService {
       }
 
       .items-table thead {
-        background: #d9d9d9;
-        color: #000;
+        background: var(--invoice-table-header-bg);
+        color: var(--invoice-table-header-color);
       }
 
       .items-table th {
-        padding: 1mm 1.5mm;
+        padding: var(--invoice-spacing-sm) var(--invoice-spacing-md);
         text-align: left;
         font-weight: bold;
         font-size: 7pt;
         text-transform: uppercase;
-        border: 1px solid #999;
-        background: #d9d9d9;
+        border: 1px solid var(--invoice-table-border);
+        background: var(--invoice-table-header-bg);
+        color: var(--invoice-table-header-color);
+      }
+
+      .items-table tbody tr:nth-child(even) {
+        background: var(--invoice-bg-light);
+      }
+
+      .items-table tbody tr:nth-child(even) td {
+        background: var(--invoice-bg-light);
       }
 
       .items-table th.text-center { text-align: center; }
@@ -1346,9 +1450,9 @@ export class SalesPrintService {
       }
 
       .items-table td {
-        padding: 1mm 1.5mm;
+        padding: var(--invoice-spacing-sm) var(--invoice-spacing-md);
         vertical-align: top;
-        border: 1px solid #999;
+        border: 1px solid var(--invoice-table-border);
         background: #fff;
       }
 
@@ -1369,18 +1473,24 @@ export class SalesPrintService {
       .items-table .text-center {
         text-align: center;
         font-weight: normal;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .items-table .text-right {
         text-align: right;
         font-weight: normal;
-        color: #000;
+        color: var(--invoice-text-primary);
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       .items-table .item-id {
         text-align: center;
         font-weight: normal;
         width: 6mm;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
       }
 
       /* Totales estilo Alegra */
@@ -1418,17 +1528,18 @@ export class SalesPrintService {
 
       .totals-value {
         font-weight: normal;
-        color: #000;
+        color: var(--invoice-text-primary);
         font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
         text-align: right;
       }
 
       .total-final {
-        background: #d9d9d9;
-        color: #000;
-        padding: 1.5mm 2mm;
-        margin-top: 1mm;
-        border: 1px solid #999;
+        background: var(--invoice-bg-medium);
+        color: var(--invoice-text-primary);
+        padding: var(--invoice-spacing-md) var(--invoice-spacing-lg);
+        margin-top: var(--invoice-spacing-sm);
+        border: 1px solid var(--invoice-table-border);
       }
 
       .total-final .totals-label {
@@ -1972,10 +2083,6 @@ export class SalesPrintService {
               <div class="signature-line"></div>
               <div class="signature-label">ACEPTADA, FIRMA Y/O SELLO Y FECHA</div>
             </div>
-          </div>
-
-          <div class="footer-tech">
-            Proveedor tecnológico: Soluciones Alegra S.A.S - Software: Alegra - NIT 900.559.088-2
           </div>
         </div>
         `}
