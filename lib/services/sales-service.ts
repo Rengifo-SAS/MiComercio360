@@ -121,7 +121,7 @@ export class SalesService {
     supabaseClient?: any
   ): Promise<Sale | null> {
     const client = supabaseClient || this.supabase;
-    
+
     const { data, error } = await client
       .from('sales')
       .select(`
@@ -195,30 +195,60 @@ export class SalesService {
     let customerIdToUse = saleInfo.customer_id;
     if (!customerIdToUse) {
       try {
-        // Intentar buscar por varios nombres comunes de cliente por defecto
-        const searchTerms = ['%consumidor%final%', '%contado%', '%generico%', '%general%', '%publico%'];
-        let defaultCustomer = null;
+        // Primero intentar buscar por NIT estándar colombiano (más confiable)
+        const { data: customerByNIT } = await this.supabase
+          .from('customers')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('identification_number', '22222222-2')
+          .eq('identification_type', 'NIT')
+          .limit(1)
+          .maybeSingle();
 
-        for (const term of searchTerms) {
-          const { data } = await this.supabase
-            .from('customers')
-            .select('id')
-            .eq('company_id', companyId)
-            .ilike('name', term)
-            .limit(1)
-            .maybeSingle();
+        if (customerByNIT?.id) {
+          customerIdToUse = customerByNIT.id;
+        } else {
+          // Si no se encuentra por NIT, buscar por business_name
+          const searchTerms = ['%consumidor%final%', '%contado%', '%generico%', '%general%', '%publico%'];
+          let defaultCustomer = null;
 
-          if (data?.id) {
-            defaultCustomer = data;
-            break;
+          for (const term of searchTerms) {
+            const { data } = await this.supabase
+              .from('customers')
+              .select('id')
+              .eq('company_id', companyId)
+              .ilike('business_name', term)
+              .limit(1)
+              .maybeSingle();
+
+            if (data?.id) {
+              defaultCustomer = data;
+              break;
+            }
+          }
+
+          if (defaultCustomer?.id) {
+            customerIdToUse = defaultCustomer.id;
           }
         }
-
-        if (defaultCustomer?.id) {
-          customerIdToUse = defaultCustomer.id;
-        }
       } catch (err) {
+        console.error('Error buscando cliente por defecto:', err);
+      }
+    }
 
+    // Validar que customerIdToUse sea válido antes de insertar
+    if (customerIdToUse) {
+      // Verificar que el cliente existe
+      const { data: customerCheck } = await this.supabase
+        .from('customers')
+        .select('id')
+        .eq('id', customerIdToUse)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (!customerCheck?.id) {
+        console.warn('Cliente no encontrado, eliminando customer_id del insert');
+        customerIdToUse = undefined;
       }
     }
 
@@ -230,7 +260,7 @@ export class SalesService {
           .from('numerations')
           .select('id')
           .eq('company_id', companyId)
-          .eq('type', 'invoice')
+          .eq('document_type', 'invoice')
           .eq('is_active', true)
           .order('created_at', { ascending: true })
           .limit(1)
@@ -240,7 +270,24 @@ export class SalesService {
           numerationIdToUse = defaultNumeration.id;
         }
       } catch (err) {
+        console.error('Error buscando numeración por defecto:', err);
+      }
+    }
 
+    // Validar que numerationIdToUse sea válido antes de insertar
+    if (numerationIdToUse) {
+      // Verificar que la numeración existe
+      const { data: numerationCheck } = await this.supabase
+        .from('numerations')
+        .select('id')
+        .eq('id', numerationIdToUse)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!numerationCheck?.id) {
+        console.warn('Numeración no encontrada o inactiva, eliminando numeration_id del insert');
+        numerationIdToUse = undefined;
       }
     }
 
@@ -259,23 +306,54 @@ export class SalesService {
       return mapping[paymentType] || 'cash'; // Default a cash si no se encuentra
     };
 
-    // Preparar datos de venta con payment_method mapeado
-    const saleInsertData = {
+    const saleInsertData: any = {
       company_id: companyId,
       shift_id: activeShift?.id, // Asociar con el turno activo
       sale_number: saleNumber,
-      customer_id: customerIdToUse, // Usar el cliente obtenido o proporcionado
-      numeration_id: numerationIdToUse, // Usar la numeración obtenida o proporcionada
+      customer_id: customerIdToUse, // Usar el cliente obtenido o proporcionado 
+      numeration_id: numerationIdToUse, // Usar la numeración obtenida o proporcionada (puede ser undefined si no existe)
       subtotal: totals.subtotal,
       tax_amount: totals.tax_amount,
       discount_amount: totals.discount_amount,
-      ...saleInfo,
+      total_amount: totals.total_amount, // Usar el total calculado
       payment_method: mapPaymentMethod(saleInfo.payment_method),
       // Incluir información de pago si está disponible
       payment_reference: saleInfo.payment_reference,
       payment_amount_received: saleInfo.payment_amount_received,
-      payment_change: saleInfo.payment_change
+      payment_change: saleInfo.payment_change,
+      // Notas y otros campos
+      notes: saleInfo.notes,
+      account_id: saleInfo.account_id,
+      // Si se proporciona created_at, usarlo (para conversiones desde remisiones)
+      created_at: saleInfo.created_at,
     };
+
+    // IMPORTANTE: Para ventas del POS, siempre establecer como 'completed'
+    // Solo si viene explícitamente definido Y es un string válido Y no está vacío, usar ese valor
+    // Esto permite que el formulario de ventas (/dashboard/sales) pueda establecer 'pending'
+    const hasExplicitPaymentStatus = saleInfo.payment_status !== undefined && 
+                                     saleInfo.payment_status !== null && 
+                                     typeof saleInfo.payment_status === 'string' &&
+                                     saleInfo.payment_status.trim() !== '';
+    
+    if (hasExplicitPaymentStatus) {
+      saleInsertData.payment_status = saleInfo.payment_status;
+    } else {
+      // No viene definido o está vacío = viene del POS, establecer como 'completed'
+      saleInsertData.payment_status = 'completed';
+    }
+
+    const hasExplicitStatus = saleInfo.status !== undefined && 
+                              saleInfo.status !== null && 
+                              typeof saleInfo.status === 'string' &&
+                              saleInfo.status.trim() !== '';
+    
+    if (hasExplicitStatus) {
+      saleInsertData.status = saleInfo.status;
+    } else {
+      // No viene definido o está vacío = viene del POS, establecer como 'completed'
+      saleInsertData.status = 'completed';
+    }
 
     // Eliminar customer_id y numeration_id si quedaron undefined (para evitar error de FK)
     if (!saleInsertData.customer_id) {
@@ -334,54 +412,55 @@ export class SalesService {
       throw new Error('Error al crear los items de la venta');
     }
 
-    // Registrar movimiento financiero en cuentas
-    try {
-      // Obtener cuenta por defecto Efectivo POS si no viene account_id
-      let accountId = saleData.account_id as string | undefined;
-      if (!accountId) {
-        const { data: cashAccounts } = await this.supabase
-          .from('accounts')
-          .select('id, account_name')
-          .eq('company_id', companyId)
-          .eq('is_active', true);
-        accountId = cashAccounts?.find(a => a.account_name === 'Efectivo POS')?.id;
-      }
-
-      if (accountId) {
-        // Obtener el saldo actual de la cuenta
-        const { data: account } = await this.supabase
-          .from('accounts')
-          .select('current_balance')
-          .eq('id', accountId)
-          .single();
-
-        const currentBalance = account?.current_balance || 0;
-        const newBalance = currentBalance + totals.total_amount;
-
-        // Insertar la transacción con el balance_after calculado
-        const { error: txError } = await this.supabase
-          .from('account_transactions')
-          .insert({
-            account_id: accountId,
-            company_id: companyId,
-            transaction_type: 'RECEIPT',
-            amount: totals.total_amount,
-            balance_after: newBalance,
-            description: `Venta ${saleNumber}`,
-            related_entity_type: 'sale',
-            related_entity_id: sale.id,
-          });
-
-        if (txError) {
-          console.error('Error insertando transacción de cuenta:', txError);
-          throw txError;
+    const finalPaymentStatus = saleInsertData.payment_status || 'completed';
+    if (finalPaymentStatus === 'completed') {
+      try {
+        // Obtener cuenta por defecto Efectivo POS si no viene account_id
+        let accountId = saleData.account_id as string | undefined;
+        if (!accountId) {
+          const { data: cashAccounts } = await this.supabase
+            .from('accounts')
+            .select('id, account_name')
+            .eq('company_id', companyId)
+            .eq('is_active', true);
+          accountId = cashAccounts?.find(a => a.account_name === 'Efectivo POS')?.id;
         }
-      } else {
 
+        if (accountId) {
+          // Obtener el saldo actual de la cuenta
+          const { data: account } = await this.supabase
+            .from('accounts')
+            .select('current_balance')
+            .eq('id', accountId)
+            .single();
+
+          const currentBalance = account?.current_balance || 0;
+          const newBalance = currentBalance + totals.total_amount;
+
+          // Insertar la transacción con el balance_after calculado
+          const { error: txError } = await this.supabase
+            .from('account_transactions')
+            .insert({
+              account_id: accountId,
+              company_id: companyId,
+              transaction_type: 'RECEIPT',
+              amount: totals.total_amount,
+              balance_after: newBalance,
+              description: `Venta ${saleNumber}`,
+              related_entity_type: 'sale',
+              related_entity_id: sale.id,
+            });
+
+          if (txError) {
+            console.error('Error insertando transacción de cuenta:', txError);
+            throw txError;
+          }
+        }
+      } catch (txError) {
+        console.error('Error registrando transacción de cuenta para la venta:', txError);
+        // No hacer rollback de la venta; se puede registrar manualmente luego
       }
-    } catch (txError) {
-      console.error('Error registrando transacción de cuenta para la venta:', txError);
-      // No hacer rollback de la venta; se puede registrar manualmente luego
+    } else {
     }
 
     // Actualizar inventario
@@ -817,7 +896,7 @@ export class SalesService {
         // Buscar la primera numeración activa de tipo invoice
         const numerations = await offlineStorage.getCachedNumerations(companyId);
         numeration = numerations.find(
-          (n) => n.type === 'invoice' && n.is_active === true
+          (n) => n.document_type === 'invoice' && n.is_active === true
         );
       }
 

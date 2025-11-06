@@ -337,17 +337,17 @@ export function SalesPageClient({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="flex-1 w-full flex flex-col gap-4 sm:gap-6 p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Ventas</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Ventas</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gestiona las transacciones de venta
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleNewSale}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button onClick={handleNewSale} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Venta
           </Button>
@@ -355,15 +355,15 @@ export function SalesPageClient({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ventas Hoy</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">Ventas Hoy</CardTitle>
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.sales_today || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl sm:text-2xl font-bold truncate">{stats?.sales_today || 0}</div>
+            <p className="text-xs text-muted-foreground truncate">
               {formatCurrency(stats?.amount_today || 0)}
             </p>
           </CardContent>
@@ -371,16 +371,16 @@ export function SalesPageClient({
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
               Ventas del Mes
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold truncate">
               {stats?.sales_this_month || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               {formatCurrency(stats?.amount_this_month || 0)}
             </p>
           </CardContent>
@@ -388,16 +388,16 @@ export function SalesPageClient({
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
               Promedio por Venta
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold truncate">
               {formatCurrency(stats?.average_sale || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               {stats?.total_sales || 0} transacciones
             </p>
           </CardContent>
@@ -405,14 +405,14 @@ export function SalesPageClient({
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
               Total de Items
             </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.items_today || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl sm:text-2xl font-bold truncate">{stats?.items_today || 0}</div>
+            <p className="text-xs text-muted-foreground truncate">
               {formatCurrency(stats?.amount_today || 0)} total
             </p>
           </CardContent>
@@ -420,36 +420,40 @@ export function SalesPageClient({
       </div>
 
       {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por número o notas..."
               value={searchParams.query}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-8 w-64"
+              className="pl-8 w-full sm:w-64"
             />
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
+            className="flex-shrink-0"
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtrar
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtrar</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex-shrink-0">
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowRefundsManagement(true)}
+            className="flex-shrink-0"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reembolsos
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Reembolsos</span>
           </Button>
         </div>
       </div>

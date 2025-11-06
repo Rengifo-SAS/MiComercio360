@@ -58,7 +58,7 @@ export class RefundsService {
         query = query.lte('request_date', filters.date_to);
       }
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error obteniendo solicitudes de reembolso:', error);
@@ -67,7 +67,7 @@ export class RefundsService {
 
       return {
         refundRequests: data || [],
-        total: count || 0
+        total: data?.length || 0
       };
     } catch (error) {
       console.error('Error en RefundsService.getRefundRequests:', error);
@@ -383,42 +383,152 @@ export class RefundsService {
 
       // Crear transacciones contables para el reembolso
       try {
-        // Usar la misma cuenta que se usó en la venta original, o buscar Efectivo POS como fallback
-        let accountId = refundRequest.sale?.account_id;
+        // Usar la misma cuenta que se usó en la venta original
+        let accountId: string | undefined = undefined;
         
+        // Primero intentar obtener account_id de la venta en el objeto refundRequest
+        const saleAccountId = (refundRequest as any).sale?.account_id;
+        console.log('🔍 Buscando cuenta para reembolso. account_id de venta en refundRequest:', saleAccountId);
+        
+        if (saleAccountId) {
+          accountId = saleAccountId;
+          console.log('✅ Cuenta encontrada en refundRequest.sale:', accountId);
+        }
+        
+        // Si no tiene account_id, obtener la venta directamente de la base de datos
         if (!accountId) {
-          // Fallback: buscar la cuenta de efectivo POS
-          const { data: cashAccount } = await this.supabase
-            .from('accounts')
-            .select('id, name')
-            .eq('company_id', refundRequest.company_id)
-            .eq('name', 'Efectivo POS')
+          console.log('📋 Consultando tabla sales directamente para obtener account_id...');
+          const { data: saleData, error: saleError } = await this.supabase
+            .from('sales')
+            .select('account_id, company_id')
+            .eq('id', refundRequest.sale_id)
             .single();
           
-          if (cashAccount) {
+          if (saleError) {
+            console.error('❌ Error obteniendo venta:', saleError);
+          } else {
+            accountId = saleData?.account_id || undefined;
+            console.log('📋 account_id obtenido de tabla sales:', accountId);
+            if (saleData?.company_id) {
+              console.log('📋 company_id de la venta:', saleData.company_id);
+            }
+          }
+        }
+        
+        // Si aún no hay cuenta, buscar la cuenta de efectivo POS como fallback
+        if (!accountId) {
+          console.log('💰 Buscando cuenta de efectivo POS como fallback...');
+          const { data: cashAccount, error: cashError } = await this.supabase
+            .from('accounts')
+            .select('id, account_name, account_type')
+            .eq('company_id', refundRequest.company_id)
+            .eq('account_name', 'Efectivo POS')
+            .eq('is_active', true)
+            .maybeSingle();
+          
+          if (cashError) {
+            console.error('❌ Error buscando cuenta Efectivo POS:', cashError);
+          } else if (cashAccount) {
             accountId = cashAccount.id;
+            console.log('✅ Cuenta Efectivo POS encontrada:', accountId, cashAccount.account_name);
+          } else {
+            console.log('⚠️ No se encontró cuenta "Efectivo POS"');
+          }
+        }
+        
+        // Si aún no hay cuenta, buscar cualquier cuenta de efectivo activa
+        if (!accountId) {
+          console.log('💰 Buscando cualquier cuenta CASH_BOX activa...');
+          const { data: cashAccountAlt, error: cashAltError } = await this.supabase
+            .from('accounts')
+            .select('id, account_name, account_type')
+            .eq('company_id', refundRequest.company_id)
+            .eq('account_type', 'CASH_BOX')
+            .eq('is_active', true)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          
+          if (cashAltError) {
+            console.error('❌ Error buscando cuenta CASH_BOX:', cashAltError);
+          } else if (cashAccountAlt) {
+            accountId = cashAccountAlt.id;
+            console.log('✅ Cuenta CASH_BOX encontrada:', accountId, cashAccountAlt.account_name);
+          } else {
+            console.log('⚠️ No se encontró ninguna cuenta CASH_BOX activa');
+          }
+        }
+        
+        // Si aún no hay cuenta, buscar CUALQUIER cuenta activa como último recurso
+        if (!accountId) {
+          console.log('🔍 Buscando cualquier cuenta activa como último recurso...');
+          const { data: anyAccount, error: anyAccountError } = await this.supabase
+            .from('accounts')
+            .select('id, account_name, account_type')
+            .eq('company_id', refundRequest.company_id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          
+          if (anyAccountError) {
+            console.error('❌ Error buscando cualquier cuenta activa:', anyAccountError);
+          } else if (anyAccount) {
+            accountId = anyAccount.id;
+            console.log('⚠️ Cuenta activa encontrada (último recurso):', accountId, anyAccount.account_name, anyAccount.account_type);
           }
         }
 
-        if (accountId) {
-          // Crear transacción de débito (salida de efectivo)
-          // El amount debe ser negativo para representar una salida de dinero
-          await AccountsService.createTransaction({
-            account_id: accountId,
-            transaction_type: 'WITHDRAWAL',
-            amount: -refundRequest.requested_amount, // NEGATIVO para salida de efectivo
-            description: `Reembolso de venta ${refundRequest.sale?.sale_number || refundRequest.sale_id}`,
-            reference_number: `REFUND-${refundRequest.id}`,
-            transaction_date: new Date().toISOString()
+        // Verificar que finalmente tenemos una cuenta
+        if (!accountId) {
+          // Listar todas las cuentas para debugging
+          const { data: allAccounts, error: listError } = await this.supabase
+            .from('accounts')
+            .select('id, account_name, account_type, is_active, company_id')
+            .eq('company_id', refundRequest.company_id);
+          
+          console.error('❌ NO SE ENCONTRÓ CUENTA. Cuentas disponibles en la empresa:', {
+            companyId: refundRequest.company_id,
+            accountsCount: allAccounts?.length || 0,
+            accounts: allAccounts || [],
+            listError,
           });
           
-          console.log('Transacción contable de reembolso creada exitosamente:', -refundRequest.requested_amount);
-        } else {
-          console.error('No se encontró cuenta para crear transacción de reembolso');
+          const errorMsg = `No se encontró cuenta para crear transacción de reembolso. Venta ID: ${refundRequest.sale_id}, Company ID: ${refundRequest.company_id}. Por favor, verifica que exista al menos una cuenta activa en la empresa.`;
+          throw new Error(errorMsg);
         }
-      } catch (accountError) {
-        console.error('Error creando transacción contable del reembolso:', accountError);
-        // No lanzar error para no interrumpir el proceso de reembolso
+
+        // Crear transacción de reembolso (salida de efectivo)
+        const amount = refundRequest.approved_amount || refundRequest.requested_amount;
+        
+        console.log('💳 Creando transacción de reembolso:', {
+          accountId,
+          amount: -amount,
+          transaction_type: 'REFUND',
+          description: `Reembolso de venta ${(refundRequest as any).sale?.sale_number || refundRequest.sale_id}`,
+        });
+        
+        const transactionResult = await AccountsService.createTransaction({
+          account_id: accountId,
+          transaction_type: 'REFUND', // Usar tipo REFUND específico
+          amount: -amount, // NEGATIVO para salida de efectivo
+          description: `Reembolso de venta ${(refundRequest as any).sale?.sale_number || refundRequest.sale_id}`,
+          reference_number: `REFUND-${refundRequest.id}`,
+          transaction_date: new Date().toISOString(),
+          related_entity_type: 'refund',
+          related_entity_id: refundRequest.id,
+        });
+        
+        console.log('✅ Transacción contable de reembolso creada exitosamente:', {
+          transactionId: transactionResult?.id,
+          accountId,
+          amount: -amount,
+          balanceAfter: transactionResult?.balance_after,
+        });
+      } catch (accountError: any) {
+        console.error('❌ Error creando transacción contable del reembolso:', accountError);
+        // Lanzar error para que el usuario sepa que falló la creación de la transacción
+        throw new Error(`Error al crear transacción contable: ${accountError.message || 'Error desconocido'}`);
       }
 
       return data;

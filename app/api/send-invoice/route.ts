@@ -47,17 +47,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Crear servicio de correo
-        const emailService = EmailService.createGmailService();
-
-        // Verificar conexión SMTP
-        const isConnected = await emailService.verifyConnection();
-        if (!isConnected) {
-            return NextResponse.json(
-                { error: 'Error de conexión SMTP. Verifique la configuración.' },
-                { status: 500 }
-            );
-        }
+        // Crear servicio de correo (usando Resend directamente)
+        const emailService = EmailService.create();
 
         // Enviar factura por correo (siempre usar tamaño carta para correos)
         await emailService.sendInvoice(

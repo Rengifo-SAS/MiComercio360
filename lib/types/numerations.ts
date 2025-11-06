@@ -60,16 +60,23 @@ export interface NumerationSummary {
 
 // Tipos de documentos soportados
 export type DocumentType = 
-  | 'invoice'           // Factura de venta
-  | 'receipt'           // Recibo de caja
-  | 'expense_voucher'   // Comprobante de egreso
-  | 'credit_note'       // Nota crédito
-  | 'debit_note'        // Nota débito
-  | 'purchase_order'    // Orden de compra
-  | 'quotation'         // Cotización
-  | 'delivery_note'     // Remisión
-  | 'payment_voucher'   // Comprobante de pago
-  | 'adjustment_note';  // Nota de ajuste
+  | 'invoice'              // Factura de venta
+  | 'receipt'              // Recibo de caja
+  | 'expense_voucher'      // Comprobante de egreso
+  | 'credit_note'          // Nota crédito
+  | 'debit_note'           // Nota débito
+  | 'purchase_order'       // Orden de compra
+  | 'quotation'            // Cotización
+  | 'delivery_note'         // Remisión
+  | 'payment_voucher'      // Comprobante de pago
+  | 'adjustment_note'      // Nota de ajuste
+  | 'payment_received'     // Pagos recibidos
+  | 'recurring_invoice'    // Facturas Recurrentes
+  | 'sale_return'          // Devoluciones de venta
+  | 'purchase_invoice'     // Factura de Compra (Egresos)
+  | 'support_document'     // Documento de soporte
+  | 'payment'              // Pagos
+  | 'recurring_payment';   // Pagos Recurrentes
 
 // Configuración de tipos de documentos
 export const DOCUMENT_TYPES: Array<{
@@ -148,6 +155,55 @@ export const DOCUMENT_TYPES: Array<{
     description: 'Documento para ajustes de inventario o contables',
     defaultPrefix: 'NA',
     icon: 'Settings'
+  },
+  {
+    value: 'payment_received',
+    label: 'Pagos Recibidos',
+    description: 'Documento de registro de pagos recibidos de clientes',
+    defaultPrefix: 'PR',
+    icon: 'DollarSign'
+  },
+  {
+    value: 'recurring_invoice',
+    label: 'Facturas Recurrentes',
+    description: 'Facturas que se generan automáticamente de forma periódica',
+    defaultPrefix: 'FREC',
+    icon: 'Repeat'
+  },
+  {
+    value: 'sale_return',
+    label: 'Devoluciones de Venta',
+    description: 'Documento de devolución de productos vendidos',
+    defaultPrefix: 'DEV',
+    icon: 'RotateCcw'
+  },
+  {
+    value: 'purchase_invoice',
+    label: 'Factura de Compra',
+    description: 'Documento de compra de productos o servicios (Egresos)',
+    defaultPrefix: 'FAC-C',
+    icon: 'FileText'
+  },
+  {
+    value: 'support_document',
+    label: 'Documento de Soporte',
+    description: 'Documento de soporte contable o administrativo',
+    defaultPrefix: 'DS',
+    icon: 'FileCheck'
+  },
+  {
+    value: 'payment',
+    label: 'Pagos',
+    description: 'Documento de registro de pagos realizados',
+    defaultPrefix: 'PAG',
+    icon: 'CreditCard'
+  },
+  {
+    value: 'recurring_payment',
+    label: 'Pagos Recurrentes',
+    description: 'Pagos que se realizan automáticamente de forma periódica',
+    defaultPrefix: 'PAG-REC',
+    icon: 'Repeat'
   }
 ];
 

@@ -50,6 +50,8 @@ import {
   BarChart3,
   Clock,
   CheckCircle,
+  Repeat,
+  FileCheck,
 } from 'lucide-react';
 import { NumerationFormDialog } from './numeration-form-dialog';
 import { NumerationViewDialog } from './numeration-view-dialog';
@@ -218,6 +220,9 @@ export function NumerationsPageClient({
       Truck,
       DollarSign,
       Settings,
+      Repeat,
+      RotateCcw,
+      FileCheck,
     };
     return iconMap[typeInfo?.icon || 'FileText'] || FileText;
   };

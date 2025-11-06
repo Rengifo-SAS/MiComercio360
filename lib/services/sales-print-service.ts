@@ -36,7 +36,7 @@ export class SalesPrintService {
   }
 
   // Generar HTML para impresión de venta
-  static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<string> {
+  static async generatePrintHTML(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
     try {
 
 
@@ -93,7 +93,7 @@ export class SalesPrintService {
   }
 
   // Procesar plantilla con datos de la venta
-  private static processTemplate(template: PrintTemplate, sale: Sale, company: any, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): string {
+  private static processTemplate(template: PrintTemplate, sale: Sale, company: any, paperSize: 'letter' | 'thermal-80mm' = 'letter'): string {
     let html = template.body_template || '';
 
     // Reemplazar variables de la empresa
@@ -217,7 +217,7 @@ export class SalesPrintService {
   }
 
   // Generar HTML por defecto si no hay plantilla
-  private static async generateDefaultPrintHTML(sale: Sale, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<string> {
+  private static async generateDefaultPrintHTML(sale: Sale, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<string> {
     // Obtener datos de la empresa con preferencia por cache si estamos offline
     let companyData = null;
     const isBrowser = typeof window !== 'undefined';
@@ -646,513 +646,8 @@ export class SalesPrintService {
           margin: 5mm auto;
         }
       }
-    ` : paperSize === 'half-letter' ? `
-      /* ===== ESTILOS ESTILO ALEGRA PARA MEDIA CARTA ===== */
-      :root {
-        --invoice-primary-color: #000;
-        --invoice-secondary-color: #333;
-        --invoice-tertiary-color: #666;
-        --invoice-border-color: #999;
-        --invoice-bg-light: #f9f9f9;
-        --invoice-bg-medium: #d9d9d9;
-        --invoice-separator-color: #ddd;
-        --invoice-table-header-bg: #d9d9d9;
-        --invoice-table-header-color: #000;
-        --invoice-table-border: #999;
-        --invoice-text-primary: #000;
-        --invoice-text-secondary: #333;
-        --invoice-text-tertiary: #666;
-        --invoice-spacing-xs: 1mm;
-        --invoice-spacing-sm: 1.5mm;
-        --invoice-spacing-md: 2mm;
-        --invoice-spacing-lg: 3mm;
-        --invoice-spacing-xl: 4mm;
-        --invoice-font-family: 'Arial', 'Helvetica', sans-serif;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      @page {
-        size: 5.5in 8.5in;
-        margin: 0;
-      }
-
-      body {
-        font-family: var(--invoice-font-family);
-        width: 5.5in;
-        margin: 0 auto;
-        padding: 8mm;
-        color: var(--invoice-text-primary);
-        background: #fff;
-        font-size: 7pt;
-        line-height: 1.2;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      /* Header limpio estilo Alegra */
-      .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 3mm;
-        padding-bottom: 0;
-        border-bottom: none;
-      }
-
-      .header-left {
-        flex: 1;
-        max-width: 55%;
-      }
-
-      .header-right {
-        width: 65mm;
-        text-align: right;
-        padding: 0;
-        background: none;
-        box-shadow: none;
-        border-radius: 0;
-        color: #000;
-      }
-
-      /* Información de empresa estilo Alegra */
-      .company-logo {
-        max-width: 50mm;
-        max-height: 18mm;
-        margin-bottom: 2mm;
-      }
-
-      .company-name {
-        font-size: 11pt;
-        font-weight: bold;
-        color: #000;
-        margin-bottom: 1mm;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        line-height: 1.2;
-      }
-
-      .company-nit {
-        font-size: 8pt;
-        font-weight: normal;
-        color: #000;
-        margin-bottom: 1.5mm;
-      }
-
-      .company-details {
-        font-size: 7.5pt;
-        color: #000;
-        line-height: 1.4;
-      }
-
-      .company-details div {
-        margin-bottom: 0.5mm;
-      }
-
-      .company-regime {
-        margin-top: 1.5mm;
-        padding: 0;
-        font-weight: normal;
-        color: #000;
-        font-size: 7.5pt;
-      }
-
-      /* Box de factura estilo Alegra */
-      .invoice-box {
-        text-align: right;
-      }
-
-      .invoice-title {
-        font-size: 10pt;
-        font-weight: bold;
-        margin-bottom: 1mm;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        color: #000;
-      }
-
-      .invoice-number {
-        font-size: 14pt;
-        font-weight: bold;
-        margin-bottom: 2mm;
-        letter-spacing: 0.4px;
-        color: #000;
-      }
-
-      .invoice-meta {
-        font-size: 7pt;
-        line-height: 1.5;
-        color: #000;
-      }
-
-      .invoice-meta div {
-        margin-bottom: 0.8mm;
-      }
-
-      .invoice-label {
-        font-weight: normal;
-        display: inline;
-        text-align: right;
-      }
-
-      /* Información del cliente estilo Alegra */
-      .client-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        background: #d9d9d9;
-        border: 1px solid #999;
-        min-height: 7mm;
-      }
-
-      .client-row + .client-row {
-        border-top: none;
-      }
-
-      .client-label {
-        background: #d9d9d9;
-        padding: 1.5mm 2.5mm;
-        font-weight: bold;
-        color: #000;
-        text-transform: uppercase;
-        font-size: 7.5pt;
-        border-right: 1px solid #999;
-        display: flex;
-        align-items: center;
-      }
-
-      .client-value {
-        background: #fff;
-        padding: 1.5mm 2.5mm;
-        color: #000;
-        display: flex;
-        align-items: center;
-        font-weight: normal;
-        font-size: 7.5pt;
-      }
-
-      .date-label {
-        background: #d9d9d9;
-        padding: 1.5mm 2.5mm;
-        font-weight: bold;
-        color: #000;
-        text-transform: uppercase;
-        font-size: 7.5pt;
-        border-right: 1px solid #999;
-        border-left: 1px solid #999;
-        display: flex;
-        align-items: center;
-      }
-
-      .date-value {
-        background: #fff;
-        padding: 1.5mm 2.5mm;
-        color: #000;
-        display: flex;
-        align-items: center;
-        font-size: 7.5pt;
-      }
-
-      .section-title {
-        display: none;
-      }
-
-      .client-grid {
-        display: block;
-      }
-
-      .client-field {
-        display: none;
-      }
-
-      .field-label {
-        display: none;
-      }
-
-      .field-value {
-        display: none;
-      }
-
-      /* Tabla de productos estilo Alegra */
-      .items-section {
-        margin: 4mm 0;
-      }
-
-      .items-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 7.5pt;
-        border: 1px solid #999;
-      }
-
-      .items-table thead {
-        background: #d9d9d9;
-        color: #000;
-      }
-
-      .items-table th {
-        padding: 1.5mm 1.5mm;
-        text-align: left;
-        font-weight: bold;
-        font-size: 7.5pt;
-        text-transform: uppercase;
-        border: 1px solid #999;
-        background: #d9d9d9;
-      }
-
-      .items-table th.text-center { text-align: center; }
-      .items-table th.text-right { text-align: right; }
-
-      .items-table tbody tr {
-        border: none;
-      }
-
-      .items-table tbody tr:nth-child(even) {
-        background: #fff;
-      }
-
-      .items-table tbody tr:hover {
-        background: inherit;
-      }
-
-      .items-table td {
-        padding: 1.5mm 1.5mm;
-        vertical-align: top;
-        border: 1px solid #999;
-        background: #fff;
-      }
-
-      .items-table .description {
-        font-weight: normal;
-        color: #000;
-        line-height: 1.2;
-      }
-
-      .items-table .description small {
-        display: block;
-        font-size: 7pt;
-        color: #666;
-        margin-top: 0.4mm;
-        font-weight: normal;
-      }
-
-      .items-table .text-center {
-        text-align: center;
-        font-weight: normal;
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: 'tnum';
-      }
-
-      .items-table .text-right {
-        text-align: right;
-        font-weight: normal;
-        color: var(--invoice-text-primary);
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: 'tnum';
-      }
-
-      .items-table .item-id {
-        text-align: center;
-        font-weight: normal;
-        width: 7mm;
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: 'tnum';
-      }
-
-      /* Total en letras */
-      .total-words {
-        font-size: 7.5pt;
-        color: #000;
-        margin: 4mm 0;
-        padding: 1.5mm 0;
-        font-weight: normal;
-      }
-
-      /* Totales estilo Alegra */
-      .totals-section {
-        margin-top: 4mm;
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      .totals-box {
-        width: 50mm;
-        background: #fff;
-        border: none;
-        border-radius: 0;
-        overflow: visible;
-        box-shadow: none;
-      }
-
-      .totals-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 1.5mm 0;
-        font-size: 8pt;
-        border-bottom: none;
-      }
-
-      .totals-row:last-child {
-        border-bottom: none;
-      }
-
-      .totals-label {
-        font-weight: normal;
-        color: #000;
-      }
-
-      .totals-value {
-        font-weight: normal;
-        color: var(--invoice-text-primary);
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: 'tnum';
-        text-align: right;
-      }
-
-      .total-final {
-        background: var(--invoice-bg-medium);
-        color: var(--invoice-text-primary);
-        padding: var(--invoice-spacing-md) var(--invoice-spacing-lg);
-        margin-top: var(--invoice-spacing-sm);
-        border: 1px solid var(--invoice-table-border);
-      }
-
-      .total-final .totals-label {
-        color: var(--invoice-text-primary);
-        font-weight: bold;
-        text-transform: none;
-        font-size: 8pt;
-        letter-spacing: 0;
-      }
-
-      .total-final .totals-value {
-        font-weight: bold;
-        font-size: 8pt;
-        color: var(--invoice-text-primary);
-        letter-spacing: 0;
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: 'tnum';
-      }
-
-      .total-lines {
-        font-size: 7pt;
-        color: #000;
-        margin-top: 2mm;
-        text-align: right;
-      }
-
-      /* Información de pago */
-      .payment-section {
-        display: none;
-      }
-
-      .payment-title {
-        display: none;
-      }
-
-      .payment-grid {
-        display: none;
-      }
-
-      .payment-item {
-        display: none;
-      }
-
-      .payment-label {
-        display: none;
-      }
-
-      .payment-value {
-        display: none;
-      }
-
-      /* Footer estilo Alegra */
-      .footer {
-        margin-top: 8mm;
-        padding-top: 0;
-        border-top: none;
-      }
-
-      .footer-message {
-        display: none;
-      }
-
-      .footer-legal {
-        font-size: 6.5pt;
-        color: #000;
-        line-height: 1.3;
-        text-align: justify;
-        margin-bottom: 4mm;
-        padding: 0;
-      }
-
-      .footer-signatures {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15mm;
-        margin-top: 12mm;
-        padding: 0;
-      }
-
-      .signature-box {
-        text-align: center;
-      }
-
-      .signature-line {
-        border-top: 1px solid #000;
-        margin-bottom: 1.5mm;
-        padding-top: 0;
-        min-height: 12mm;
-      }
-
-      .signature-label {
-        font-size: 7pt;
-        font-weight: normal;
-        text-transform: uppercase;
-        color: #000;
-        letter-spacing: 0;
-      }
-
-      .footer-tech {
-        text-align: center;
-        font-size: 6pt;
-        color: #666;
-        margin-top: 4mm;
-        font-style: normal;
-      }
-
-      .qr-section {
-        margin: 4mm 0;
-        text-align: left;
-        font-size: 6.5pt;
-        line-height: 1.4;
-        color: #000;
-      }
-
-      .cufe-text {
-        word-break: break-all;
-        font-family: monospace;
-        font-size: 6pt;
-      }
-
-      /* Estilos de impresión */
-      @media print {
-        body {
-          margin: 0;
-          padding: 12mm;
-        }
-        .no-print {
-          display: none !important;
-        }
-        .items-table tbody tr:hover {
-          background: inherit;
-        }
-      }
     ` : `
-      /* ===== ESTILOS ESTILO ALEGRA PARA TAMAÑO CARTA ===== */
+      /* ===== ESTILOS ESTILO  PARA TAMAÑO CARTA ===== */
       :root {
         --invoice-primary-color: #000;
         --invoice-secondary-color: #333;
@@ -1199,7 +694,7 @@ export class SalesPrintService {
         -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Header limpio estilo Alegra */
+      /* Header limpio estilo  */
       .page-header {
         display: flex;
         justify-content: space-between;
@@ -1224,7 +719,7 @@ export class SalesPrintService {
         color: #000;
       }
 
-      /* Información de empresa estilo Alegra */
+      /* Información de empresa estilo  */
       .company-logo {
         max-width: 50mm;
         max-height: 16mm;
@@ -1266,7 +761,7 @@ export class SalesPrintService {
         font-size: 7pt;
       }
 
-      /* Box de factura estilo Alegra */
+      /* Box de factura estilo  */
       .invoice-box {
         text-align: right;
       }
@@ -1304,7 +799,7 @@ export class SalesPrintService {
         text-align: right;
       }
 
-      /* Información del cliente estilo Alegra */
+      /* Información del cliente estilo  */
       .client-section {
         background: none;
         padding: 0;
@@ -1394,7 +889,7 @@ export class SalesPrintService {
         display: none;
       }
 
-      /* Tabla de productos estilo Alegra */
+      /* Tabla de productos estilo  */
       .items-section {
         margin: 3mm 0;
       }
@@ -1493,7 +988,7 @@ export class SalesPrintService {
         font-feature-settings: 'tnum';
       }
 
-      /* Totales estilo Alegra */
+      /* Totales estilo  */
       .totals-section {
         margin-top: 3mm;
         display: flex;
@@ -1598,7 +1093,7 @@ export class SalesPrintService {
         font-weight: normal;
       }
 
-      /* Footer estilo Alegra */
+      /* Footer estilo  */
       .footer {
         margin-top: 6mm;
         padding-top: 0;
@@ -1749,64 +1244,6 @@ export class SalesPrintService {
         </div>
 
         <hr class="separator" />
-        ` : paperSize === 'half-letter' ? `
-        <!-- ============================================ -->
-        <!-- FORMATO PROFESIONAL PARA MEDIA CARTA -->
-        <!-- ============================================ -->
-
-        <div class="page-header">
-          <div class="header-left">
-            <div class="company-name">${companyData?.name || 'NOMBRE DE EMPRESA'}</div>
-            ${companyData?.tax_id ? `<div class="company-nit">NIT: ${companyData.tax_id}</div>` : ''}
-            <div class="company-details">
-              ${companyData?.address ? `<div>${companyData.address}</div>` : ''}
-              ${companyData?.city || companyData?.state ? `<div>${[companyData?.city, companyData?.state].filter(Boolean).join(', ')}</div>` : ''}
-              ${companyData?.phone ? `<div>Tel: ${companyData.phone}</div>` : ''}
-              ${companyData?.email ? `<div>${companyData.email}</div>` : ''}
-            </div>
-            ${companyData?.regimen_tributario ? `<div class="company-regime">${companyData.regimen_tributario}</div>` : ''}
-          </div>
-
-          <div class="header-right">
-            <div class="invoice-box">
-              <div class="invoice-title">Factura de Venta</div>
-              <div class="invoice-number">${sale.sale_number || '0000'}</div>
-              <div class="invoice-meta">
-                <div><span class="invoice-label">Fecha de Expedición:</span> ${this.formatDate(sale.created_at)}</div>
-                <div><span class="invoice-label">Fecha de Vencimiento:</span> ${this.formatDate(sale.created_at)}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="client-section">
-          <div class="section-title">Cliente</div>
-          <div class="client-grid">
-            <div class="client-field">
-              <span class="field-label">Nombre/Razón Social</span>
-              <span class="field-value">${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</span>
-            </div>
-            <div class="client-field">
-              <span class="field-label">Identificación</span>
-              <span class="field-value">${sale.customer?.identification_type || 'CC'}: ${sale.customer?.identification_number || 'N/A'}</span>
-            </div>
-            ${sale.customer?.address ? `
-            <div class="client-field">
-              <span class="field-label">Dirección</span>
-              <span class="field-value">${sale.customer.address}</span>
-            </div>` : ''}
-            ${sale.customer?.phone ? `
-            <div class="client-field">
-              <span class="field-label">Teléfono</span>
-              <span class="field-value">${sale.customer.phone}</span>
-            </div>` : ''}
-            ${sale.customer?.email ? `
-            <div class="client-field">
-              <span class="field-label">Email</span>
-              <span class="field-value">${sale.customer.email}</span>
-            </div>` : ''}
-          </div>
-        </div>
         ` : `
         <!-- ============================================ -->
         <!-- FORMATO PROFESIONAL PARA TAMAÑO CARTA -->
@@ -1837,7 +1274,7 @@ export class SalesPrintService {
           </div>
         </div>
 
-        <!-- Sección de cliente estilo Alegra -->
+        <!-- Sección de cliente estilo  -->
         <div class="client-row">
           <div class="client-label">SEÑOR(ES)</div>
           <div class="client-value">${sale.customer?.business_name || sale.customer?.name || 'Consumidor Final'}</div>
@@ -1905,7 +1342,7 @@ export class SalesPrintService {
           </table>
         </div>
         ` : `
-        <!-- Tabla de Productos estilo Alegra para Letter/Half-Letter -->
+        <!-- Tabla de Productos estilo  para Letter -->
         <div class="items-section">
           <table class="items-table">
             <thead>
@@ -2000,12 +1437,11 @@ export class SalesPrintService {
           </div>
         </div>
         ` : `
-        <!-- Total en letras estilo Alegra -->
         <div class="total-words">
           ${this.numberToWords(sale.total_amount || 0)}
         </div>
 
-        <!-- Totales estilo Alegra para Letter/Half-Letter -->
+        <!-- Totales estilo  para Letter -->
         <div class="totals-section">
           <div class="totals-box">
             <div class="totals-row">
@@ -2064,7 +1500,7 @@ export class SalesPrintService {
           </div>
         </div>
         ` : `
-        <!-- Footer estilo Alegra para Letter/Half-Letter -->
+        <!-- Footer para Letter -->
         <div class="footer">
           <div class="footer-legal">
             Con esta factura de venta el comprador declara haber recibido de forma real y materialmente las mercancías y/o servicios descritos en este título valor.
@@ -2146,29 +1582,84 @@ export class SalesPrintService {
   }
 
   // Imprimir venta
-  static async printSale(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<void> {
+  static async printSale(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
     try {
-      const html = await this.generatePrintHTML(sale, companyId, paperSize);
+      // Generar PDF primero para evitar espacios en blanco
+      const pdfBuffer = await this.generatePDFBuffer(sale, companyId, paperSize);
+      
+      // Convertir buffer a blob (Buffer es compatible en navegador)
+      const bufferArray = new Uint8Array(pdfBuffer);
+      const blob = new Blob([bufferArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
 
-      // Crear ventana de impresión
-      const printWindow = window.open('', '_blank');
+      // Abrir PDF en nueva ventana para imprimir
+      const printWindow = window.open(url, '_blank');
       if (!printWindow) {
         throw new Error('No se pudo abrir la ventana de impresión. Verifique que los pop-ups estén habilitados.');
       }
 
-      printWindow.document.write(html);
-      printWindow.document.close();
-
-      // Esperar a que se cargue el contenido y luego imprimir
-      printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-
-        // Cerrar la ventana después de imprimir
-        printWindow.onafterprint = () => {
-          printWindow.close();
-        };
+      // Función para limpiar URL y cerrar ventana de forma segura
+      const cleanup = () => {
+        try {
+          URL.revokeObjectURL(url);
+          if (printWindow && !printWindow.closed) {
+            printWindow.close();
+          }
+        } catch (e) {
+          // Ignorar errores de limpieza
+          console.warn('Error al limpiar recursos de impresión:', e);
+        }
       };
+
+      // Esperar a que el PDF se cargue y luego imprimir
+      printWindow.onload = () => {
+        setTimeout(() => {
+          try {
+            printWindow.focus();
+            printWindow.print();
+
+            // Intentar usar onafterprint si está disponible (puede fallar por CORS)
+            try {
+              if ('onafterprint' in printWindow) {
+                printWindow.onafterprint = () => {
+                  cleanup();
+                };
+              }
+            } catch (e) {
+              // Si no se puede establecer onafterprint, usar timeout como fallback
+              setTimeout(cleanup, 5000);
+            }
+          } catch (e) {
+            console.warn('Error al imprimir:', e);
+            cleanup();
+          }
+        }, 500);
+      };
+
+      // Fallback: si onload no se dispara, intentar imprimir después de un delay
+      setTimeout(() => {
+        if (printWindow && !printWindow.closed) {
+          try {
+            printWindow.focus();
+            printWindow.print();
+
+            // Intentar usar onafterprint si está disponible
+            try {
+              if ('onafterprint' in printWindow) {
+                printWindow.onafterprint = () => {
+                  cleanup();
+                };
+              }
+            } catch (e) {
+              // Si no se puede establecer onafterprint, usar timeout como fallback
+              setTimeout(cleanup, 5000);
+            }
+          } catch (e) {
+            console.warn('Error al imprimir (fallback):', e);
+            cleanup();
+          }
+        }
+      }, 1000);
     } catch (error) {
       console.error('Error imprimiendo venta:', error);
       throw error;
@@ -2176,7 +1667,7 @@ export class SalesPrintService {
   }
 
   // Generar PDF de la venta
-  static async generatePDF(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<void> {
+  static async generatePDF(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<void> {
     try {
       console.log('Generando PDF para venta:', sale.sale_number);
 
@@ -2216,12 +1707,6 @@ export class SalesPrintService {
         margin: 5,
         customWidth: 80,
         customHeight: 200
-      } : paperSize === 'half-letter' ? {
-        format: 'custom' as const,
-        orientation: 'portrait' as const,
-        margin: 15,
-        customWidth: 139.7,  // 5.5 pulgadas
-        customHeight: 215.9  // 8.5 pulgadas
       } : {
         format: 'letter' as const,
         orientation: 'portrait' as const,
@@ -2247,7 +1732,7 @@ export class SalesPrintService {
 
 
   // Generar PDF como buffer para envío por correo (versión para cliente)
-  static async generatePDFBuffer(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' | 'half-letter' = 'letter'): Promise<Buffer> {
+  static async generatePDFBuffer(sale: Sale, companyId: string, paperSize: 'letter' | 'thermal-80mm' = 'letter'): Promise<Buffer> {
     try {
       console.log('Generando PDF buffer para venta:', sale.sale_number);
 
@@ -2285,12 +1770,6 @@ export class SalesPrintService {
         margin: 5,
         customWidth: 80,
         customHeight: 200
-      } : paperSize === 'half-letter' ? {
-        format: 'custom' as const,
-        orientation: 'portrait' as const,
-        margin: 15,
-        customWidth: 139.7,  // 5.5 pulgadas
-        customHeight: 215.9  // 8.5 pulgadas
       } : {
         format: 'letter' as const,
         orientation: 'portrait' as const,
@@ -2316,7 +1795,7 @@ export class SalesPrintService {
   }
 
   /**
-   * Convierte números a palabras en español (formato Alegra)
+   * Convierte números a palabras en español (formato )
    */
   private static numberToWords(num: number): string {
     if (num === 0) return 'Cero pesos';

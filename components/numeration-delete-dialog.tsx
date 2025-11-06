@@ -27,6 +27,9 @@ import {
   Truck,
   DollarSign,
   Settings,
+  Repeat,
+  RotateCcw,
+  FileCheck,
 } from 'lucide-react';
 
 interface NumerationDeleteDialogProps {
@@ -127,6 +130,9 @@ export function NumerationDeleteDialog({
           Truck,
           DollarSign,
           Settings,
+          Repeat,
+          RotateCcw,
+          FileCheck,
         };
         return iconMap[typeInfo.icon] || FileText;
       })()

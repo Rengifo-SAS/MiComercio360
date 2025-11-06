@@ -99,11 +99,17 @@ export class CustomersService {
         offset = 0
       } = options || {};
 
-      const { data: customers, error, count } = await this.supabase
+      let query = this.supabase
         .from('customers')
         .select('*', { count: 'exact' })
-        .eq('company_id', companyId)
-        .ilike('business_name', `%${search}%`)
+        .eq('company_id', companyId);
+
+      // Solo aplicar filtro de búsqueda si hay un término de búsqueda
+      if (search && search.trim() !== '') {
+        query = query.ilike('business_name', `%${search}%`);
+      }
+
+      const { data: customers, error, count } = await query
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(offset, offset + limit - 1);
 

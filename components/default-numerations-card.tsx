@@ -35,6 +35,9 @@ import {
   Settings,
   Eye,
   Edit,
+  Repeat,
+  RotateCcw,
+  FileCheck,
 } from 'lucide-react';
 
 interface DefaultNumerationsCardProps {
@@ -101,6 +104,9 @@ export const DefaultNumerationsCard = forwardRef<
       Truck,
       DollarSign,
       Settings,
+      Repeat,
+      RotateCcw,
+      FileCheck,
     };
     return iconMap[typeInfo?.icon || 'FileText'] || FileText;
   };
