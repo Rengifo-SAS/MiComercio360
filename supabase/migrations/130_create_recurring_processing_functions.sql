@@ -92,6 +92,7 @@ BEGIN
     INSERT INTO public.sales (
         company_id,
         customer_id,
+        numeration_id,
         sale_number,
         subtotal,
         tax_amount,
@@ -108,6 +109,7 @@ BEGIN
     VALUES (
         v_company_id,
         v_recurring_invoice.customer_id,
+        v_recurring_invoice.numeration_id,
         v_sale_number,
         v_subtotal,
         v_tax_amount,
@@ -423,23 +425,31 @@ DECLARE
     v_failed_count integer := 0;
     v_errors jsonb := '[]'::jsonb;
     v_result jsonb;
+    v_actual_generation_date date;
 BEGIN
     v_process_date := COALESCE(p_process_date, CURRENT_DATE);
     
-    -- Buscar todas las facturas recurrentes que deben procesarse hoy
+    -- Buscar todas las facturas recurrentes que deben procesarse
+    -- Procesar facturas donde next_generation_date <= fecha de procesamiento
+    -- Esto permite procesar facturas que se perdieron o se ejecutaron tarde
     FOR v_recurring_invoice IN
         SELECT *
         FROM public.recurring_invoices
         WHERE is_active = true
-          AND next_generation_date = v_process_date
+          AND next_generation_date IS NOT NULL
+          AND next_generation_date <= v_process_date
           AND (end_date IS NULL OR end_date >= v_process_date)
           AND start_date <= v_process_date
     LOOP
         BEGIN
+            -- Usar la fecha de próxima generación como fecha de generación real
+            -- Esto asegura que la factura se genere con la fecha correcta
+            v_actual_generation_date := LEAST(v_recurring_invoice.next_generation_date, v_process_date);
+            
             -- Intentar generar la factura
             SELECT public.generate_sale_from_recurring_invoice(
                 v_recurring_invoice.id,
-                v_process_date
+                v_actual_generation_date
             ) INTO v_sale_id;
             
             v_processed_count := v_processed_count + 1;
@@ -448,6 +458,8 @@ BEGIN
                 v_failed_count := v_failed_count + 1;
                 v_errors := v_errors || jsonb_build_object(
                     'recurring_invoice_id', v_recurring_invoice.id,
+                    'recurring_invoice_number', v_recurring_invoice.id::text,
+                    'next_generation_date', v_recurring_invoice.next_generation_date,
                     'error', SQLERRM
                 );
         END;
@@ -481,23 +493,29 @@ DECLARE
     v_failed_count integer := 0;
     v_errors jsonb := '[]'::jsonb;
     v_result jsonb;
+    v_actual_generation_date date;
 BEGIN
     v_process_date := COALESCE(p_process_date, CURRENT_DATE);
     
-    -- Buscar todos los pagos recurrentes que deben procesarse hoy
+    -- Buscar todos los pagos recurrentes que deben procesarse
+    -- Procesar pagos donde next_generation_date <= fecha de procesamiento
     FOR v_recurring_payment IN
         SELECT *
         FROM public.recurring_payments
         WHERE is_active = true
-          AND next_generation_date = v_process_date
+          AND next_generation_date IS NOT NULL
+          AND next_generation_date <= v_process_date
           AND (end_date IS NULL OR end_date >= v_process_date)
           AND start_date <= v_process_date
     LOOP
         BEGIN
+            -- Usar la fecha de próxima generación como fecha de generación real
+            v_actual_generation_date := LEAST(v_recurring_payment.next_generation_date, v_process_date);
+            
             -- Intentar generar el pago
             SELECT public.generate_payment_from_recurring_cron(
                 v_recurring_payment.id,
-                v_process_date
+                v_actual_generation_date
             ) INTO v_payment_id;
             
             v_processed_count := v_processed_count + 1;
@@ -506,6 +524,8 @@ BEGIN
                 v_failed_count := v_failed_count + 1;
                 v_errors := v_errors || jsonb_build_object(
                     'recurring_payment_id', v_recurring_payment.id,
+                    'recurring_payment_number', v_recurring_payment.id::text,
+                    'next_generation_date', v_recurring_payment.next_generation_date,
                     'error', SQLERRM
                 );
         END;
