@@ -229,16 +229,16 @@ export function RecurringInvoicesPageClient({
   const visiblePages = getVisiblePages();
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
             <Repeat className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Facturas Recurrentes</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Facturas Recurrentes</h1>
+            <p className="text-sm text-muted-foreground">
               Programa y gestiona facturas que se generan automáticamente
             </p>
           </div>
@@ -261,45 +261,45 @@ export function RecurringInvoicesPageClient({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Total</CardTitle>
             <Repeat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recurringInvoices.length}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{recurringInvoices.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Activas</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {recurringInvoices.filter((i) => i.is_active).length}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactivas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Inactivas</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {recurringInvoices.filter((i) => !i.is_active).length}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Valor Total</CardTitle>
             <Repeat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {formatCurrency(
                 recurringInvoices.reduce((sum, i) => sum + i.total_amount, 0)
               )}
@@ -309,9 +309,9 @@ export function RecurringInvoicesPageClient({
       </div>
 
       {/* Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Facturas Recurrentes</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Facturas Recurrentes</CardTitle>
           <CardDescription>
             Lista de todas las facturas recurrentes configuradas
           </CardDescription>

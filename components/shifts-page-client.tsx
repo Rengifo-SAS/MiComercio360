@@ -337,22 +337,22 @@ export function ShiftsPageClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">
             Gestión de Turnos
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Administra los turnos de caja y controla el efectivo
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {activeShift ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="default" className="bg-green-100 text-green-800">
-                <CheckCircle className="w-3 h-3 mr-1" />
+            <div className="flex items-center gap-3">
+              <Badge variant="default" className="bg-green-100 text-green-800 px-3 py-1">
+                <CheckCircle className="w-3 h-3 mr-1.5" />
                 Turno Activo
               </Badge>
               <ShiftCloseDialog
@@ -368,31 +368,31 @@ export function ShiftsPageClient() {
 
       {/* Estadísticas */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Turnos Totales
               </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_shifts}</div>
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">{stats.total_shifts}</div>
               <p className="text-xs text-muted-foreground">
                 {stats.open_shifts} abiertos, {stats.closed_shifts} cerrados
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Ventas Totales
               </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">
                 {formatCurrency(stats.total_sales)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -401,15 +401,15 @@ export function ShiftsPageClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Duración Promedio
               </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">
                 {stats.average_shift_duration > 0
                   ? formatShiftDuration(stats.average_shift_duration)
                   : 'N/A'}
@@ -418,16 +418,16 @@ export function ShiftsPageClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Diferencia Efectivo
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-1">
               <div
-                className={`text-2xl font-bold ${
+                className={`text-3xl font-bold ${
                   stats.total_cash_difference >= 0
                     ? 'text-green-600'
                     : 'text-red-600'
@@ -444,9 +444,9 @@ export function ShiftsPageClient() {
       )}
 
       {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -457,12 +457,12 @@ export function ShiftsPageClient() {
                   placeholder="Buscar por notas..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10"
                 />
               </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-[180px] h-10">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
@@ -472,7 +472,7 @@ export function ShiftsPageClient() {
               </SelectContent>
             </Select>
             <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-[180px] h-10">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -487,31 +487,31 @@ export function ShiftsPageClient() {
       </Card>
 
       {/* Tabla de turnos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Turnos</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Turnos</CardTitle>
+          <CardDescription className="text-sm">
             Lista de todos los turnos registrados
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Cajero</TableHead>
-                  <TableHead className="min-w-[100px]">Inicio</TableHead>
-                  <TableHead className="min-w-[100px]">Fin</TableHead>
-                  <TableHead className="min-w-[80px]">Duración</TableHead>
-                  <TableHead className="min-w-[120px]">
+                  <TableHead className="min-w-[140px] px-4 py-3">Cajero</TableHead>
+                  <TableHead className="min-w-[120px] px-4 py-3">Inicio</TableHead>
+                  <TableHead className="min-w-[120px] px-4 py-3">Fin</TableHead>
+                  <TableHead className="min-w-[100px] px-4 py-3">Duración</TableHead>
+                  <TableHead className="min-w-[140px] px-4 py-3">
                     Efectivo Inicial
                   </TableHead>
-                  <TableHead className="min-w-[120px]">
+                  <TableHead className="min-w-[140px] px-4 py-3">
                     Efectivo Final
                   </TableHead>
-                  <TableHead className="min-w-[100px]">Ventas</TableHead>
-                  <TableHead className="min-w-[80px]">Estado</TableHead>
-                  <TableHead className="text-right min-w-[80px]">
+                  <TableHead className="min-w-[120px] px-4 py-3">Ventas</TableHead>
+                  <TableHead className="min-w-[100px] px-4 py-3">Estado</TableHead>
+                  <TableHead className="text-right min-w-[100px] px-4 py-3">
                     Acciones
                   </TableHead>
                 </TableRow>
@@ -527,49 +527,49 @@ export function ShiftsPageClient() {
                     : 'En curso';
 
                   return (
-                    <TableRow key={shift.id}>
-                      <TableCell className="font-medium">
+                    <TableRow key={shift.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium px-4 py-3">
                         <div
-                          className="truncate max-w-[120px]"
+                          className="truncate max-w-[140px]"
                           title={shift.cashier?.full_name || 'N/A'}
                         >
                           {shift.cashier?.full_name || 'N/A'}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm">
                           {formatDate(shift.start_time)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm">
                           {shift.end_time ? formatDate(shift.end_time) : '-'}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm font-mono">
                           {durationFormatted}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm font-mono">
                           {formatCurrency(shift.initial_cash)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm font-mono">
                           {shift.final_cash
                             ? formatCurrency(shift.final_cash)
                             : '-'}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="text-sm font-mono font-semibold">
                           {formatCurrency(shift.total_sales)}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(shift.status)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 py-3">{getStatusBadge(shift.status)}</TableCell>
+                      <TableCell className="text-right px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -604,10 +604,10 @@ export function ShiftsPageClient() {
           </div>
 
           {shifts.length === 0 && !loading && (
-            <div className="text-center py-8">
+            <div className="text-center py-12 px-4">
               <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No hay turnos</h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-6">
                 No se encontraron turnos con los filtros aplicados.
               </p>
               {!activeShift && (
@@ -621,7 +621,7 @@ export function ShiftsPageClient() {
 
           {/* Paginación */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
               <p className="text-sm text-muted-foreground">
                 Mostrando {(currentPage - 1) * 20 + 1} a{' '}
                 {Math.min(currentPage * 20, totalShifts)} de {totalShifts}{' '}
@@ -638,7 +638,7 @@ export function ShiftsPageClient() {
                 >
                   Anterior
                 </Button>
-                <span className="text-sm">
+                <span className="text-sm px-2">
                   Página {currentPage} de {totalPages}
                 </span>
                 <Button

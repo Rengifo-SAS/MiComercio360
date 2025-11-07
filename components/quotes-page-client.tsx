@@ -345,16 +345,16 @@ export function QuotesPageClient({
   const visiblePages = getVisiblePages();
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-teal-100 dark:bg-teal-900/20 rounded-lg">
             <FileCheck className="h-6 w-6 text-teal-600 dark:text-teal-400" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Cotizaciones</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Cotizaciones</h1>
+            <p className="text-sm text-muted-foreground">
               Creación y gestión de cotizaciones para clientes
             </p>
           </div>
@@ -378,50 +378,50 @@ export function QuotesPageClient({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Total</CardTitle>
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{allQuotes.length}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{allQuotes.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Borradores</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Borradores</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{draftCount}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{draftCount}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enviadas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Enviadas</CardTitle>
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sentCount}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{sentCount}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Valor Total</CardTitle>
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(totalAmount)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cotizaciones</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Cotizaciones</CardTitle>
+          <CardDescription className="text-sm">
             Lista de todas las cotizaciones creadas
           </CardDescription>
         </CardHeader>

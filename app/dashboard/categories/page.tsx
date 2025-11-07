@@ -65,14 +65,19 @@ export default async function CategoriesPage() {
 
 
     <RouteGuard requiredPermission="categories.read">
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Categorías</h1>
-          <p className="text-muted-foreground">
-            Organiza tus productos por categorías
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+            <Tag className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Categorías</h1>
+            <p className="text-sm text-muted-foreground">
+              Organiza tus productos por categorías
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <CategoryFormDialog />
@@ -80,51 +85,51 @@ export default async function CategoriesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Categorías
             </CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCategories}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{totalCategories}</div>
             <p className="text-xs text-muted-foreground">Creadas</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Activas</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCategories}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{activeCategories}</div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Con Productos</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Con Productos</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categoriesWithProducts}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{categoriesWithProducts}</div>
             <p className="text-xs text-muted-foreground">En uso</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Productos
             </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {totalProductsInCategories}
             </div>
             <p className="text-xs text-muted-foreground">Categorizados</p>
@@ -132,33 +137,15 @@ export default async function CategoriesPage() {
         </Card>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Search className="h-4 w-4 mr-2" />
-            Buscar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtrar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
-      </div>
-
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {categories && categories.length > 0 ? (
           categories.map((category) => {
             const productCount = category.products?.length || 0;
 
             return (
-              <Card key={category.id} className="relative">
-                <CardHeader className="pb-3">
+              <Card key={category.id} className="relative shadow-sm">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div

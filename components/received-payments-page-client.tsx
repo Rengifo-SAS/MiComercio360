@@ -260,16 +260,16 @@ export function ReceivedPaymentsPageClient({
   const visiblePages = getVisiblePages();
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
             <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Pagos Recibidos</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Pagos Recibidos</h1>
+            <p className="text-sm text-muted-foreground">
               Registro y gestión de pagos recibidos de clientes
             </p>
           </div>
@@ -292,54 +292,54 @@ export function ReceivedPaymentsPageClient({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pagos</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Total Pagos</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{allReceivedPayments.length}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{allReceivedPayments.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Valor Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(totalAmount)}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abiertos</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Abiertos</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(openAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(openAmount)}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conciliados</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Conciliados</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(reconciledAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(reconciledAmount)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pagos Recibidos</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Pagos Recibidos</CardTitle>
+          <CardDescription className="text-sm">
             Lista de todos los pagos recibidos registrados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+            </CardDescription>
+          </CardHeader>
+        <CardContent className="p-0">
           <div className="flex gap-4 mb-4">
             <Input
               placeholder="Buscar por número, cliente o referencia..."

@@ -337,17 +337,17 @@ export function SalesPageClient({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-4 sm:gap-6 p-3 sm:p-4 md:p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Ventas</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Ventas</h1>
+          <p className="text-sm text-muted-foreground">
             Gestiona las transacciones de venta
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button onClick={handleNewSale} className="w-full sm:w-auto">
+        <div className="flex items-center gap-3">
+          <Button onClick={handleNewSale}>
             <Plus className="h-4 w-4 mr-2" />
             Nueva Venta
           </Button>
@@ -355,64 +355,58 @@ export function SalesPageClient({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">Ventas Hoy</CardTitle>
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Ventas Hoy</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold truncate">{stats?.sales_today || 0}</div>
-            <p className="text-xs text-muted-foreground truncate">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats?.sales_today || 0}</div>
+            <p className="text-xs text-muted-foreground">
               {formatCurrency(stats?.amount_today || 0)}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
-              Ventas del Mes
-            </CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Ventas del Mes</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold truncate">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {stats?.sales_this_month || 0}
             </div>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground">
               {formatCurrency(stats?.amount_this_month || 0)}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
-              Promedio por Venta
-            </CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Promedio por Venta</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold truncate">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {formatCurrency(stats?.average_sale || 0)}
             </div>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground">
               {stats?.total_sales || 0} transacciones
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">
-              Total de Items
-            </CardTitle>
-            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Total de Items</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold truncate">{stats?.items_today || 0}</div>
-            <p className="text-xs text-muted-foreground truncate">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats?.items_today || 0}</div>
+            <p className="text-xs text-muted-foreground">
               {formatCurrency(stats?.amount_today || 0)} total
             </p>
           </CardContent>
@@ -420,53 +414,49 @@ export function SalesPageClient({
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-          <div className="relative flex-1 sm:flex-initial">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Buscar por número o notas..."
               value={searchParams.query}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-8 w-full sm:w-64"
+              className="pl-10 h-10"
             />
           </div>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex-shrink-0"
           >
-            <Filter className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Filtrar</span>
+            <Filter className="h-4 w-4 mr-2" />
+            Filtrar
           </Button>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleExport} className="flex-shrink-0">
-            <Download className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Exportar</span>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setShowRefundsManagement(true)}
-            className="flex-shrink-0"
           >
-            <RefreshCw className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Reembolsos</span>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reembolsos
           </Button>
         </div>
       </div>
 
       {/* Filtros */}
       {showFilters && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Filtros</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Estado</label>
                 <Select
                   value={searchParams.filters?.status?.[0] || 'all'}
@@ -478,7 +468,7 @@ export function SalesPageClient({
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todos los estados" />
                   </SelectTrigger>
                   <SelectContent>
@@ -489,7 +479,7 @@ export function SalesPageClient({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Método de Pago</label>
                 <Select
                   value={searchParams.filters?.payment_method?.[0] || 'all'}
@@ -501,7 +491,7 @@ export function SalesPageClient({
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todos los métodos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -513,7 +503,7 @@ export function SalesPageClient({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Ordenar por</label>
                 <Select
                   value={searchParams.sort_by}
@@ -524,7 +514,7 @@ export function SalesPageClient({
                     }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -540,151 +530,153 @@ export function SalesPageClient({
       )}
 
       {/* Sales Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ventas</CardTitle>
-          <CardDescription>{totalSales} ventas encontradas</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Ventas</CardTitle>
+          <CardDescription className="text-sm">{totalSales} ventas encontradas</CardDescription>
         </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-2">Cargando ventas...</p>
+        <CardContent className="p-0">
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Cargando ventas...</p>
             </div>
-          ) : sales.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className="cursor-pointer"
-                    onClick={() => handleSort('sale_number')}
-                  >
-                    Número
-                  </TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead
-                    className="cursor-pointer text-right"
-                    onClick={() => handleSort('total_amount')}
-                  >
-                    Total
-                  </TableHead>
-                  <TableHead>Método de Pago</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead
-                    className="cursor-pointer"
-                    onClick={() => handleSort('created_at')}
-                  >
-                    Fecha
-                  </TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sales.map((sale) => (
-                  <TableRow
-                    key={sale.id}
-                    className={
-                      sale.status === 'completed'
-                        ? 'opacity-75 bg-muted/30'
-                        : ''
-                    }
-                  >
-                    <TableCell className="font-medium">
-                      #{sale.sale_number}
-                      {sale.status === 'completed' && (
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          Finalizada
+          )}
+          {!loading && sales.length > 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="cursor-pointer px-4 py-3"
+                      onClick={() => handleSort('sale_number')}
+                    >
+                      Número
+                    </TableHead>
+                    <TableHead className="px-4 py-3">Cliente</TableHead>
+                    <TableHead
+                      className="cursor-pointer text-right px-4 py-3"
+                      onClick={() => handleSort('total_amount')}
+                    >
+                      Total
+                    </TableHead>
+                    <TableHead className="px-4 py-3">Método de Pago</TableHead>
+                    <TableHead className="px-4 py-3">Estado</TableHead>
+                    <TableHead
+                      className="cursor-pointer px-4 py-3"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      Fecha
+                    </TableHead>
+                    <TableHead className="text-right px-4 py-3">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.map((sale) => (
+                    <TableRow
+                      key={sale.id}
+                      className={
+                        sale.status === 'completed'
+                          ? 'opacity-75 bg-muted/30 hover:bg-muted/50'
+                          : 'hover:bg-muted/50'
+                      }
+                    >
+                      <TableCell className="font-medium px-4 py-3">
+                        #{sale.sale_number}
+                        {sale.status === 'completed' && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            Finalizada
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {sale.customer?.business_name || 'Sin cliente'}
+                      </TableCell>
+                      <TableCell className="text-right font-medium px-4 py-3">
+                        {formatCurrency(sale.total_amount)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {PaymentMethodLabels[sale.payment_method]}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Badge
+                          variant={
+                            sale.status === 'completed'
+                              ? 'default'
+                              : sale.status === 'cancelled'
+                              ? 'destructive'
+                              : 'secondary'
+                          }
+                        >
+                          {SaleStatusLabels[sale.status]}
                         </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {sale.customer?.business_name || 'Sin cliente'}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(sale.total_amount)}
-                    </TableCell>
-                    <TableCell>
-                      {PaymentMethodLabels[sale.payment_method]}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          sale.status === 'completed'
-                            ? 'default'
-                            : sale.status === 'cancelled'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {SaleStatusLabels[sale.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDateTime(sale.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => handleViewSale(sale)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEditSale(sale)}
-                            disabled={sale.status === 'completed'}
-                            className={
-                              sale.status === 'completed'
-                                ? 'opacity-50 cursor-not-allowed'
-                                : ''
-                            }
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handlePrintSale(sale)}
-                          >
-                            <Printer className="mr-2 h-4 w-4" />
-                            Imprimir
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleRefundSale(sale)}
-                            disabled={sale.status === 'cancelled'}
-                            className={
-                              sale.status === 'cancelled'
-                                ? 'opacity-50 cursor-not-allowed'
-                                : 'text-orange-600'
-                            }
-                          >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Reembolso/Anulación
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteSale(sale)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell className="px-4 py-3">{formatDateTime(sale.created_at)}</TableCell>
+                      <TableCell className="text-right px-4 py-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleViewSale(sale)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Ver
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEditSale(sale)}
+                              disabled={sale.status === 'completed'}
+                              className={
+                                sale.status === 'completed'
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : ''
+                              }
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handlePrintSale(sale)}
+                            >
+                              <Printer className="mr-2 h-4 w-4" />
+                              Imprimir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleRefundSale(sale)}
+                              disabled={sale.status === 'cancelled'}
+                              className={
+                                sale.status === 'cancelled'
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : 'text-orange-600'
+                              }
+                            >
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Reembolso/Anulación
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteSale(sale)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          ) : (
+            </div>
+          )}
+          {!loading && sales.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No hay ventas registradas</p>
-              <p className="text-sm">Las ventas aparecerán aquí</p>
+              <p className="text-sm">Las ventas apareceran aqui</p>
             </div>
           )}
         </CardContent>

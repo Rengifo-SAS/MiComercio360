@@ -272,57 +272,59 @@ export function UsersPageClient() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Usuarios y Permisos
-          </h1>
-          <p className="text-muted-foreground">
-            Gestiona los usuarios, roles y permisos del sistema
-          </p>
-          {/* Debug info - solo en desarrollo */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Admin: {isAdmin() ? 'Sí' : 'No'} | Super Admin:{' '}
-              {isSuperAdmin() ? 'Sí' : 'No'} | Cargando:{' '}
-              {permissionsLoading ? 'Sí' : 'No'}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Users className="h-8 w-8 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-teal-100 dark:bg-teal-900/20 rounded-lg">
+            <Users className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Usuarios y Permisos
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona los usuarios, roles y permisos del sistema
+            </p>
+            {/* Debug info - solo en desarrollo */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Admin: {isAdmin() ? 'Sí' : 'No'} | Super Admin:{' '}
+                {isSuperAdmin() ? 'Sí' : 'No'} | Cargando:{' '}
+                {permissionsLoading ? 'Sí' : 'No'}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Estadísticas */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Total Usuarios
               </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_users}</div>
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">{stats.total_users}</div>
               <p className="text-xs text-muted-foreground">
                 {stats.active_users} activos
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Usuarios Activos
               </CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold text-green-600">
                 {stats.active_users}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -331,15 +333,15 @@ export function UsersPageClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Nuevos este Mes
               </CardTitle>
               <UserPlus className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">
                 {stats.new_users_this_month}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -348,15 +350,15 @@ export function UsersPageClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Estado del Sistema
               </CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">Operativo</div>
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold text-green-600">Operativo</div>
               <p className="text-xs text-muted-foreground">
                 Todos los servicios funcionando
               </p>
@@ -380,12 +382,12 @@ export function UsersPageClient() {
         {/* Tab de Usuarios */}
         <TabsContent value="users" className="space-y-4">
           {/* Filtros y acciones */}
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Gestión de Usuarios</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg">Gestión de Usuarios</CardTitle>
+                  <CardDescription className="text-sm">
                     Administra los usuarios del sistema y sus permisos
                   </CardDescription>
                 </div>
@@ -408,79 +410,81 @@ export function UsersPageClient() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar usuarios..."
-                      value={filters.search || ''}
-                      onChange={(e) =>
-                        setFilters({ ...filters, search: e.target.value })
-                      }
-                      className="pl-10"
-                    />
+            <CardContent className="p-0">
+              <div className="px-6 pt-6 pb-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar usuarios..."
+                        value={filters.search || ''}
+                        onChange={(e) =>
+                          setFilters({ ...filters, search: e.target.value })
+                        }
+                        className="pl-10 h-10"
+                      />
+                    </div>
                   </div>
+                  <Select
+                    value={filters.status || 'all'}
+                    onValueChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        status:
+                          value === 'all' ? undefined : (value as UserStatus),
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-48 h-10">
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="ACTIVE">Activo</SelectItem>
+                      <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspendido</SelectItem>
+                      <SelectItem value="PENDING">Pendiente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.role || 'all'}
+                    onValueChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        role: value === 'all' ? undefined : (value as UserRole),
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-48 h-10">
+                      <SelectValue placeholder="Filtrar por rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los roles</SelectItem>
+                      <SelectItem value="ADMIN">Administrador</SelectItem>
+                      <SelectItem value="MANAGER">Gerente</SelectItem>
+                      <SelectItem value="EMPLOYEE">Empleado</SelectItem>
+                      <SelectItem value="CASHIER">Cajero</SelectItem>
+                      <SelectItem value="VIEWER">Visualizador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={loadData} className="h-10">
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Select
-                  value={filters.status || 'all'}
-                  onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      status:
-                        value === 'all' ? undefined : (value as UserStatus),
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filtrar por estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="ACTIVE">Activo</SelectItem>
-                    <SelectItem value="INACTIVE">Inactivo</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspendido</SelectItem>
-                    <SelectItem value="PENDING">Pendiente</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={filters.role || 'all'}
-                  onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      role: value === 'all' ? undefined : (value as UserRole),
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filtrar por rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los roles</SelectItem>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="MANAGER">Gerente</SelectItem>
-                    <SelectItem value="EMPLOYEE">Empleado</SelectItem>
-                    <SelectItem value="CASHIER">Cajero</SelectItem>
-                    <SelectItem value="VIEWER">Visualizador</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" onClick={loadData}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
               </div>
 
               {/* Tabla de usuarios */}
-              <div className="rounded-md border">
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Usuario</TableHead>
-                      <TableHead>Rol</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Departamento</TableHead>
-                      <TableHead>Último Login</TableHead>
-                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="px-4 py-3">Usuario</TableHead>
+                      <TableHead className="px-4 py-3">Rol</TableHead>
+                      <TableHead className="px-4 py-3">Estado</TableHead>
+                      <TableHead className="px-4 py-3">Departamento</TableHead>
+                      <TableHead className="px-4 py-3">Último Login</TableHead>
+                      <TableHead className="w-12 px-4 py-3"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -489,8 +493,8 @@ export function UsersPageClient() {
                       const statusInfo = getUserStatusInfo(user.status);
 
                       return (
-                        <TableRow key={user.id}>
-                          <TableCell>
+                        <TableRow key={user.id} className="hover:bg-muted/50">
+                          <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                 {user.avatar_url ? (
@@ -513,7 +517,7 @@ export function UsersPageClient() {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant="outline"
@@ -523,7 +527,7 @@ export function UsersPageClient() {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               {getStatusIcon(user.status)}
                               <span className={statusInfo.color}>
@@ -531,19 +535,19 @@ export function UsersPageClient() {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <span className="text-sm">
                               {user.department || '-'}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <span className="text-sm">
                               {user.last_login
                                 ? new Date(user.last_login).toLocaleDateString()
                                 : 'Nunca'}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -613,12 +617,12 @@ export function UsersPageClient() {
         {/* Tab de Roles */}
         {hasPermission('settings.roles') && (
           <TabsContent value="roles" className="space-y-4">
-            <Card>
-              <CardHeader>
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Gestión de Roles</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg">Gestión de Roles</CardTitle>
+                    <CardDescription className="text-sm">
                       Administra los roles del sistema y sus permisos
                     </CardDescription>
                   </div>
@@ -632,7 +636,7 @@ export function UsersPageClient() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Los roles definen qué permisos tiene un usuario en el sistema.
                   Haz clic en "Gestionar Roles" para configurar los roles y sus
                   permisos.
@@ -645,12 +649,12 @@ export function UsersPageClient() {
         {/* Tab de Permisos */}
         {hasPermission('settings.permissions') && (
           <TabsContent value="permissions" className="space-y-4">
-            <Card>
-              <CardHeader>
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Gestión de Permisos</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg">Gestión de Permisos</CardTitle>
+                    <CardDescription className="text-sm">
                       Administra los permisos del sistema
                     </CardDescription>
                   </div>
@@ -664,7 +668,7 @@ export function UsersPageClient() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Los permisos definen las acciones específicas que un usuario
                   puede realizar. Haz clic en "Gestionar Permisos" para ver y
                   configurar los permisos del sistema.

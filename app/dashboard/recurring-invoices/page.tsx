@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { RouteGuard } from '@/components/route-guard';
 import { checkCompanySetup } from '@/lib/supabase/company-setup';
 import { RecurringInvoicesPageClient } from '@/components/recurring-invoices-page-client';
-import { RecurringInvoicesService } from '@/lib/services/recurring-invoices-service';
+import { RecurringInvoice } from '@/lib/types/recurring-invoices';
 
 export default async function RecurringInvoicesPage() {
   const supabase = await createClient();
@@ -22,11 +22,32 @@ export default async function RecurringInvoicesPage() {
 
   const companyId = setupStatus.company!.id;
 
-  // Obtener facturas recurrentes iniciales
-  const { recurringInvoices } = await RecurringInvoicesService.getRecurringInvoices(
-    companyId,
-    { limit: 50, page: 1 }
-  );
+  // Obtener facturas recurrentes iniciales - consulta directa en el servidor
+  const { data: recurringInvoicesData, error: recurringInvoicesError } = await supabase
+    .from('recurring_invoices')
+    .select(
+      `
+      *,
+      customer:customers(*),
+      numeration:numerations(*),
+      warehouse:warehouses(*),
+      items:recurring_invoice_items(
+        *,
+        product:products(*),
+        tax:taxes(*)
+      ),
+      generations:recurring_invoice_generations(*)
+    `
+    )
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (recurringInvoicesError) {
+    console.error('Error cargando facturas recurrentes:', recurringInvoicesError);
+  }
+
+  const recurringInvoices = (recurringInvoicesData || []) as RecurringInvoice[];
 
   // Obtener datos relacionados para formularios
   const { data: customers } = await supabase

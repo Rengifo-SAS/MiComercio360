@@ -99,53 +99,58 @@ export default async function WarehousesPage() {
 
   return (
     <RouteGuard requiredPermission="warehouses.read">
-      <div className="flex-1 w-full flex flex-col gap-6 p-6">
+      <div className="space-y-8 p-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Bodegas</h1>
-            <p className="text-muted-foreground">
-              Gestiona las bodegas y ubicaciones de almacenamiento
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+              <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Bodegas</h1>
+              <p className="text-sm text-muted-foreground">
+                Gestiona las bodegas y ubicaciones de almacenamiento
+              </p>
+            </div>
           </div>
           <WarehouseFormDialog />
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Total Bodegas
               </CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalWarehouses}</div>
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">{totalWarehouses}</div>
               <p className="text-xs text-muted-foreground">Configuradas</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Activas</CardTitle>
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">Activas</CardTitle>
               <Warehouse className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeWarehouses}</div>
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">{activeWarehouses}</div>
               <p className="text-xs text-muted-foreground">En operación</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">
                 Bodega Principal
               </CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="space-y-1">
+              <div className="text-3xl font-bold">
                 {mainWarehouse ? mainWarehouse.name : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -155,29 +160,11 @@ export default async function WarehousesPage() {
           </Card>
         </div>
 
-        {/* Actions Bar */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Search className="h-4 w-4 mr-2" />
-              Buscar
-            </Button>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtrar
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-        </div>
-
         {/* Warehouses Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {warehouseValues.map((warehouse) => (
-            <Card key={warehouse.id} className="relative">
-              <CardHeader>
+            <Card key={warehouse.id} className="relative shadow-sm">
+              <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
@@ -300,7 +287,7 @@ export default async function WarehousesPage() {
 
         {/* Empty State */}
         {warehouses && warehouses.length === 0 && (
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No hay bodegas</h3>

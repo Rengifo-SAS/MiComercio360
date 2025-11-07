@@ -278,16 +278,16 @@ export function PurchaseInvoicesPageClient({
   const visiblePages = getVisiblePages();
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
             <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Facturas de Compra</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Facturas de Compra</h1>
+            <p className="text-sm text-muted-foreground">
               Gestión de facturas de compra y documentos de proveedores
             </p>
           </div>
@@ -313,126 +313,130 @@ export function PurchaseInvoicesPageClient({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Facturas</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Total Facturas</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{allPurchaseInvoices.length}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{allPurchaseInvoices.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Valor Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(totalAmount)}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendiente</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Pendiente</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(pendingAmount)}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pagadas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Pagadas</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(paidAmount)}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{formatCurrency(paidAmount)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Facturas de Compra</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Facturas de Compra</CardTitle>
+          <CardDescription className="text-sm">
             Lista de todas las facturas de compra registradas
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4">
-            <Input
-              placeholder="Buscar por número, proveedor u observaciones..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activa</SelectItem>
-                <SelectItem value="cancelled">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Estado de Pago" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="partially_paid">Parcial</SelectItem>
-                <SelectItem value="paid">Pagada</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="p-0">
+          <div className="px-6 pt-6 pb-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Input
+                placeholder="Buscar por número, proveedor u observaciones..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm h-10"
+              />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] h-10">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Activa</SelectItem>
+                  <SelectItem value="cancelled">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] h-10">
+                  <SelectValue placeholder="Estado de Pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="partially_paid">Parcial</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="rounded-md border">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Número Proveedor</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Vencimiento</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Pendiente</TableHead>
-                  <TableHead>Estado Pago</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="px-4 py-3">Número Proveedor</TableHead>
+                  <TableHead className="px-4 py-3">Fecha</TableHead>
+                  <TableHead className="px-4 py-3">Proveedor</TableHead>
+                  <TableHead className="px-4 py-3">Vencimiento</TableHead>
+                  <TableHead className="px-4 py-3">Total</TableHead>
+                  <TableHead className="px-4 py-3">Pendiente</TableHead>
+                  <TableHead className="px-4 py-3">Estado Pago</TableHead>
+                  <TableHead className="text-right px-4 py-3">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      Cargando...
+                    <TableCell colSpan={8} className="text-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Cargando...</p>
                     </TableCell>
                   </TableRow>
                 ) : allPurchaseInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No hay facturas de compra
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                      <p className="text-lg font-semibold mb-2">No hay facturas de compra</p>
+                      <p className="text-sm">Las facturas de compra aparecerán aquí</p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   purchaseInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
+                    <TableRow key={invoice.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium px-4 py-3">
                         {invoice.supplier_invoice_number}
                       </TableCell>
-                      <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                      <TableCell>{invoice.supplier?.name || 'N/A'}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">{formatDate(invoice.invoice_date)}</TableCell>
+                      <TableCell className="px-4 py-3">{invoice.supplier?.name || 'N/A'}</TableCell>
+                      <TableCell className="px-4 py-3">
                         {invoice.due_date ? formatDate(invoice.due_date) : 'N/A'}
                       </TableCell>
-                      <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
-                      <TableCell>{formatCurrency(invoice.pending_amount)}</TableCell>
-                      <TableCell>{getPaymentStatusBadge(invoice.payment_status)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 py-3">{formatCurrency(invoice.total_amount)}</TableCell>
+                      <TableCell className="px-4 py-3">{formatCurrency(invoice.pending_amount)}</TableCell>
+                      <TableCell className="px-4 py-3">{getPaymentStatusBadge(invoice.payment_status)}</TableCell>
+                      <TableCell className="text-right px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -510,7 +514,7 @@ export function PurchaseInvoicesPageClient({
 
           {/* Paginación */}
           {allPurchaseInvoices.length > itemsPerPage && (
-            <div className="flex items-center justify-between pt-4 border-t mt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
               <div className="flex items-center space-x-2">
                 <p className="text-sm text-muted-foreground">
                   Mostrando {startItem} a {endItem} de {allPurchaseInvoices.length} resultados

@@ -236,14 +236,19 @@ export function NumerationsPageClient({
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Numeraciones</h1>
-          <p className="text-muted-foreground">
-            Administra las numeraciones de los documentos de tu empresa
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+            <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Numeraciones</h1>
+            <p className="text-sm text-muted-foreground">
+              Administra las numeraciones de los documentos de tu empresa
+            </p>
+          </div>
         </div>
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
@@ -252,16 +257,16 @@ export function NumerationsPageClient({
       </div>
 
       {/* Estadísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Numeraciones
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {summary.total_numerations}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -270,15 +275,15 @@ export function NumerationsPageClient({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Tipos de Documento
             </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {summary.document_types.length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -287,15 +292,15 @@ export function NumerationsPageClient({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Numeraciones Activas
             </CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {summary.active_numerations}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -310,15 +315,15 @@ export function NumerationsPageClient({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Última Actualización
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {numerations.length > 0
                 ? new Date(
                     Math.max(
@@ -335,56 +340,58 @@ export function NumerationsPageClient({
       </div>
 
       {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Filtros</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nombre o prefijo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <CardContent className="p-0">
+          <div className="px-6 pt-6 pb-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nombre o prefijo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-10"
+                  />
+                </div>
               </div>
+              <Select
+                value={filterType}
+                onValueChange={(value) =>
+                  setFilterType(value as DocumentType | 'all')
+                }
+              >
+                <SelectTrigger className="w-full sm:w-48 h-10">
+                  <SelectValue placeholder="Tipo de documento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {DOCUMENT_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filterStatus}
+                onValueChange={(value) =>
+                  setFilterStatus(value as 'all' | 'active' | 'inactive')
+                }
+              >
+                <SelectTrigger className="w-full sm:w-32 h-10">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Activas</SelectItem>
+                  <SelectItem value="inactive">Inactivas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={filterType}
-              onValueChange={(value) =>
-                setFilterType(value as DocumentType | 'all')
-              }
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Tipo de documento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                {DOCUMENT_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filterStatus}
-              onValueChange={(value) =>
-                setFilterStatus(value as 'all' | 'active' | 'inactive')
-              }
-            >
-              <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activas</SelectItem>
-                <SelectItem value="inactive">Inactivas</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -417,13 +424,13 @@ export function NumerationsPageClient({
             ))}
           </div>
         ) : filteredNumerations.length === 0 ? (
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
                 No hay numeraciones
               </h3>
-              <p className="text-muted-foreground text-center mb-4">
+              <p className="text-sm text-muted-foreground text-center mb-4">
                 {searchTerm || filterType !== 'all' || filterStatus !== 'all'
                   ? 'No se encontraron numeraciones con los filtros aplicados'
                   : 'Comienza creando tu primera numeración de documentos'}
@@ -439,7 +446,7 @@ export function NumerationsPageClient({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredNumerations.map((numeration) => {
               const DocumentIcon = getDocumentIcon(numeration.document_type);
               const typeInfo = getDocumentTypeInfo(numeration.document_type);
@@ -447,9 +454,9 @@ export function NumerationsPageClient({
               return (
                 <Card
                   key={numeration.id}
-                  className="hover:shadow-md transition-shadow"
+                  className="hover:shadow-md transition-shadow shadow-sm"
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">

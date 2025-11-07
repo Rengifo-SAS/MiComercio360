@@ -291,14 +291,14 @@ export function PaymentMethodsPageClient({
   // No renderizar hasta que esté hidratado
   if (!isHydrated) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8 p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold">Métodos de Pago</h2>
           <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
         </div>
         <div className="h-6 w-96 bg-muted animate-pulse rounded"></div>
         <div className="h-12 w-full bg-muted animate-pulse rounded"></div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-48 bg-muted animate-pulse rounded"></div>
           ))}
@@ -308,9 +308,19 @@ export function PaymentMethodsPageClient({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Métodos de Pago</h2>
+    <div className="space-y-8 p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-pink-100 dark:bg-pink-900/20 rounded-lg">
+            <CreditCard className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold tracking-tight">Métodos de Pago</h2>
+            <p className="text-sm text-muted-foreground">
+              Gestiona los métodos de pago y pasarelas de pago para tu empresa.
+            </p>
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button onClick={handleNewPaymentMethod}>
             <Plus className="mr-2 h-4 w-4" />
@@ -322,10 +332,6 @@ export function PaymentMethodsPageClient({
           </Button>
         </div>
       </div>
-
-      <p className="text-muted-foreground">
-        Gestiona los métodos de pago y pasarelas de pago para tu empresa.
-      </p>
 
       {/* Tabs */}
       <div className="flex space-x-1 rounded-lg bg-muted p-1">
@@ -352,67 +358,74 @@ export function PaymentMethodsPageClient({
       </div>
 
       {/* Filtros */}
-      <div
-        ref={searchContainerRef}
-        className="flex flex-wrap items-center gap-4"
-        suppressHydrationWarning
-      >
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o descripción..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div
+            ref={searchContainerRef}
+            className="px-6 pt-6 pb-4 flex flex-wrap items-center gap-4"
+            suppressHydrationWarning
+          >
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10"
+              />
+            </div>
 
-        {activeTab === 'methods' && (
-          <>
-            <Select
-              value={filterType}
-              onValueChange={(value: PaymentType | 'all') =>
-                setFilterType(value)
-              }
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                {PaymentTypeValues.map((type) => {
-                  const typeInfo = getPaymentTypeInfo(type);
-                  const Icon = getPaymentTypeIcon(type);
-                  return (
-                    <SelectItem key={type} value={type}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {typeInfo.label}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            {activeTab === 'methods' && (
+              <>
+                <Select
+                  value={filterType}
+                  onValueChange={(value: PaymentType | 'all') =>
+                    setFilterType(value)
+                  }
+                >
+                  <SelectTrigger className="w-[200px] h-10">
+                    <SelectValue placeholder="Filtrar por tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    {PaymentTypeValues.map((type) => {
+                      const typeInfo = getPaymentTypeInfo(type);
+                      const Icon = getPaymentTypeIcon(type);
+                      return (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            {typeInfo.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={filterStatus}
-              onValueChange={(value: 'all' | 'active' | 'inactive') =>
-                setFilterStatus(value)
-              }
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
-        )}
-      </div>
+                <Select
+                  value={filterStatus}
+                  onValueChange={(value: 'all' | 'active' | 'inactive') =>
+                    setFilterStatus(value)
+                  }
+                >
+                  <SelectTrigger className="w-[150px] h-10">
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="active">Activos</SelectItem>
+                    <SelectItem value="inactive">Inactivos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {loading && (
         <div className="flex items-center justify-center p-8">
@@ -434,25 +447,27 @@ export function PaymentMethodsPageClient({
       {activeTab === 'methods' && (
         <>
           {!loading && filteredPaymentMethods.length === 0 && (
-            <div className="text-center p-8 border rounded-lg">
-              <p className="text-lg text-muted-foreground">
-                No se encontraron métodos de pago que coincidan con los
-                criterios.
-              </p>
-              <Button onClick={handleNewPaymentMethod} className="mt-4">
-                Crear Nuevo Método
-              </Button>
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="text-center py-12">
+                <p className="text-sm text-muted-foreground">
+                  No se encontraron métodos de pago que coincidan con los
+                  criterios.
+                </p>
+                <Button onClick={handleNewPaymentMethod} className="mt-4">
+                  Crear Nuevo Método
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPaymentMethods.map((method) => {
               const typeInfo = getPaymentTypeInfo(method.payment_type);
               const Icon = getPaymentTypeIcon(method.payment_type);
 
               return (
-                <Card key={method.id} className="flex flex-col">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card key={method.id} className="flex flex-col shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                     <div className="flex items-center gap-3">
                       <div
                         className="p-2 rounded-lg text-white"
@@ -589,20 +604,22 @@ export function PaymentMethodsPageClient({
       {activeTab === 'gateways' && (
         <>
           {!loading && paymentGateways.length === 0 && (
-            <div className="text-center p-8 border rounded-lg">
-              <p className="text-lg text-muted-foreground">
-                No se encontraron pasarelas de pago configuradas.
-              </p>
-              <Button onClick={handleNewPaymentGateway} className="mt-4">
-                Configurar Pasarela
-              </Button>
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="text-center py-12">
+                <p className="text-sm text-muted-foreground">
+                  No se encontraron pasarelas de pago configuradas.
+                </p>
+                <Button onClick={handleNewPaymentGateway} className="mt-4">
+                  Configurar Pasarela
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paymentGateways.map((gateway) => (
-              <Card key={gateway.id} className="flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card key={gateway.id} className="flex flex-col shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500 text-white">
                       <Globe className="h-5 w-5" />

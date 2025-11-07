@@ -456,13 +456,86 @@ export class ShiftsService {
       : 0;
 
     // Calcular diferencia total de efectivo
-    const total_cash_difference = shifts
-      .filter(s => s.status === 'closed' && s.final_cash)
-      .reduce((sum, shift) => {
-        const expected = Number(shift.initial_cash) + Number(shift.total_sales);
-        const actual = Number(shift.final_cash);
-        return sum + (actual - expected);
-      }, 0);
+    // IMPORTANTE: Solo contamos ventas con payment_method='cash' (NO tarjeta, transferencia, ni mixtas)
+    // Las ventas con tarjeta, transferencia o mixtas NO aumentan el efectivo en caja
+    const closedShifts = shifts.filter(s => s.status === 'closed' && s.final_cash !== null && s.final_cash !== undefined);
+    const closedShiftIds = closedShifts.map(s => s.id).filter(id => id);
+
+    let cashSalesByShift: Record<string, number> = {};
+    let cashMovementsByShift: Record<string, number> = {};
+    
+    if (closedShiftIds.length > 0) {
+      // Obtener SOLO ventas en efectivo (payment_method='cash')
+      // NO incluir: 'card', 'transfer', 'mixed' - estas no generan efectivo físico
+      const { data: salesData, error: salesError } = await this.supabase
+        .from('sales')
+        .select('shift_id, total_amount, payment_method')
+        .in('shift_id', closedShiftIds)
+        .eq('payment_method', 'cash')
+        .eq('status', 'completed')
+        .not('shift_id', 'is', null);
+
+      if (salesError) {
+        console.error('Error obteniendo ventas en efectivo:', salesError);
+      }
+
+      if (salesData && salesData.length > 0) {
+        salesData.forEach(sale => {
+          const shiftId = sale.shift_id;
+          if (!shiftId || sale.payment_method !== 'cash') return;
+
+          if (!cashSalesByShift[shiftId]) {
+            cashSalesByShift[shiftId] = 0;
+          }
+          cashSalesByShift[shiftId] += Number(sale.total_amount) || 0;
+        });
+      }
+
+      // Obtener movimientos de efectivo por turno (ingresos y egresos de efectivo)
+      const { data: movementsData, error: movementsError } = await this.supabase
+        .from('cash_movements')
+        .select('shift_id, movement_type, amount')
+        .in('shift_id', closedShiftIds)
+        .not('shift_id', 'is', null);
+
+      if (movementsError) {
+        console.error('Error obteniendo movimientos de efectivo:', movementsError);
+      }
+
+      if (movementsData && movementsData.length > 0) {
+        movementsData.forEach(movement => {
+          const shiftId = movement.shift_id;
+          if (!shiftId) return;
+
+          if (!cashMovementsByShift[shiftId]) {
+            cashMovementsByShift[shiftId] = 0;
+          }
+
+          const amount = Number(movement.amount) || 0;
+          if (movement.movement_type === 'income') {
+            cashMovementsByShift[shiftId] += amount;
+          } else if (movement.movement_type === 'expense') {
+            cashMovementsByShift[shiftId] -= amount;
+          }
+        });
+      }
+    }
+
+    // Calcular diferencia total de efectivo usando la misma lógica que getShiftCashSummary
+    // Efectivo esperado = Efectivo inicial + Ventas en efectivo + Movimientos de efectivo
+    // Diferencia = Efectivo final - Efectivo esperado
+    const total_cash_difference = closedShifts.reduce((sum, shift) => {
+      const initialCash = Number(shift.initial_cash) || 0;
+      const finalCash = Number(shift.final_cash) || 0;
+      const cashSales = cashSalesByShift[shift.id] || 0;
+      const cashMovements = cashMovementsByShift[shift.id] || 0;
+      
+      // Misma lógica que calculateExpectedCash y getShiftCashSummary
+      const expectedCash = initialCash + cashSales + cashMovements;
+      const difference = finalCash - expectedCash;
+      
+      return sum + difference;
+    }, 0);
 
     return {
       total_shifts,

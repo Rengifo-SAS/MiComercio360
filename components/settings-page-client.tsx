@@ -218,44 +218,46 @@ export function SettingsPageClient() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
-          <p className="text-muted-foreground">
-            Gestiona la configuración del sistema y personaliza tu experiencia
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Settings className="h-8 w-8 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-slate-100 dark:bg-slate-900/20 rounded-lg">
+            <Settings className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona la configuración del sistema y personaliza tu experiencia
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Estadísticas rápidas */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Configuraciones Activas
             </CardTitle>
             <Settings className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {settingsCategories.filter((c) => c.status === 'active').length}
             </div>
             <p className="text-xs text-muted-foreground">Módulos disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximamente</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Próximamente</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {
                 settingsCategories.filter((c) => c.status === 'coming-soon')
                   .length
@@ -267,28 +269,28 @@ export function SettingsPageClient() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Última Actualización
             </CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Hoy</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">Hoy</div>
             <p className="text-xs text-muted-foreground">Sistema actualizado</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Estado del Sistema
             </CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">Operativo</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-green-600">Operativo</div>
             <p className="text-xs text-muted-foreground">
               Todos los servicios funcionando
             </p>
@@ -297,17 +299,17 @@ export function SettingsPageClient() {
       </div>
 
       {/* Categorías de configuración */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight pb-1">
             Categorías de Configuración
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Selecciona una categoría para acceder a su configuración específica
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {settingsCategories.map((category) => {
             const IconComponent = category.icon;
             const isDisabled = category.status === 'coming-soon';
@@ -315,18 +317,18 @@ export function SettingsPageClient() {
             return (
               <Card
                 key={category.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                className={`cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
                   isDisabled
                     ? 'opacity-60 cursor-not-allowed'
-                    : 'hover:scale-105'
+                    : 'hover:scale-[1.02]'
                 } ${
                   selectedCategory === category.id
-                    ? 'ring-2 ring-blue-500 shadow-lg'
+                    ? 'ring-2 ring-blue-500 shadow-md'
                     : ''
                 }`}
                 onClick={() => handleCategoryClick(category)}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div
                       className={`p-3 rounded-lg ${category.color} text-white`}
@@ -371,7 +373,7 @@ export function SettingsPageClient() {
       </div>
 
       {/* Información adicional */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="p-2 bg-blue-100 rounded-lg">

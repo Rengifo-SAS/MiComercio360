@@ -11,6 +11,10 @@ DECLARE
     v_payment_record record;
     v_company_id uuid;
     v_user_id uuid;
+    v_new_status text := 'reconciled';
+    v_new_is_reconciled boolean := true;
+    v_new_reconciliation_date timestamp with time zone;
+    v_new_updated_at timestamp with time zone;
 BEGIN
     -- Obtener el ID del usuario actual
     v_user_id := auth.uid();

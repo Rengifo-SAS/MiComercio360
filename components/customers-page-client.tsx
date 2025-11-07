@@ -159,14 +159,19 @@ export function CustomersPageClient({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground">
-            Gestiona la información de tus clientes
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-cyan-100 dark:bg-cyan-900/20 rounded-lg">
+            <Users className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona la información de tus clientes
+            </p>
+          </div>
         </div>
         <Button onClick={handleCreateCustomer}>
           <UserPlus className="h-4 w-4 mr-2" />
@@ -175,70 +180,70 @@ export function CustomersPageClient({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Clientes
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_customers}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats.total_customers}</div>
             <p className="text-xs text-muted-foreground">Registrados</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Personas Naturales
             </CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-blue-600">
               {stats.natural_persons}
             </div>
             <p className="text-xs text-muted-foreground">Individuales</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Personas Jurídicas
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-green-600">
               {stats.juridical_persons}
             </div>
             <p className="text-xs text-muted-foreground">Empresas</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activos</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Activos</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-green-600">
               {stats.active_customers}
             </div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">VIP</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">VIP</CardTitle>
             <Crown className="h-4 w-4 text-yellow-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-yellow-600">
               {stats.vip_customers}
             </div>
             <p className="text-xs text-muted-foreground">Especiales</p>
@@ -247,7 +252,7 @@ export function CustomersPageClient({
       </div>
 
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <CustomerSearchFilter
           companyId={companyId}
           departments={departments}
@@ -259,10 +264,10 @@ export function CustomersPageClient({
       </div>
 
       {/* Customers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Clientes</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Lista de Clientes</CardTitle>
+          <CardDescription className="text-sm">
             Gestiona la información de tus clientes
           </CardDescription>
         </CardHeader>

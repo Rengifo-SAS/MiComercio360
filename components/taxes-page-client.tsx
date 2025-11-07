@@ -192,7 +192,7 @@ export function TaxesPageClient() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Impuestos</h1>
@@ -202,7 +202,7 @@ export function TaxesPageClient() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
@@ -215,14 +215,19 @@ export function TaxesPageClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Impuestos</h1>
-          <p className="text-muted-foreground">
-            Gestiona los impuestos de tu empresa
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
+            <Receipt className="h-6 w-6 text-red-600 dark:text-red-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Impuestos</h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona los impuestos de tu empresa
+            </p>
+          </div>
         </div>
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
@@ -231,68 +236,70 @@ export function TaxesPageClient() {
       </div>
 
       {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Filtros</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Buscar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar impuestos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <CardContent className="p-0">
+          <div className="px-6 pt-6 pb-4">
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar impuestos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-10"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo</label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos los tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="VAT">IVA</SelectItem>
-                  <SelectItem value="WITHHOLDING">Retención</SelectItem>
-                  <SelectItem value="CONSUMPTION">Consumo</SelectItem>
-                  <SelectItem value="INDUSTRY">ICA</SelectItem>
-                  <SelectItem value="OTHER">Otros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tipo</label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Todos los tipos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    <SelectItem value="VAT">IVA</SelectItem>
+                    <SelectItem value="WITHHOLDING">Retención</SelectItem>
+                    <SelectItem value="CONSUMPTION">Consumo</SelectItem>
+                    <SelectItem value="INDUSTRY">ICA</SelectItem>
+                    <SelectItem value="OTHER">Otros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Estado</label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="active">Activos</SelectItem>
-                  <SelectItem value="inactive">Inactivos</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Estado</label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="active">Activos</SelectItem>
+                    <SelectItem value="inactive">Inactivos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Lista de impuestos */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredTaxes.map((tax) => {
           const TaxIcon = getTaxIcon(tax.tax_type);
           const typeInfo = getTaxTypeInfo(tax.tax_type);
 
           return (
-            <Card key={tax.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
+            <Card key={tax.id} className="hover:shadow-md transition-shadow shadow-sm">
+              <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${typeInfo.color}`}>
@@ -379,11 +386,11 @@ export function TaxesPageClient() {
       </div>
 
       {filteredTaxes.length === 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No hay impuestos</h3>
-            <p className="text-muted-foreground text-center mb-4">
+            <p className="text-sm text-muted-foreground text-center mb-4">
               {searchTerm || filterType !== 'all' || filterStatus !== 'all'
                 ? 'No se encontraron impuestos con los filtros aplicados.'
                 : 'Comienza creando tu primer impuesto para tu empresa.'}
