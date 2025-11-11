@@ -249,8 +249,8 @@ BEGIN
         v_tax_amount,
         v_discount_amount,
         v_total_amount,
-        'credit', -- Por defecto crédito ya que tiene payment_terms
-        'pending', -- Pendiente de pago
+        'transfer', -- Método de pago por defecto para facturas recurrentes
+        'pending', -- Pendiente de pago (a crédito)
         'completed',
         v_recurring_invoice.notes,
         v_generation_date,
