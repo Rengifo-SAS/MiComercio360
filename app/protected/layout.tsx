@@ -22,7 +22,7 @@ export default function ProtectedLayout({
               href={'/'}
               className="font-bold text-slate-900 dark:text-white text-lg hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
-              Sistema POS
+              MiComercio360
             </Link>
           </div>
           <div className="flex items-center space-x-4">
@@ -40,7 +40,7 @@ export default function ProtectedLayout({
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <div className="flex items-center justify-center">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              © {new Date().getFullYear()} Sistema POS. Todos los derechos
+              © {new Date().getFullYear()} MiComercio360. Todos los derechos
               reservados.
             </p>
           </div>

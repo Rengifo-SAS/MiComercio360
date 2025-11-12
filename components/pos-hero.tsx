@@ -35,7 +35,7 @@ export function POSHero() {
           <div className="space-y-4">
             <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight">
               <span className="block bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                Sistema POS
+                MiComercio360
               </span>
               <span className="block bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mt-2">
                 Moderno y Eficiente

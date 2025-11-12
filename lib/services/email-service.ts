@@ -112,7 +112,7 @@ export class EmailService {
         paperSize
       );
 
-      const subject = `Factura #${sale.sale_number} - ${process.env.COMPANY_NAME || 'Sistema POS'}`;
+      const subject = `Factura #${sale.sale_number} - ${process.env.COMPANY_NAME || 'MiComercio360'}`;
 
       // Obtener datos de la empresa para personalizar el correo
       const supabase = await this.supabase;
@@ -122,7 +122,7 @@ export class EmailService {
         .eq('id', companyId)
         .single();
 
-      const companyName = company?.name || process.env.COMPANY_NAME || 'Sistema POS';
+      const companyName = company?.name || process.env.COMPANY_NAME || 'MiComercio360';
       const companyEmail = company?.email || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@example.com';
       const companyPhone = company?.phone || '';
       const cashierName = sale.cashier?.full_name || sale.cashier?.email || 'Sistema';
@@ -184,7 +184,7 @@ export class EmailService {
         paperSize
       );
 
-      const subject = `Cotización #${quote.quote_number || 'N/A'} - ${process.env.COMPANY_NAME || 'Sistema POS'}`;
+      const subject = `Cotización #${quote.quote_number || 'N/A'} - ${process.env.COMPANY_NAME || 'MiComercio360'}`;
 
       // Obtener datos de la empresa para personalizar el correo
       const supabase = await this.supabase;
@@ -194,7 +194,7 @@ export class EmailService {
         .eq('id', companyId)
         .single();
 
-      const companyName = company?.name || process.env.COMPANY_NAME || 'Sistema POS';
+      const companyName = company?.name || process.env.COMPANY_NAME || 'MiComercio360';
       const companyEmail = company?.email || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@example.com';
       const companyPhone = company?.phone || '';
       const salespersonName = quote.salesperson?.full_name || quote.salesperson?.email || 'Sistema';

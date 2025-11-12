@@ -1496,7 +1496,7 @@ export class SalesPrintService {
             Este documento es válido como comprobante de pago. Conserve para cualquier reclamación o garantía.
           </div>
           <div class="footer-tech">
-            Powered by Sistema POS • ${new Date().toLocaleString('es-CO')}
+            Powered by MiComercio360 • ${new Date().toLocaleString('es-CO')}
           </div>
         </div>
         ` : `
