@@ -23,7 +23,7 @@ interface EmailLayoutProps {
 export const EmailLayout = ({
   preview,
   children,
-  companyName = 'Sistema POS',
+  companyName = 'MiComercio360',
   companyEmail,
   companyPhone,
 }: EmailLayoutProps) => {
