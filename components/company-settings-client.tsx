@@ -258,7 +258,7 @@ export function CompanySettingsClient() {
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-6 p-6">
+      <div className="space-y-8 p-6">
         <div className="flex items-center gap-4">
           <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
           <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
@@ -277,7 +277,7 @@ export function CompanySettingsClient() {
 
   if (!company) {
     return (
-      <div className="flex-1 space-y-6 p-6">
+      <div className="space-y-8 p-6">
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -296,20 +296,22 @@ export function CompanySettingsClient() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-blue-600" />
+          <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+            <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
               Configuración de Empresa
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Gestiona la información y configuración de tu empresa
             </p>
           </div>
@@ -345,15 +347,15 @@ export function CompanySettingsClient() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {/* Información Básica */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <FileText className="h-5 w-5" />
                 Información Básica
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Datos principales de identificación de la empresa
               </CardDescription>
             </CardHeader>
@@ -460,13 +462,13 @@ export function CompanySettingsClient() {
           </Card>
 
           {/* Información de Contacto */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Phone className="h-5 w-5" />
                 Información de Contacto
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Datos de contacto y ubicación de la empresa
               </CardDescription>
             </CardHeader>
@@ -577,14 +579,14 @@ export function CompanySettingsClient() {
         </div>
 
         {/* Logo y Configuración */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Image className="h-5 w-5" />
                 Logo de la Empresa
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Sube el logo de tu empresa para personalizar la aplicación
               </CardDescription>
             </CardHeader>
@@ -679,13 +681,13 @@ export function CompanySettingsClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Globe className="h-5 w-5" />
                 Configuración
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configuración general de la empresa
               </CardDescription>
             </CardHeader>

@@ -46,6 +46,9 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
+  Repeat,
+  RotateCcw,
+  FileCheck,
 } from 'lucide-react';
 
 interface NumerationFormDialogProps {
@@ -195,6 +198,9 @@ export function NumerationFormDialog({
       Truck,
       DollarSign,
       Settings,
+      Repeat,
+      RotateCcw,
+      FileCheck,
     };
     return iconMap[typeInfo?.icon || 'FileText'] || FileText;
   };

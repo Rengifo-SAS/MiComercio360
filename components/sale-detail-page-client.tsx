@@ -53,10 +53,13 @@ export function SaleDetailPageClient({
   const handlePrint = async () => {
     setIsPrinting(true);
     try {
-      await SalesPrintService.printSale(sale, companyId);
+      // Generar PDF primero para evitar espacios en blanco al imprimir
+      await SalesPrintService.printSale(sale, companyId, 'letter');
+      toast.success('Impresión iniciada');
     } catch (error) {
       console.error('Error imprimiendo venta:', error);
-      toast.error('Error al imprimir la venta. Inténtalo de nuevo.');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast.error(`Error al imprimir la venta: ${errorMessage}`);
     } finally {
       setIsPrinting(false);
     }
@@ -65,10 +68,13 @@ export function SaleDetailPageClient({
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await SalesPrintService.generatePDF(sale, companyId);
+      // Generar PDF con el nuevo formato
+      await SalesPrintService.generatePDF(sale, companyId, 'letter');
+      toast.success('PDF generado exitosamente');
     } catch (error) {
       console.error('Error exportando venta:', error);
-      toast.error('Error al exportar la venta. Inténtalo de nuevo.');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast.error(`Error al exportar la venta: ${errorMessage}`);
     } finally {
       setIsExporting(false);
     }

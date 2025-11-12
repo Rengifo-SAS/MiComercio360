@@ -36,6 +36,22 @@ import {
   RefreshCw,
   Calculator,
 } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AccountViewDialogProps {
   account: Account | null;
@@ -49,9 +65,13 @@ export function AccountViewDialog({
   onOpenChange,
 }: AccountViewDialogProps) {
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [showReconciliationDialog, setShowReconciliationDialog] =
     useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalTransactions, setTotalTransactions] = useState(0);
 
   useEffect(() => {
     if (account && open) {
@@ -64,14 +84,29 @@ export function AccountViewDialog({
 
     try {
       setLoading(true);
-      const data = await AccountsService.getTransactions(account.id, 20);
-      setTransactions(data);
+      // Cargar todas las transacciones para paginación
+      const data = await AccountsService.getTransactions(account.id, 1000, 0);
+      setAllTransactions(data);
+      setTotalTransactions(data.length);
+      setCurrentPage(1); // Resetear a la primera página
     } catch (error) {
       console.error('Error cargando transacciones:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Paginación de transacciones
+  useEffect(() => {
+    if (allTransactions.length > 0) {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginated = allTransactions.slice(startIndex, endIndex);
+      setTransactions(paginated);
+    } else {
+      setTransactions([]);
+    }
+  }, [allTransactions, currentPage, itemsPerPage]);
 
   if (!account) return null;
 
@@ -114,6 +149,7 @@ export function AccountViewDialog({
       case 'WITHDRAWAL':
       case 'TRANSFER_OUT':
       case 'PAYMENT':
+      case 'REFUND':
         return <ArrowUpRight className="h-4 w-4 text-red-600" />;
       default:
         return <RefreshCw className="h-4 w-4 text-blue-600" />;
@@ -137,6 +173,63 @@ export function AccountViewDialog({
       minute: '2-digit',
     });
   };
+
+  // Calcular paginación
+  const totalPages = Math.ceil(allTransactions.length / itemsPerPage);
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
+  const startItem = allTransactions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endItem = Math.min(currentPage * itemsPerPage, allTransactions.length);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll al inicio de las transacciones
+    const transactionsElement = document.querySelector('[data-transactions-list]');
+    if (transactionsElement) {
+      transactionsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = parseInt(value, 10);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
+
+  // Calcular páginas visibles
+  const getVisiblePages = () => {
+    if (totalPages <= 1) return [1];
+    
+    const delta = 2;
+    const range: (number | string)[] = [];
+    const rangeWithDots: (number | string)[] = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  const visiblePages = getVisiblePages();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -295,60 +388,151 @@ export function AccountViewDialog({
                   ></div>
                 ))}
               </div>
-            ) : transactions.length > 0 ? (
-              <div className="space-y-2">
-                {transactions.map((transaction) => (
-                  <Card key={transaction.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {getTransactionIcon(transaction.transaction_type)}
-                          <div>
-                            <div className="font-medium">
-                              {AccountsService.getTransactionTypeLabel(
-                                transaction.transaction_type
+            ) : allTransactions.length > 0 ? (
+              <>
+                <div className="space-y-2" data-transactions-list>
+                  {transactions.map((transaction) => (
+                    <Card key={transaction.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {getTransactionIcon(transaction.transaction_type)}
+                            <div>
+                              <div className="font-medium">
+                                {AccountsService.getTransactionTypeLabel(
+                                  transaction.transaction_type
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {transaction.description}
+                              </div>
+                              {transaction.reference_number && (
+                                <div className="text-xs text-muted-foreground">
+                                  Ref: {transaction.reference_number}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`font-semibold ${
+                                transaction.amount >= 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }`}
+                            >
+                              {transaction.amount >= 0 ? '+' : ''}
+                              {formatCurrency(
+                                transaction.amount,
+                                account.currency
                               )}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {transaction.description}
+                              {formatDate(transaction.transaction_date)}
                             </div>
-                            {transaction.reference_number && (
-                              <div className="text-xs text-muted-foreground">
-                                Ref: {transaction.reference_number}
-                              </div>
-                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Saldo:{' '}
+                              {formatCurrency(
+                                transaction.balance_after,
+                                account.currency
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div
-                            className={`font-semibold ${
-                              transaction.amount >= 0
-                                ? 'text-green-600'
-                                : 'text-red-600'
-                            }`}
-                          >
-                            {transaction.amount >= 0 ? '+' : ''}
-                            {formatCurrency(
-                              transaction.amount,
-                              account.currency
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {formatDate(transaction.transaction_date)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Saldo:{' '}
-                            {formatCurrency(
-                              transaction.balance_after,
-                              account.currency
-                            )}
-                          </div>
-                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Paginación */}
+                {allTransactions.length > itemsPerPage && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm text-muted-foreground">
+                        Mostrando {startItem} a {endItem} de {allTransactions.length} resultados
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm text-muted-foreground">Filas por página:</p>
+                        <Select
+                          value={itemsPerPage.toString()}
+                          onValueChange={handleItemsPerPageChange}
+                        >
+                          <SelectTrigger className="h-8 w-[70px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent side="top">
+                            {[10, 20, 30, 50, 100].map((pageSize) => (
+                              <SelectItem key={pageSize} value={pageSize.toString()}>
+                                {pageSize}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (hasPreviousPage) {
+                                  handlePageChange(currentPage - 1);
+                                }
+                              }}
+                              className={
+                                !hasPreviousPage
+                                  ? 'pointer-events-none opacity-50'
+                                  : 'cursor-pointer'
+                              }
+                            />
+                          </PaginationItem>
+
+                          {visiblePages.map((page, index) => (
+                            <PaginationItem key={index}>
+                              {page === '...' ? (
+                                <PaginationEllipsis />
+                              ) : (
+                                <PaginationLink
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    handlePageChange(page as number);
+                                  }}
+                                  isActive={currentPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              )}
+                            </PaginationItem>
+                          ))}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (hasNextPage) {
+                                  handlePageChange(currentPage + 1);
+                                }
+                              }}
+                              className={
+                                !hasNextPage
+                                  ? 'pointer-events-none opacity-50'
+                                  : 'cursor-pointer'
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

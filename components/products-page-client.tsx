@@ -190,180 +190,138 @@ export function ProductsPageClient({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Productos</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
+          <p className="text-sm text-muted-foreground">
             Gestiona tu catálogo de productos
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ProductFormDialog onProductCreated={handleProductCreate} />
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Productos
             </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_products}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats.total_products}</div>
             <p className="text-xs text-muted-foreground">En catálogo</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activos</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Activos</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.active_products}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats.active_products}</div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bajo Stock</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Bajo Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.low_stock_count}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats.low_stock_count}</div>
             <p className="text-xs text-muted-foreground">
               Necesitan reposición
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sin Stock</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Sin Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.out_of_stock_count}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{stats.out_of_stock_count}</div>
             <p className="text-xs text-muted-foreground">Agotados</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search
-                className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Input
-                placeholder="Buscar productos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 w-64 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-                aria-label="Buscar productos por nombre, SKU o descripción"
-              />
-            </div>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Nombre</SelectItem>
-                <SelectItem value="sku">SKU</SelectItem>
-                <SelectItem value="selling_price">Precio</SelectItem>
-                <SelectItem value="created_at">Fecha</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-              aria-label={`Cambiar orden a ${
-                sortOrder === 'asc' ? 'descendente' : 'ascendente'
-              }`}
-            >
-              {sortOrder === 'asc' ? '↑' : '↓'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-              aria-label="Exportar productos"
-            >
-              <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-              Exportar
-            </Button>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4"
+              aria-hidden="true"
+            />
+            <Input
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-10"
+              aria-label="Buscar productos por nombre, SKU o descripción"
+            />
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setShowImportDialog(true)}
-              className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-              aria-label="Importar productos desde archivo Excel"
-            >
-              <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
-              Importar Excel
-            </Button>
-          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px] h-10">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Nombre</SelectItem>
+              <SelectItem value="sku">SKU</SelectItem>
+              <SelectItem value="selling_price">Precio</SelectItem>
+              <SelectItem value="created_at">Fecha</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            aria-label={`Cambiar orden a ${
+              sortOrder === 'asc' ? 'descendente' : 'ascendente'
+            }`}
+          >
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </Button>
         </div>
-
-        {/* Paginación superior */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Mostrando {(currentPage - 1) * itemsPerPage + 1} -{' '}
-              {Math.min(currentPage * itemsPerPage, totalProducts)} de{' '}
-              {totalProducts} productos
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(currentPage - 1)}
-                disabled={currentPage === 1 || loading}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <span className="text-sm">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(currentPage + 1)}
-                disabled={currentPage === totalPages || loading}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowImportDialog(true)}
+            aria-label="Importar productos desde archivo Excel"
+          >
+            <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
+            Importar Excel
+          </Button>
+          <Button
+            variant="outline"
+            aria-label="Exportar productos"
+          >
+            <Download className="h-4 w-4 mr-2" aria-hidden="true" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {/* Products Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Productos</CardTitle>
-          <CardDescription>Lista de productos en tu catálogo</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Productos</CardTitle>
+          <CardDescription className="text-sm">Lista de productos en tu catálogo</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-2">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">
                 Cargando productos...
               </p>
             </div>
@@ -501,69 +459,76 @@ export function ProductsPageClient({
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay productos registrados</p>
+              <p className="text-lg font-semibold mb-2">No hay productos registrados</p>
               <p className="text-sm">Los productos aparecerán aquí</p>
             </div>
           )}
 
-          {/* Paginación inferior */}
+          {/* Paginación */}
           {totalPages > 1 && !loading && (
-            <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(1)}
-                disabled={currentPage === 1}
-              >
-                Primera
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
+                {Math.min(currentPage * itemsPerPage, totalProducts)} de{' '}
+                {totalProducts} productos
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadProducts(1)}
+                  disabled={currentPage === 1}
+                >
+                  Primera
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadProducts(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
 
-              {/* Números de página */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const startPage = Math.max(1, currentPage - 2);
-                const pageNum = startPage + i;
-                if (pageNum > totalPages) return null;
+                {/* Números de página */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const startPage = Math.max(1, currentPage - 2);
+                  const pageNum = startPage + i;
+                  if (pageNum > totalPages) return null;
 
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={pageNum === currentPage ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => loadProducts(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pageNum === currentPage ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => loadProducts(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadProducts(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                Última
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadProducts(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadProducts(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  Última
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

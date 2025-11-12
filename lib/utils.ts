@@ -10,6 +10,21 @@ export const hasEnvVars =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY;
 
+// Función para formatear fechas
+export function formatDate(dateString: string | Date): string {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Fecha inválida';
+  }
+}
+
 // Función para formatear fechas y horas
 export function formatDateTime(dateString: string | Date): string {
   try {

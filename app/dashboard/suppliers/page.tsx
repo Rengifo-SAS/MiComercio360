@@ -61,14 +61,19 @@ export default async function SuppliersPage() {
 
 
     <RouteGuard requiredPermission="suppliers.read">
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Proveedores</h1>
-          <p className="text-muted-foreground">
-            Gestiona tu lista de proveedores
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+            <Building2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Proveedores</h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona tu lista de proveedores
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <SupplierFormDialog />
@@ -76,87 +81,69 @@ export default async function SuppliersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Proveedores
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSuppliers}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{totalSuppliers}</div>
             <p className="text-xs text-muted-foreground">Registrados</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activos</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Activos</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeSuppliers}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{activeSuppliers}</div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Con Email</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Con Email</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{suppliersWithEmail}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{suppliersWithEmail}</div>
             <p className="text-xs text-muted-foreground">Contacto digital</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Con Teléfono</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Con Teléfono</CardTitle>
             <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{suppliersWithPhone}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{suppliersWithPhone}</div>
             <p className="text-xs text-muted-foreground">Contacto directo</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Search className="h-4 w-4 mr-2" />
-            Buscar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtrar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
-      </div>
-
       {/* Suppliers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Proveedores</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Lista de Proveedores</CardTitle>
+          <CardDescription className="text-sm">
             Gestiona la información de tus proveedores
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {suppliers && suppliers.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-0 divide-y">
               {suppliers.map((supplier) => (
                 <div
                   key={supplier.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">

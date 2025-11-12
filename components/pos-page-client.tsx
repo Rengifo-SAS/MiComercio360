@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ProductsService } from '@/lib/services/products-service';
 import { CustomersService } from '@/lib/services/customers-service';
@@ -211,39 +211,69 @@ export function POSPageClient() {
     }
   }, [isOnline]);
 
-  // Aplicar configuración por defecto cuando activeSale esté disponible
-  useEffect(() => {
-    if (activeSale && customers.length > 0 && numerations.length > 0) {
-      // Verificar si la venta activa ya tiene cliente y numeración asignados
-      if (!activeSale.selectedCustomer || !activeSale.selectedNumeration) {
-        // Debug: comentado para producción
-        // console.log(
-        //   'Aplicando configuración por defecto a venta activa:',
-        //   activeSale.id
-        // );
+  // Función para aplicar configuración a una venta
+  const applyConfigurationToSale = useCallback((saleId: string) => {
+    if (!saleId || customers.length === 0 || numerations.length === 0) return;
 
-        // Aplicar numeración por defecto si no tiene
-        if (!activeSale.selectedNumeration && numerations.length > 0) {
-          updateSaleNumeration(activeSale.id, numerations[0]);
-        }
+    const sale = pendingSales.find(s => s.id === saleId);
+    if (!sale) return;
 
-        // Aplicar cliente por defecto si no tiene
-        if (!activeSale.selectedCustomer) {
-          const defaultCustomer = customers.find(
-            (c: Customer) =>
-              c.identification_number === '22222222-2' &&
-              c.business_name === 'Consumidor Final'
-          );
+    // Aplicar numeración desde configuración si está establecida
+    if (configuration?.defaultNumerationId && !sale.selectedNumeration) {
+      const savedNumeration = numerations.find(
+        (n) => n.id === configuration.defaultNumerationId
+      );
+      if (savedNumeration) {
+        updateSaleNumeration(saleId, savedNumeration);
+      }
+    } else if (!sale.selectedNumeration && numerations.length > 0) {
+      // Si no hay configuración guardada, usar la primera numeración disponible
+      updateSaleNumeration(saleId, numerations[0]);
+    }
 
-          if (defaultCustomer) {
-            // Debug: comentado para producción
-            // console.log('Asignando cliente por defecto:', defaultCustomer);
-            updateSaleCustomer(activeSale.id, defaultCustomer);
-          }
-        }
+    // Aplicar cliente desde configuración si está establecido
+    if (configuration?.defaultCustomerId && !sale.selectedCustomer) {
+      const savedCustomer = customers.find(
+        (c: Customer) => c.id === configuration.defaultCustomerId
+      );
+      if (savedCustomer) {
+        updateSaleCustomer(saleId, savedCustomer);
+      }
+    } else if (!sale.selectedCustomer) {
+      // Si no hay configuración guardada, buscar Consumidor Final
+      const defaultCustomer = customers.find(
+        (c: Customer) =>
+          c.identification_number === '22222222-2' &&
+          c.business_name === 'Consumidor Final'
+      );
+
+      if (defaultCustomer) {
+        updateSaleCustomer(saleId, defaultCustomer);
       }
     }
-  }, [activeSale, customers, numerations]);
+  }, [customers, numerations, configuration, pendingSales, updateSaleNumeration, updateSaleCustomer]);
+
+  // Wrapper para addNewSale que aplica configuración después de crear la venta
+  const handleAddNewSale = useCallback((name?: string) => {
+    addNewSale(name);
+  }, [addNewSale]);
+
+  // Aplicar configuración cuando se crea una nueva venta o cambia activeSaleId
+  useEffect(() => {
+    if (activeSaleId && customers.length > 0 && numerations.length > 0) {
+      const sale = pendingSales.find(s => s.id === activeSaleId);
+      if (sale && (!sale.selectedCustomer || !sale.selectedNumeration)) {
+        applyConfigurationToSale(activeSaleId);
+      }
+    }
+  }, [activeSaleId, pendingSales, customers.length, numerations.length, applyConfigurationToSale]);
+
+  // Aplicar configuración cuando cambia la configuración o se cargan los datos
+  useEffect(() => {
+    if (activeSale && customers.length > 0 && numerations.length > 0 && configuration) {
+      applyConfigurationToSale(activeSale.id);
+    }
+  }, [activeSale, customers.length, numerations.length, configuration, applyConfigurationToSale]);
 
   // Función para cargar productos
   const loadProducts = async () => {
@@ -322,12 +352,14 @@ export function POSPageClient() {
         companyData,
       ] = await Promise.all([
         ProductsService.getProducts(profile.company_id),
-        CustomersService.getCustomers(profile.company_id),
+        CustomersService.getCustomers(profile.company_id, {
+          isActive: true,
+          limit: 1000, // Aumentar límite para cargar todos los clientes
+        }),
         AccountsService.getAccounts(profile.company_id),
         PaymentMethodsService.getPaymentMethods(profile.company_id),
-        NumerationsService.getActiveNumerationsByType(
-          profile.company_id,
-          'invoice'
+        NumerationsService.getNumerations(profile.company_id).then(numerations => 
+          numerations.filter(n => n.is_active)
         ),
         CategoriesService.getCategories(profile.company_id),
         supabase
@@ -340,12 +372,21 @@ export function POSPageClient() {
 
       setProducts(productsData.products);
       setCustomers(customersData.customers);
-      setAccounts(accountsData);
+      // Filtrar solo cuentas activas
+      setAccounts(accountsData.filter((a: any) => a.is_active));
       setPaymentMethods(
         paymentMethodsData.filter((method: PaymentMethod) => method.is_active)
       );
       setNumerations(numerationsData);
       setCategories(categoriesData);
+
+      // Log para depuración
+      console.log('Datos cargados para POS:', {
+        customers: customersData.customers.length,
+        accounts: accountsData.filter((a: any) => a.is_active).length,
+        numerations: numerationsData.length,
+        companyId: profile.company_id,
+      });
 
       // Cachear datos para uso offline
       // 1) Productos: traer TODOS para cache, no solo la primera página
@@ -384,33 +425,16 @@ export function POSPageClient() {
 
         if (savedConfig) {
           // Usar configuración guardada
-          setConfiguration({
+          const configToSet = {
             defaultAccountId: savedConfig.default_account_id || '',
             defaultCustomerId: savedConfig.default_customer_id || '',
             defaultNumerationId: savedConfig.default_numeration_id || '',
             terminalName: savedConfig.terminal_name || 'Terminal Principal',
             printPaperSize: savedConfig.print_paper_size || 'thermal-80mm',
-          });
-
-          // Configurar cliente seleccionado
-          if (savedConfig.default_customer_id) {
-            const savedCustomer = customersData.customers.find(
-              (c: Customer) => c.id === savedConfig.default_customer_id
-            );
-            if (savedCustomer && activeSale) {
-              updateSaleCustomer(activeSale.id, savedCustomer);
-            }
-          }
-
-          // Configurar numeración seleccionada
-          if (savedConfig.default_numeration_id) {
-            const savedNumeration = numerationsData.find(
-              (n) => n.id === savedConfig.default_numeration_id
-            );
-            if (savedNumeration && activeSale) {
-              updateSaleNumeration(activeSale.id, savedNumeration);
-            }
-          }
+          };
+          
+          setConfiguration(configToSet);
+          // Los efectos se encargarán de aplicar la configuración a las ventas activas
         } else {
           // Configuración por defecto si no hay configuración guardada
           await loadDefaultConfiguration(
@@ -653,6 +677,7 @@ export function POSPageClient() {
       );
 
       // Crear datos de venta
+      // IMPORTANTE: NO incluir payment_status ni status para que el servicio los establezca como 'completed'
       const saleData: CreateSaleData = {
         customer_id: activeSale.selectedCustomer!.id,
         total_amount: totals.total_amount,
@@ -665,6 +690,7 @@ export function POSPageClient() {
         payment_reference: paymentData.reference,
         payment_amount_received: paymentData.amount,
         payment_change: paymentData.change,
+        // NO incluir payment_status ni status - el servicio los establecerá como 'completed'
       };
 
       let createdSale: Sale;
@@ -911,7 +937,7 @@ export function POSPageClient() {
         <POSMultiVentasTabs
           pendingSales={pendingSales}
           activeSaleId={activeSaleId}
-          onAddNewSale={addNewSale}
+          onAddNewSale={handleAddNewSale}
           onSetActiveSale={setActiveSale}
           onRenameSale={renameSale}
           onDeleteSale={deleteSale}
@@ -1026,7 +1052,28 @@ export function POSPageClient() {
         open={showConfiguration}
         onOpenChange={setShowConfiguration}
         configuration={configuration}
-        onConfigurationChange={setConfiguration}
+        onConfigurationChange={(newConfig) => {
+          setConfiguration(newConfig);
+          // Aplicar configuración inmediatamente al carrito activo
+          if (activeSale) {
+            if (newConfig.defaultCustomerId) {
+              const savedCustomer = customers.find(
+                (c: Customer) => c.id === newConfig.defaultCustomerId
+              );
+              if (savedCustomer) {
+                updateSaleCustomer(activeSale.id, savedCustomer);
+              }
+            }
+            if (newConfig.defaultNumerationId) {
+              const savedNumeration = numerations.find(
+                (n) => n.id === newConfig.defaultNumerationId
+              );
+              if (savedNumeration) {
+                updateSaleNumeration(activeSale.id, savedNumeration);
+              }
+            }
+          }
+        }}
         accounts={accounts}
         customers={customers}
         numerations={numerations}

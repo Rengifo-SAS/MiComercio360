@@ -35,6 +35,9 @@ import {
   Settings,
   Eye,
   Edit,
+  Repeat,
+  RotateCcw,
+  FileCheck,
 } from 'lucide-react';
 
 interface DefaultNumerationsCardProps {
@@ -101,6 +104,9 @@ export const DefaultNumerationsCard = forwardRef<
       Truck,
       DollarSign,
       Settings,
+      Repeat,
+      RotateCcw,
+      FileCheck,
     };
     return iconMap[typeInfo?.icon || 'FileText'] || FileText;
   };
@@ -116,13 +122,13 @@ export const DefaultNumerationsCard = forwardRef<
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5" />
             Numeraciones por Defecto
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Numeraciones del sistema creadas automáticamente
           </CardDescription>
         </CardHeader>
@@ -142,20 +148,20 @@ export const DefaultNumerationsCard = forwardRef<
 
   if (defaultNumerations.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5" />
             Numeraciones por Defecto
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Numeraciones del sistema creadas automáticamente
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               No hay numeraciones por defecto disponibles
             </p>
           </div>
@@ -165,13 +171,13 @@ export const DefaultNumerationsCard = forwardRef<
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="h-5 w-5" />
           Numeraciones por Defecto
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Numeraciones del sistema creadas automáticamente
         </CardDescription>
       </CardHeader>

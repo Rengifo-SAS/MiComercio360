@@ -88,6 +88,8 @@ export function SalesFormDialog({
     total_amount: 0,
     items: [],
     payment_method: 'cash',
+    payment_status: 'pending',
+    status: 'pending',
     notes: '',
     discount_amount: 0,
   });
@@ -120,6 +122,8 @@ export function SalesFormDialog({
               discount_percentage: item.discount_percentage,
             })) || [],
           payment_method: sale.payment_method,
+          payment_status: sale.payment_status,
+          status: sale.status,
           notes: sale.notes || '',
           discount_amount: sale.discount_amount,
           total_amount: sale.total_amount,
@@ -129,6 +133,8 @@ export function SalesFormDialog({
           customer_id: undefined,
           items: [],
           payment_method: 'cash',
+          payment_status: 'pending',
+          status: 'pending',
           notes: '',
           discount_amount: 0,
           total_amount: 0,
@@ -351,10 +357,27 @@ export function SalesFormDialog({
 
     setLoading(true);
     try {
+      // Calcular totales antes de enviar
+      const totals = calculateSaleTotals(
+        formData.items,
+        formData.discount_amount || 0,
+        convertProductsForTotals(products)
+      );
+
+      // Preparar datos para enviar, incluyendo el total calculado
+      const saleDataToSend: CreateSaleData = {
+        ...formData,
+        total_amount: totals.total_amount,
+        discount_amount: totals.discount_amount,
+        // Asegurar que los estados sean consistentes
+        payment_status: formData.payment_status || 'pending',
+        status: formData.status || (formData.payment_status === 'completed' ? 'completed' : 'pending'),
+      };
+
       if (sale) {
-        await SalesService.updateSale(sale.id, formData);
+        await SalesService.updateSale(sale.id, saleDataToSend);
       } else {
-        await SalesService.createSale(companyId, formData);
+        await SalesService.createSale(companyId, saleDataToSend);
       }
       onSave();
     } catch (error) {
@@ -543,6 +566,65 @@ export function SalesFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Estado de Pago */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="payment_status">Estado de Pago</Label>
+              <Select
+                value={formData.payment_status || 'pending'}
+                onValueChange={(value: 'pending' | 'completed' | 'refunded' | 'partially_refunded') =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    payment_status: value,
+                    // Si el pago se marca como completado, también marcar la venta como completada
+                    status: value === 'completed' ? 'completed' : (prev.status || 'pending'),
+                  }))
+                }
+                disabled={isFormDisabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar estado de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="completed">Completado</SelectItem>
+                  <SelectItem value="refunded" disabled={!sale}>Reembolsado</SelectItem>
+                  <SelectItem value="partially_refunded" disabled={!sale}>Parcialmente Reembolsado</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {formData.payment_status === 'pending' 
+                  ? 'La venta quedará pendiente de pago y podrá ser pagada desde el módulo de pagos recibidos'
+                  : 'La venta se marcará como pagada'}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="status">Estado de la Venta</Label>
+              <Select
+                value={formData.status || 'pending'}
+                onValueChange={(value: 'pending' | 'completed' | 'cancelled') =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: value,
+                  }))
+                }
+                disabled={isFormDisabled || sale?.status === 'cancelled'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="completed">Completada</SelectItem>
+                  <SelectItem value="cancelled" disabled={!sale}>Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Estado general de la venta en el sistema
+              </p>
             </div>
           </div>
 

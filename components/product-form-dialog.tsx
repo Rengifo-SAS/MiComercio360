@@ -97,44 +97,6 @@ export function ProductFormDialog({
   });
   const [defaultTaxId, setDefaultTaxId] = useState<string>('');
 
-  // Inicializar formulario cuando se abre el modal
-  useEffect(() => {
-    if (open && product) {
-      setFormData({
-        ...product,
-        description: product.description || '',
-        category_id: product.category_id || '',
-        supplier_id: product.supplier_id || '',
-        warehouse_id: product.warehouse_id || '',
-        max_stock: product.max_stock || 0,
-        image_url: product.image_url || '',
-        initial_quantity: 0, // No es parte del producto existente
-        fiscal_classification: product.fiscal_classification || 'Bien',
-        cost_center_id: product.cost_center_id || '',
-      });
-    } else if (open && !product) {
-      setFormData({
-        name: '',
-        sku: '',
-        description: '',
-        category_id: '',
-        supplier_id: '',
-        warehouse_id: '',
-        cost_price: 0,
-        selling_price: 0,
-        min_stock: 0,
-        max_stock: 0,
-        unit: 'pcs',
-        image_url: '',
-        is_active: true,
-        initial_quantity: 0,
-        tax_id: defaultTaxId || '', // Usar el IVA 19% por defecto
-        fiscal_classification: 'Bien',
-        cost_center_id: '',
-      });
-    }
-  }, [open, product, defaultTaxId]);
-
   const router = useRouter();
   const supabase = createClient();
 
@@ -188,18 +150,12 @@ export function ProductFormDialog({
           profile.company_id
         );
 
+        // Establecer las listas en el estado
         setCategories(categoriesData || []);
         setSuppliers(suppliersData || []);
         setWarehouses(warehousesData || []);
         setTaxes(taxesData);
         setCostCenters(costCentersData);
-
-        // Encontrar la bodega principal (main) y establecerla como predeterminada
-        const mainWarehouse = warehousesData?.find(
-          (warehouse) =>
-            warehouse.name.toLowerCase() === 'main' ||
-            warehouse.code.toLowerCase() === 'main'
-        );
 
         // Encontrar el IVA 19% y establecerlo como predeterminado
         const iva19Tax = taxesData.find(
@@ -212,44 +168,6 @@ export function ProductFormDialog({
         if (iva19Tax) {
           setDefaultTaxId(iva19Tax.id);
         }
-
-        // Inicializar formulario con valores predeterminados
-        if (product) {
-          // Producto existente
-          setFormData({
-            ...product,
-            category_id: product.category_id || '',
-            supplier_id: product.supplier_id || '',
-            max_stock: product.max_stock || 0,
-            warehouse_id:
-              product.warehouse_id ||
-              mainWarehouse?.id ||
-              warehousesData?.[0]?.id ||
-              '',
-            tax_id: product.tax_id || iva19Tax?.id || '',
-          });
-        } else {
-          // Nuevo producto - establecer valores predeterminados incluyendo bodega
-          setFormData({
-            name: '',
-            sku: '',
-            description: '',
-            category_id: '',
-            supplier_id: '',
-            warehouse_id: mainWarehouse?.id || warehousesData?.[0]?.id || '', // Bodega principal como predeterminada
-            cost_price: 0,
-            selling_price: 0,
-            min_stock: 0,
-            max_stock: 0,
-            unit: 'pcs',
-            image_url: '',
-            is_active: true,
-            initial_quantity: 0,
-            fiscal_classification: 'Bien',
-            cost_center_id: '',
-            tax_id: iva19Tax?.id || '',
-          });
-        }
       } catch (error) {
         console.error('Error loading data:', error);
       }
@@ -258,7 +176,127 @@ export function ProductFormDialog({
     if (open) {
       loadData();
     }
-  }, [open, supabase, product]);
+  }, [open, supabase]);
+
+  // Inicializar formulario cuando las listas estén cargadas Y haya un producto
+  useEffect(() => {
+    if (!open || !product?.id) {
+      // Si no hay producto, solo establecer valores por defecto para nuevo producto
+      if (open && !product && warehouses.length > 0 && taxes.length > 0) {
+        const mainWarehouse = warehouses.find(
+          (w) => w.name.toLowerCase() === 'main' || w.code.toLowerCase() === 'main'
+        );
+        const iva19Tax = taxes.find(
+          (t) => t.name === 'IVA 19%' && t.tax_type === 'VAT' && t.percentage === 19
+        );
+        
+        setFormData({
+          name: '',
+          sku: '',
+          description: '',
+          category_id: '',
+          supplier_id: '',
+          warehouse_id: mainWarehouse?.id || warehouses[0]?.id || '',
+          cost_price: 0,
+          selling_price: 0,
+          min_stock: 0,
+          max_stock: 0,
+          unit: 'pcs',
+          image_url: '',
+          is_active: true,
+          initial_quantity: 0,
+          fiscal_classification: 'Bien',
+          cost_center_id: '',
+          tax_id: iva19Tax?.id || '',
+        });
+      }
+      return;
+    }
+
+    // Solo proceder si las listas están cargadas
+    if (categories.length === 0 && suppliers.length === 0 && warehouses.length === 0 && taxes.length === 0) {
+      return;
+    }
+
+    const initializeFormData = async () => {
+      // Cargar cantidad disponible del inventario
+      let availableQuantity = 0;
+      
+      if ((product as any).available_quantity !== undefined) {
+        availableQuantity = (product as any).available_quantity || 0;
+      } else {
+        try {
+          const { data: inventoryData } = await supabase
+            .from('inventory')
+            .select('quantity')
+            .eq('product_id', product.id)
+            .maybeSingle();
+          availableQuantity = inventoryData?.quantity || 0;
+        } catch (error) {
+          console.error('Error loading inventory quantity:', error);
+        }
+      }
+
+      // Convertir precios a números si vienen como strings
+      const costPrice = typeof product.cost_price === 'string' 
+        ? parseFloat(product.cost_price) || 0 
+        : (product.cost_price || 0);
+      const sellingPrice = typeof product.selling_price === 'string'
+        ? parseFloat(product.selling_price) || 0
+        : (product.selling_price || 0);
+      
+      const formDataToSet = {
+        id: product.id,
+        name: product.name || '',
+        sku: product.sku || '',
+        description: product.description || '',
+        category_id: product.category_id || '',
+        supplier_id: product.supplier_id || '',
+        warehouse_id: product.warehouse_id || '',
+        cost_price: costPrice,
+        selling_price: sellingPrice,
+        min_stock: typeof product.min_stock === 'string' 
+          ? parseInt(product.min_stock) || 0 
+          : (product.min_stock || 0),
+        max_stock: product.max_stock !== null && product.max_stock !== undefined
+          ? (typeof product.max_stock === 'string' ? parseInt(product.max_stock) : product.max_stock)
+          : undefined,
+        unit: product.unit || 'pcs',
+        image_url: product.image_url || '',
+        is_active: product.is_active ?? true,
+        initial_quantity: availableQuantity,
+        tax_id: product.tax_id || '',
+        fiscal_classification: product.fiscal_classification || 'Bien',
+        cost_center_id: product.cost_center_id || '',
+        company_id: product.company_id || '',
+        created_at: product.created_at,
+        updated_at: product.updated_at,
+      };
+      
+      // Log para debug
+      console.log('Product form initialized:', {
+        productIds: {
+          category_id: product.category_id,
+          supplier_id: product.supplier_id,
+          warehouse_id: product.warehouse_id,
+          tax_id: product.tax_id,
+          cost_center_id: product.cost_center_id,
+        },
+        formData: formDataToSet,
+        listsAvailable: {
+          categories: categories.length,
+          suppliers: suppliers.length,
+          warehouses: warehouses.length,
+          taxes: taxes.length,
+          costCenters: costCenters.length,
+        },
+      });
+      
+      setFormData(formDataToSet);
+    };
+
+    initializeFormData();
+  }, [open, product, categories, suppliers, warehouses, taxes, costCenters, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -641,14 +679,14 @@ export function ProductFormDialog({
                     id="max_stock"
                     type="number"
                     min="0"
-                    value={formData.max_stock}
+                    value={formData.max_stock !== null && formData.max_stock !== undefined ? formData.max_stock : ''}
                     onChange={(e) =>
                       handleInputChange(
                         'max_stock',
-                        parseInt(e.target.value) || 0
+                        e.target.value === '' ? undefined : (parseInt(e.target.value) || undefined)
                       )
                     }
-                    placeholder="0"
+                    placeholder="Sin límite"
                   />
                 </div>
                 <div className="space-y-2">
@@ -664,6 +702,7 @@ export function ProductFormDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pcs">Piezas</SelectItem>
+                      <SelectItem value="unidad">Unidad</SelectItem>
                       <SelectItem value="kg">Kilogramos</SelectItem>
                       <SelectItem value="g">Gramos</SelectItem>
                       <SelectItem value="l">Litros</SelectItem>
@@ -717,6 +756,28 @@ export function ProductFormDialog({
                   />
                   <p className="text-xs text-muted-foreground">
                     Cantidad inicial en inventario
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Cantidad actual (solo para productos existentes) */}
+            {product && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Inventario Actual
+                </h4>
+                <div className="space-y-2">
+                  <Label htmlFor="current_quantity">Cantidad Actual en Inventario</Label>
+                  <Input
+                    id="current_quantity"
+                    type="number"
+                    value={formData.initial_quantity || 0}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    La cantidad se gestiona mediante ajustes de inventario. Esta es solo informativa.
                   </p>
                 </div>
               </div>

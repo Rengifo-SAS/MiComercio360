@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,6 +33,7 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -44,6 +46,7 @@ import {
   calculateShiftDuration,
 } from '@/lib/types/shifts';
 import { ShiftsService } from '@/lib/services/shifts-service';
+import { createClient } from '@/lib/supabase/client';
 
 interface ShiftViewDialogProps {
   shift: Shift;
@@ -51,9 +54,11 @@ interface ShiftViewDialogProps {
 }
 
 export function ShiftViewDialog({ shift, onClose }: ShiftViewDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(true);
   const [report, setReport] = useState<ShiftReport | null>(null);
   const [cashMovements, setCashMovements] = useState<CashMovement[]>([]);
+  const [shiftSales, setShiftSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Cargar reporte cuando se abre el diálogo
@@ -61,8 +66,37 @@ export function ShiftViewDialog({ shift, onClose }: ShiftViewDialogProps) {
     if (open) {
       loadReport();
       loadCashMovements();
+      loadShiftSales();
     }
   }, [open, shift.id]);
+
+  const loadShiftSales = async () => {
+    try {
+      const supabase = createClient();
+      const { data: salesData, error } = await supabase
+        .from('sales')
+        .select(`
+          id,
+          sale_number,
+          total_amount,
+          payment_method,
+          status,
+          created_at,
+          customer:customers(id, business_name, identification_number)
+        `)
+        .eq('shift_id', shift.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error cargando ventas del turno:', error);
+        return;
+      }
+
+      setShiftSales(salesData || []);
+    } catch (error) {
+      console.error('Error cargando ventas del turno:', error);
+    }
+  };
 
   const loadReport = async () => {
     try {
@@ -179,8 +213,9 @@ export function ShiftViewDialog({ shift, onClose }: ShiftViewDialogProps) {
           </div>
         ) : (
           <Tabs defaultValue="summary" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="summary">Resumen</TabsTrigger>
+              <TabsTrigger value="sales">Ventas</TabsTrigger>
               <TabsTrigger value="cash">Efectivo</TabsTrigger>
               <TabsTrigger value="movements">Movimientos</TabsTrigger>
             </TabsList>
@@ -328,6 +363,93 @@ export function ShiftViewDialog({ shift, onClose }: ShiftViewDialogProps) {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="sales" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Receipt className="w-5 h-5" />
+                      Ventas del Turno
+                    </CardTitle>
+                    {shiftSales.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        {shiftSales.length} {shiftSales.length === 1 ? 'venta' : 'ventas'} • Haz clic para ver detalles
+                      </p>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {shiftSales.length > 0 ? (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Número de Venta</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Método de Pago</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                            <TableHead>Fecha</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                      <TableBody>
+                        {shiftSales.map((sale) => (
+                          <TableRow 
+                            key={sale.id}
+                            className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Cerrar el diálogo primero
+                              setOpen(false);
+                              if (onClose) onClose();
+                              // Navegar a la página de detalle de la venta
+                              setTimeout(() => {
+                                router.push(`/dashboard/sales/${sale.id}`);
+                              }, 100);
+                            }}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <span className="text-primary group-hover:underline">
+                                  {sale.sale_number || 'N/A'}
+                                </span>
+                                <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {sale.customer?.business_name || 'Consumidor Final'}
+                            </TableCell>
+                            <TableCell>
+                              {sale.payment_method === 'cash' ? 'Efectivo' :
+                               sale.payment_method === 'card' ? 'Tarjeta' :
+                               sale.payment_method === 'transfer' ? 'Transferencia' :
+                               sale.payment_method === 'mixed' ? 'Mixto' : sale.payment_method || 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(sale.total_amount || 0)}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(sale.created_at)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        No hay ventas
+                      </h3>
+                      <p className="text-muted-foreground">
+                        No se registraron ventas en este turno.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="cash" className="space-y-4">

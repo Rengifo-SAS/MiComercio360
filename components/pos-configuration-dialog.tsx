@@ -29,6 +29,9 @@ import {
   Receipt,
 } from 'lucide-react';
 import { POSConfigurationService } from '@/lib/services/pos-configuration-service';
+import { CustomersService } from '@/lib/services/customers-service';
+import { AccountsService } from '@/lib/services/accounts-service';
+import { NumerationsService } from '@/lib/services/numerations-service';
 import { toast } from 'sonner';
 
 interface POSConfiguration {
@@ -55,19 +58,60 @@ export function POSConfigurationDialog({
   onOpenChange,
   configuration,
   onConfigurationChange,
-  accounts,
-  customers,
-  numerations,
+  accounts: propAccounts,
+  customers: propCustomers,
+  numerations: propNumerations,
   companyId,
 }: POSConfigurationDialogProps) {
   const [localConfig, setLocalConfig] =
     useState<POSConfiguration>(configuration);
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<any[]>(propAccounts || []);
+  const [customers, setCustomers] = useState<any[]>(propCustomers || []);
+  const [numerations, setNumerations] = useState<any[]>(propNumerations || []);
 
   // Actualizar configuración local cuando cambie la prop
   useEffect(() => {
     setLocalConfig(configuration);
   }, [configuration]);
+
+  // Actualizar datos locales cuando cambien las props
+  useEffect(() => {
+    setAccounts(propAccounts || []);
+    setCustomers(propCustomers || []);
+    setNumerations(propNumerations || []);
+  }, [propAccounts, propCustomers, propNumerations]);
+
+  // Cargar datos si no están disponibles cuando se abre el diálogo
+  useEffect(() => {
+    if (open && companyId && (accounts.length === 0 || customers.length === 0 || numerations.length === 0)) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, companyId]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [customersData, accountsData, numerationsData] = await Promise.all([
+        CustomersService.getCustomers(companyId, {
+          isActive: true,
+          limit: 1000,
+        }),
+        AccountsService.getAccounts(companyId),
+        NumerationsService.getNumerations(companyId),
+      ]);
+
+      setCustomers(customersData.customers);
+      setAccounts(accountsData.filter((a: any) => a.is_active));
+      setNumerations(numerationsData.filter((n: any) => n.is_active));
+    } catch (error) {
+      console.error('Error cargando datos en diálogo de configuración:', error);
+      toast.error('Error cargando datos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -168,18 +212,24 @@ export function POSConfigurationDialog({
                     <SelectValue placeholder="Seleccionar cuenta contable" />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {account.account_name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {account.account_type} - {account.description}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {accounts && accounts.length > 0 ? (
+                      accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {account.account_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {account.account_type} - {account.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No hay cuentas disponibles
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500 mt-1">
@@ -217,16 +267,22 @@ export function POSConfigurationDialog({
                     <SelectValue placeholder="Seleccionar numeración por defecto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {numerations.map((numeration) => (
-                      <SelectItem key={numeration.id} value={numeration.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{numeration.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {numeration.prefix} - {numeration.current_number}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {numerations && numerations.length > 0 ? (
+                      numerations.map((numeration) => (
+                        <SelectItem key={numeration.id} value={numeration.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{numeration.name}</span>
+                            <span className="text-xs text-gray-500">
+                              {numeration.prefix} - {numeration.current_number}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No hay numeraciones disponibles
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500 mt-1">
@@ -316,19 +372,25 @@ export function POSConfigurationDialog({
                     <SelectValue placeholder="Seleccionar cliente por defecto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {customer.business_name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {customer.identification_type}{' '}
-                            {customer.identification_number}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {customers && customers.length > 0 ? (
+                      customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {customer.business_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {customer.identification_type}{' '}
+                              {customer.identification_number}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No hay clientes disponibles
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500 mt-1">

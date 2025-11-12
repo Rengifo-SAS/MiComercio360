@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Printer, Download, Eye, Loader2 } from 'lucide-react';
+import { Printer, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { SalesPrintService } from '@/lib/services/sales-print-service';
 import { SalesService } from '@/lib/services/sales-service';
@@ -20,7 +20,7 @@ interface POSPrintDialogProps {
   onOpenChange: (open: boolean) => void;
   saleId: string | null;
   companyId: string;
-  defaultPaperSize?: 'letter' | 'thermal-80mm' | 'half-letter';
+  defaultPaperSize?: 'letter' | 'thermal-80mm';
 }
 
 export function POSPrintDialog({
@@ -30,7 +30,7 @@ export function POSPrintDialog({
   companyId,
   defaultPaperSize = 'thermal-80mm',
 }: POSPrintDialogProps) {
-  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm' | 'half-letter'>(
+  const [paperSize, setPaperSize] = useState<'letter' | 'thermal-80mm'>(
     defaultPaperSize
   );
   const [loading, setLoading] = useState(false);
@@ -52,40 +52,6 @@ export function POSPrintDialog({
     } catch (error) {
       console.error('Error imprimiendo:', error);
       toast.error('Error al imprimir');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePreview = async () => {
-    if (!saleId || !companyId) return;
-
-    try {
-      setLoading(true);
-      // Obtener la venta completa
-      const sale = await SalesService.getSaleById(saleId);
-      if (!sale) {
-        throw new Error('No se pudo encontrar la venta');
-      }
-
-      // Generar HTML y abrir en nueva ventana para vista previa
-      const html = await SalesPrintService.generatePrintHTML(
-        sale,
-        companyId,
-        paperSize
-      );
-      const previewWindow = window.open('', '_blank');
-      if (previewWindow) {
-        previewWindow.document.write(html);
-        previewWindow.document.close();
-      } else {
-        throw new Error(
-          'No se pudo abrir la ventana de vista previa. Verifique que los pop-ups estén habilitados.'
-        );
-      }
-    } catch (error) {
-      console.error('Error en vista previa:', error);
-      toast.error('Error en vista previa');
     } finally {
       setLoading(false);
     }
@@ -133,22 +99,12 @@ export function POSPrintDialog({
               </span>
             </div>
             <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-              Tamaño: {paperSize === 'thermal-80mm' ? '80mm Térmica' : paperSize === 'half-letter' ? 'Media Carta' : 'Carta'}
+              Tamaño: {paperSize === 'thermal-80mm' ? '80mm Térmica' : 'Carta'}
             </div>
           </div>
 
           {/* Botones de acción - Compactos */}
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant="outline"
-              onClick={handlePreview}
-              disabled={loading}
-              className="flex flex-col items-center gap-1 h-12 text-xs"
-            >
-              <Eye className="h-3 w-3" />
-              <span>Vista</span>
-            </Button>
-
+          <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={handlePrint}
               disabled={loading}

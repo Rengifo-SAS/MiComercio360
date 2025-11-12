@@ -148,54 +148,54 @@ export function InventoryPageClient({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 p-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Inventario</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Inventario</h1>
+          <p className="text-sm text-muted-foreground">
             Gestiona el stock y movimientos de productos
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">
               Total Productos
             </CardTitle>
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               {stats?.total_products || 0}
             </div>
             <p className="text-xs text-muted-foreground">En inventario</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Stock</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">En Stock</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-green-600">
               {stats?.in_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bajo Stock</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Bajo Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-orange-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-orange-600">
               {stats?.low_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -204,46 +204,46 @@ export function InventoryPageClient({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sin Stock</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Sin Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold text-red-600">
               {stats?.out_of_stock_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Agotados</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Valor Total</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">
               ${(stats?.total_value || 0).toLocaleString('es-CO')}
             </div>
             <p className="text-xs text-muted-foreground">En inventario</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bodegas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Bodegas</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{warehouses.length}</div>
+          <CardContent className="space-y-1">
+            <div className="text-3xl font-bold">{warehouses.length}</div>
             <p className="text-xs text-muted-foreground">Activas</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <InventorySearchFilter
           warehouses={warehouses}
           categories={categories}
@@ -262,14 +262,14 @@ export function InventoryPageClient({
       </div>
 
       {/* Inventory Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Inventario Actual</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Inventario Actual</CardTitle>
+          <CardDescription className="text-sm">
             Lista de productos con sus cantidades en stock
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {inventoryData && inventoryData.length > 0 ? (
             <div className="space-y-4">
               {inventoryData.map((item, index) => {

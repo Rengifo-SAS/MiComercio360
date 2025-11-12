@@ -96,13 +96,13 @@ export const DefaultAccountsCard = forwardRef<
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Cuentas por Defecto</CardTitle>
-          <CardDescription>Cargando cuentas del sistema...</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Cuentas por Defecto</CardTitle>
+          <CardDescription className="text-sm">Cargando cuentas del sistema...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(3)].map((_, i) => (
               <div
                 key={i}
@@ -116,12 +116,12 @@ export const DefaultAccountsCard = forwardRef<
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-sm">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Cuentas por Defecto</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg">Cuentas por Defecto</CardTitle>
+            <CardDescription className="text-sm">
               Cuentas del sistema creadas automáticamente
             </CardDescription>
           </div>
@@ -133,11 +133,11 @@ export const DefaultAccountsCard = forwardRef<
       </CardHeader>
       <CardContent>
         {defaultAccounts.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {defaultAccounts.map((account) => (
               <Card
                 key={account.id}
-                className={`cursor-pointer transition-colors hover:bg-muted/50 ${getAccountColor(
+                className={`cursor-pointer transition-colors hover:bg-muted/50 shadow-sm ${getAccountColor(
                   account.account_name
                 )}`}
                 onClick={() => onAccountClick?.(account)}
