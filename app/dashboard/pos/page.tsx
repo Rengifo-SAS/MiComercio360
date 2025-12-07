@@ -6,7 +6,7 @@ export default function POSPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center h-screen">
-          Cargando POS...
+          Cargando...
         </div>
       }
     >

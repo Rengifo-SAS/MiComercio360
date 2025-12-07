@@ -558,36 +558,124 @@ export function POSPageClient() {
     updateSaleCart(activeSale.id, newCart);
   };
 
-  const updateCartItemQuantity = (productId: string, quantity: number) => {
-    if (!activeSale) return;
-
-    if (quantity <= 0) {
-      removeFromCart(productId);
-    } else {
-      // Buscar el producto para obtener la cantidad disponible
-      const product = products.find((p) => p.id === productId);
-      if (product) {
-        const availableQuantity = product.available_quantity || 0;
-
-        // Validar que no se exceda la cantidad disponible
-        if (quantity > availableQuantity) {
-          const unitLabel = getUnitLabel(product.unit);
-          toast.error(
-            `No hay suficiente inventario. Disponible: ${formatQuantity(
-              availableQuantity,
-              product.unit
-            )} ${unitLabel}`
-          );
-          return;
-        }
-
-        const newCart = activeSale.cart.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
-        );
-        updateSaleCart(activeSale.id, newCart);
-      }
+  const updateCartItemQuantity = useCallback((productId: string, quantity: number, skipValidation: boolean = false) => {
+    if (!activeSale || !activeSale.id) {
+      return;
     }
-  };
+
+    // Buscar el item en el carrito
+    const currentCartItem = activeSale.cart.find(i => i.product.id === productId);
+    if (!currentCartItem) {
+      return;
+    }
+
+    // Si la cantidad es 0 o negativa, eliminar del carrito
+    if (quantity <= 0) {
+      const newCart = activeSale.cart.filter((item) => item.product.id !== productId);
+      updateSaleCart(activeSale.id, newCart);
+      return;
+    }
+
+    // Usar el producto del carrito o buscar en products para obtener available_quantity actualizado
+    const productFromCart = currentCartItem.product;
+    const productFromProducts = products.find((p) => p.id === productId);
+    const product = productFromProducts || productFromCart;
+    
+    // Usar available_quantity actualizado de products si existe, sino del producto del carrito
+    const availableQuantity = productFromProducts?.available_quantity ?? productFromCart?.available_quantity ?? 0;
+
+    // Si skipValidation es true, actualizar directamente sin validar
+    if (skipValidation) {
+      const newCart = activeSale.cart.map((item) => {
+        if (item.product.id === productId) {
+          return { ...item, quantity };
+        }
+        return item;
+      });
+      updateSaleCart(activeSale.id, newCart);
+      return;
+    }
+
+    // Validar stock disponible
+    if (quantity > availableQuantity) {
+      const unitLabel = getUnitLabel(product.unit);
+      toast.error(
+        `No hay suficiente inventario. Disponible: ${formatQuantity(
+          availableQuantity,
+          product.unit
+        )} ${unitLabel}`
+      );
+      // Ajustar al máximo disponible
+      const newCart = activeSale.cart.map((item) => {
+        if (item.product.id === productId) {
+          return { ...item, quantity: availableQuantity };
+        }
+        return item;
+      });
+      updateSaleCart(activeSale.id, newCart);
+      return;
+    }
+
+    // Actualizar cantidad normalmente
+    const newCart = activeSale.cart.map((item) => {
+      if (item.product.id === productId) {
+        return { ...item, quantity };
+      }
+      return item;
+    });
+    updateSaleCart(activeSale.id, newCart);
+  }, [activeSale, products, updateSaleCart]);
+
+  const updateCartItemPrice = useCallback((productId: string, price: number) => {
+    if (!activeSale || !activeSale.id) {
+      return;
+    }
+
+    // Buscar el item en el carrito
+    const currentCartItem = activeSale.cart.find(i => i.product.id === productId);
+    if (!currentCartItem) {
+      return;
+    }
+
+    // Usar el producto del carrito o buscar en products para obtener cost_price
+    const productFromCart = currentCartItem.product;
+    const productFromProducts = products.find((p) => p.id === productId);
+    const product = productFromProducts || productFromCart;
+
+    const costPrice = parseFloat(product.cost_price?.toString() || '0');
+    const originalPrice = parseFloat(product.selling_price.toString());
+    
+    // Validar que el precio no sea menor al precio de compra
+    if (price < costPrice) {
+      toast.error(
+        `El precio de venta no puede ser menor al precio de compra (${formatCurrency(costPrice)})`
+      );
+      // Restaurar al precio original o al precio de compra
+      const restorePrice = Math.max(costPrice, originalPrice);
+      const newCart = activeSale.cart.map((item) => {
+        if (item.product.id === productId) {
+          return { ...item, customPrice: restorePrice };
+        }
+        return item;
+      });
+      updateSaleCart(activeSale.id, newCart);
+      return;
+    }
+
+    // Actualizar precio (si es igual al original, eliminar customPrice)
+    const newCart = activeSale.cart.map((item) => {
+      if (item.product.id === productId) {
+        // Si el precio es igual al original, no usar customPrice
+        if (price === originalPrice) {
+          const { customPrice, ...rest } = item;
+          return rest;
+        }
+        return { ...item, customPrice: price };
+      }
+      return item;
+    });
+    updateSaleCart(activeSale.id, newCart);
+  }, [activeSale, products, updateSaleCart]);
 
   const removeFromCart = (productId: string) => {
     if (!activeSale) return;
@@ -645,20 +733,22 @@ export function POSPageClient() {
       setLoading(true);
 
       // Crear items de venta con impuestos específicos del producto
-      const saleItems: CreateSaleItemData[] = activeSale.cart.map((item) => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.product.selling_price.toString()),
-        discount_percentage: 0,
-        discount_amount: 0,
-        total_price:
-          parseFloat(item.product.selling_price.toString()) * item.quantity,
-        iva_rate: parseFloat(item.product.iva_rate?.toString() || '0'),
-        ica_rate: parseFloat(item.product.ica_rate?.toString() || '0'),
-        retencion_rate: parseFloat(
-          item.product.retencion_rate?.toString() || '0'
-        ),
-      }));
+      const saleItems: CreateSaleItemData[] = activeSale.cart.map((item) => {
+        const unitPrice = item.customPrice ?? parseFloat(item.product.selling_price.toString());
+        return {
+          product_id: item.product.id,
+          quantity: item.quantity,
+          unit_price: unitPrice,
+          discount_percentage: 0,
+          discount_amount: 0,
+          total_price: unitPrice * item.quantity,
+          iva_rate: parseFloat(item.product.iva_rate?.toString() || '0'),
+          ica_rate: parseFloat(item.product.ica_rate?.toString() || '0'),
+          retencion_rate: parseFloat(
+            item.product.retencion_rate?.toString() || '0'
+          ),
+        };
+      });
 
       // Validar datos de pago
       if (!paymentData.method) {
@@ -860,20 +950,23 @@ export function POSPageClient() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             // Construir items desde el carrito activo para la impresión
-            items: (activeSale?.cart || []).map((cartItem, index) => ({
-              id: `temp_${offlineId}_${index}`,
-              sale_id: offlineId,
-              product_id: cartItem.product.id,
-              quantity: cartItem.quantity,
-              unit_price: cartItem.product.selling_price,
-              discount_amount: 0,
-              discount_percentage: 0,
-              total_price: cartItem.quantity * cartItem.product.selling_price,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              product: cartItem.product, // Incluir datos completos del producto
-              product_name: cartItem.product.name,
-            })) as any,
+            items: (activeSale?.cart || []).map((cartItem, index) => {
+              const unitPrice = cartItem.customPrice ?? parseFloat(cartItem.product.selling_price.toString());
+              return {
+                id: `temp_${offlineId}_${index}`,
+                sale_id: offlineId,
+                product_id: cartItem.product.id,
+                quantity: cartItem.quantity,
+                unit_price: unitPrice,
+                discount_amount: 0,
+                discount_percentage: 0,
+                total_price: cartItem.quantity * unitPrice,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                product: cartItem.product, // Incluir datos completos del producto
+                product_name: cartItem.product.name,
+              };
+            }) as any,
             // Incluir cliente para impresión
             customer: activeSale?.selectedCustomer || undefined,
           };
@@ -976,10 +1069,12 @@ export function POSPageClient() {
             >
               <POSCartPanel
                 cart={activeSale?.cart || []}
+                products={products}
                 customers={customers}
                 selectedCustomer={activeSale?.selectedCustomer || null}
                 onCustomerChange={handleCustomerChange}
                 onUpdateQuantity={updateCartItemQuantity}
+                onUpdatePrice={updateCartItemPrice}
                 onRemoveItem={removeFromCart}
                 onClearCart={clearCart}
                 onProcessSale={processSale}
@@ -1030,10 +1125,12 @@ export function POSPageClient() {
             >
               <POSCartPanel
                 cart={activeSale?.cart || []}
+                products={products}
                 customers={customers}
                 selectedCustomer={activeSale?.selectedCustomer || null}
                 onCustomerChange={handleCustomerChange}
                 onUpdateQuantity={updateCartItemQuantity}
+                onUpdatePrice={updateCartItemPrice}
                 onRemoveItem={removeFromCart}
                 onClearCart={clearCart}
                 onProcessSale={processSale}

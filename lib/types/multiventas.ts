@@ -6,6 +6,7 @@ import { Numeration } from './numerations';
 export interface PendingSaleCartItem {
     product: Product;
     quantity: number;
+    customPrice?: number; // Precio personalizado (opcional, si no existe usa product.selling_price)
 }
 
 // Interfaz para una venta pendiente

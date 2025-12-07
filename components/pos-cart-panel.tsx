@@ -28,7 +28,6 @@ import {
   Receipt,
   CreditCard,
   RotateCcw,
-  Edit3,
 } from 'lucide-react';
 
 // Funciones auxiliares para manejo de unidades de medida
@@ -76,10 +75,12 @@ interface CartItem {
 
 interface POSCartPanelProps {
   cart: CartItem[];
+  products?: any[]; // Lista de productos actualizada para obtener available_quantity
   customers: Customer[];
   selectedCustomer: Customer | null;
   onCustomerChange: (customer: Customer | null) => void;
-  onUpdateQuantity: (productId: string, quantity: number) => void;
+  onUpdateQuantity: (productId: string, quantity: number, skipValidation?: boolean) => void;
+  onUpdatePrice?: (productId: string, price: number) => void;
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onProcessSale: () => void;
@@ -91,10 +92,12 @@ interface POSCartPanelProps {
 
 export function POSCartPanel({
   cart,
+  products = [],
   customers,
   selectedCustomer,
   onCustomerChange,
   onUpdateQuantity,
+  onUpdatePrice,
   onRemoveItem,
   onClearCart,
   onProcessSale,
@@ -126,18 +129,20 @@ export function POSCartPanel({
   };
 
   // Calcular totales
-  const saleItems = cart.map((item) => ({
-    product_id: item.product.id,
-    quantity: item.quantity,
-    unit_price: parseFloat(item.product.selling_price.toString()),
-    discount_percentage: 0,
-    discount_amount: 0,
-    total_price:
-      parseFloat(item.product.selling_price.toString()) * item.quantity,
-    iva_rate: parseFloat(item.product.iva_rate?.toString() || '0'),
-    ica_rate: parseFloat(item.product.ica_rate?.toString() || '0'),
-    retencion_rate: parseFloat(item.product.retencion_rate?.toString() || '0'),
-  }));
+  const saleItems = cart.map((item) => {
+    const unitPrice = item.customPrice ?? parseFloat(item.product.selling_price.toString());
+    return {
+      product_id: item.product.id,
+      quantity: item.quantity,
+      unit_price: unitPrice,
+      discount_percentage: 0,
+      discount_amount: 0,
+      total_price: unitPrice * item.quantity,
+      iva_rate: parseFloat(item.product.iva_rate?.toString() || '0'),
+      ica_rate: parseFloat(item.product.ica_rate?.toString() || '0'),
+      retencion_rate: parseFloat(item.product.retencion_rate?.toString() || '0'),
+    };
+  });
 
   const totals = calculateSaleTotals(
     saleItems,
@@ -335,12 +340,17 @@ export function POSCartPanel({
               aria-label="Productos en el carrito"
             >
               {cart.map((item) => {
-                const availableQuantity = item.product.available_quantity || 0;
+                // Obtener el producto actualizado de la lista para tener información actualizada
+                const updatedProduct = products?.find((p) => p.id === item.product.id);
+                const availableQuantity = updatedProduct?.available_quantity ?? item.product.available_quantity ?? 0;
                 const isNearLimit = item.quantity >= availableQuantity * 0.8; // 80% del inventario
                 const isAtLimit = item.quantity >= availableQuantity;
-                const totalPrice =
-                  parseFloat(item.product.selling_price.toString()) *
-                  item.quantity;
+                const unitPrice = item.customPrice ?? parseFloat(item.product.selling_price.toString());
+                const totalPrice = unitPrice * item.quantity;
+                // Usar cost_price actualizado de products si está disponible, sino del producto del carrito
+                const costPrice = updatedProduct?.cost_price 
+                  ? parseFloat(updatedProduct.cost_price.toString()) 
+                  : parseFloat(item.product.cost_price?.toString() || '0');
 
                 return (
                   <Card
@@ -382,14 +392,61 @@ export function POSCartPanel({
                       {/* Precio y cantidad */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {formatCurrency(
-                              parseFloat(item.product.selling_price.toString())
-                            )}
-                          </span>
+                          {onUpdatePrice ? (
+                            <Input
+                              type="number"
+                              min={costPrice}
+                              step="any"
+                              value={unitPrice}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Permitir cualquier entrada mientras el usuario escribe
+                                if (value === '' || value === '.') {
+                                  return;
+                                }
+                                const numValue = parseFloat(value);
+                                // Actualizar inmediatamente sin validación para permitir escribir libremente
+                                if (!isNaN(numValue) && numValue >= 0) {
+                                  onUpdatePrice(item.product.id, numValue);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = parseFloat(e.target.value);
+                                // Obtener precio original actualizado
+                                const productForOriginalPrice = updatedProduct || item.product;
+                                const originalPrice = parseFloat(productForOriginalPrice.selling_price.toString());
+                                // Validar al perder el foco
+                                if (isNaN(value) || value < costPrice) {
+                                  // Restaurar al precio original o al precio de compra si es inválido
+                                  const restorePrice = Math.max(costPrice, originalPrice);
+                                  onUpdatePrice(item.product.id, restorePrice);
+                                } else {
+                                  // Asegurar que se actualice correctamente
+                                  onUpdatePrice(item.product.id, value);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                // Permitir Enter para confirmar
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              className="h-8 w-24 text-sm font-semibold px-2"
+                              aria-label={`Precio por ${getUnitLabel(item.product.unit)}`}
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {formatCurrency(unitPrice)}
+                            </span>
+                          )}
                           <span className="text-xs text-gray-500">
                             Precio por {getUnitLabel(item.product.unit)}
                           </span>
+                          {onUpdatePrice && (
+                            <span className="text-[10px] text-gray-400 mt-0.5">
+                              Mín: {formatCurrency(costPrice)}
+                            </span>
+                          )}
                         </div>
                         <div className="text-right">
                           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -428,17 +485,47 @@ export function POSCartPanel({
                             <Input
                               type="number"
                               min="0"
-                              step={getQuantityStep(item.product.unit)}
-                              value={formatQuantity(
-                                item.quantity,
-                                item.product.unit
-                              )}
-                              onChange={(e) =>
-                                onUpdateQuantity(
-                                  item.product.id,
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
+                              step="any"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Permitir cualquier entrada mientras el usuario escribe
+                                if (value === '' || value === '.') {
+                                  return;
+                                }
+                                const numValue = parseFloat(value);
+                                // Actualizar inmediatamente sin validación para permitir escribir libremente
+                                if (!isNaN(numValue) && numValue >= 0) {
+                                  onUpdateQuantity(item.product.id, numValue, true);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                // Validar y corregir al perder el foco
+                                const value = parseFloat(e.target.value);
+                                const updatedProduct = products?.find((p) => p.id === item.product.id);
+                                const availableQuantity = updatedProduct?.available_quantity ?? item.product.available_quantity ?? 0;
+                                
+                                if (isNaN(value) || value < 0) {
+                                  // Si es inválido, restaurar a cantidad mínima
+                                  const minQuantity = availableQuantity > 0 ? 1 : 0;
+                                  onUpdateQuantity(item.product.id, minQuantity, false);
+                                } else if (value > availableQuantity) {
+                                  // Si excede el stock, ajustar al máximo disponible
+                                  onUpdateQuantity(item.product.id, availableQuantity, false);
+                                } else if (value === 0) {
+                                  // Si es 0, eliminar del carrito
+                                  onUpdateQuantity(item.product.id, 0, false);
+                                } else {
+                                  // Validar normalmente
+                                  onUpdateQuantity(item.product.id, value, false);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                // Permitir Enter para confirmar
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
                               className="h-8 w-20 text-center text-sm font-semibold"
                               aria-label={`Cantidad actual: ${formatQuantity(
                                 item.quantity,
@@ -448,31 +535,17 @@ export function POSCartPanel({
                             <span className="text-xs text-gray-500 font-medium">
                               {getUnitLabel(item.product.unit)}
                             </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleOpenQuantityDialog(
-                                  item.product,
-                                  item.quantity
-                                )
-                              }
-                              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              aria-label={`Editar cantidad de ${item.product.name}`}
-                            >
-                              <Edit3 className="h-3 w-3" />
-                            </Button>
                           </div>
-                          <Button
+                            <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              onUpdateQuantity(
-                                item.product.id,
-                                item.quantity +
-                                  getQuantityStep(item.product.unit)
-                              )
-                            }
+                            onClick={() => {
+                              const step = getQuantityStep(item.product.unit);
+                              const newQuantity = item.quantity + step;
+                              // Permitir incrementar sin validación inmediata
+                              // La validación se hará en updateCartItemQuantity
+                              onUpdateQuantity(item.product.id, newQuantity, false);
+                            }}
                             disabled={isAtLimit}
                             className={`h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
                               isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
