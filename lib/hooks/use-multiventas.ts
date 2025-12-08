@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useEffect } from 'react';
+import { useReducer, useCallback, useEffect, useMemo } from 'react';
 import {
     MultiVentasState,
     MultiVentasAction,
@@ -73,7 +73,7 @@ function multiventasReducer(state: MultiVentasState, action: MultiVentasAction):
                 ...state,
                 pendingSales: state.pendingSales.map(sale =>
                     sale.id === action.payload.saleId
-                        ? { ...sale, cart: action.payload.cart, updatedAt: new Date() }
+                        ? { ...sale, cart: [...action.payload.cart], updatedAt: new Date() }
                         : sale
                 ),
             };
@@ -127,8 +127,11 @@ function multiventasReducer(state: MultiVentasState, action: MultiVentasAction):
 export function useMultiVentas() {
     const [state, dispatch] = useReducer(multiventasReducer, initialState);
 
-    // Obtener la venta activa actual
-    const activeSale = state.pendingSales.find(sale => sale.id === state.activeSaleId);
+    // Obtener la venta activa actual - usar useMemo para evitar recálculos innecesarios
+    const activeSale = useMemo(() => {
+        const sale = state.pendingSales.find(sale => sale.id === state.activeSaleId);
+        return sale || null;
+    }, [state.pendingSales, state.activeSaleId]);
 
     // Cargar ventas pendientes desde localStorage al inicializar
     useEffect(() => {
