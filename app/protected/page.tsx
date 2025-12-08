@@ -17,6 +17,11 @@ export default async function ProtectedPage() {
   const userEmail = data.claims.email;
   const userName = data.claims.user_metadata?.full_name;
 
+  // Si no hay email, redirigir al login
+  if (!userEmail) {
+    redirect('/auth/login');
+  }
+
   // Verificar el estado de configuración de la compañía
   const setupStatus = await checkCompanySetup(userId);
 
