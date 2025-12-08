@@ -71,6 +71,7 @@ const formatQuantity = (quantity: number, unit: string): string => {
 interface CartItem {
   product: any;
   quantity: number;
+  customPrice?: number;
 }
 
 interface POSCartPanelProps {
