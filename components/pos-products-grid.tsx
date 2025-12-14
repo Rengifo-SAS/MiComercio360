@@ -377,21 +377,21 @@ export function POSProductsGrid({
     >
       {/* Barra de Búsqueda - Moderna y Profesional */}
       <div
-        className="flex items-center gap-2 p-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0"
+        className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0"
         role="search"
       >
         {/* Indicador de estado offline */}
         <OfflineIndicator />
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           {/* Icono de búsqueda o código de barras según el modo */}
           {isScanning ? (
             <Barcode
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-teal-600 h-5 w-5 animate-pulse"
+              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-teal-600 h-4 w-4 sm:h-5 sm:w-5 animate-pulse"
               aria-hidden="true"
             />
           ) : (
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5"
+              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5"
               aria-hidden="true"
             />
           )}
@@ -400,13 +400,13 @@ export function POSProductsGrid({
             ref={searchInputRef}
             placeholder={
               isScanning
-                ? 'Escanee el código de barras del producto...'
-                : 'Buscar por nombre, código de barras o SKU...'
+                ? 'Escanee código...'
+                : 'Buscar producto...'
             }
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={cn(
-              'pl-11 pr-10 text-sm h-10 rounded-lg transition-all',
+              'pl-9 sm:pl-11 pr-8 sm:pr-10 text-xs sm:text-sm h-9 sm:h-10 rounded-lg transition-all',
               isScanning
                 ? 'bg-teal-50 dark:bg-teal-900/20 border-2 border-teal-500 focus:ring-teal-500 focus:border-teal-600'
                 : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
@@ -547,7 +547,7 @@ export function POSProductsGrid({
           </div>
         ) : viewMode === 'grid' ? (
           <div
-            className="flex flex-wrap justify-around align-content-start gap-2 p-4"
+            className="flex flex-wrap justify-around align-content-start gap-1.5 sm:gap-2 p-2 sm:p-3 md:p-4"
             role="grid"
             aria-label="Catálogo de productos"
           >
@@ -561,7 +561,7 @@ export function POSProductsGrid({
                   key={product.id}
                   role="gridcell"
                   className={cn(
-                    'flex flex-col bg-white dark:bg-gray-800 select-none relative cursor-pointer transition-all duration-150 hover:shadow-lg rounded-sm overflow-hidden w-[140px]',
+                    'flex flex-col bg-white dark:bg-gray-800 select-none relative cursor-pointer transition-all duration-150 hover:shadow-lg rounded-sm overflow-hidden w-[110px] sm:w-[130px] md:w-[140px]',
                     isOutOfStock && 'opacity-50 cursor-not-allowed',
                     cartQuantity > 0 && 'ring-2 ring-teal-500'
                   )}
@@ -588,10 +588,10 @@ export function POSProductsGrid({
                     </p>
                   )}
 
-                  {/* Badge de cantidad en carrito - Absolute top right */}
+                  {/* Badge de cantidad en carrito - Absolute top right con animación */}
                   {cartQuantity > 0 && (
-                    <div className="absolute -top-1 -right-1 z-10">
-                      <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs font-bold">
+                    <div className="absolute -top-1 -right-1 z-10 animate-in zoom-in-50 duration-300">
+                      <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center p-0 text-xs sm:text-sm font-bold shadow-lg ring-2 ring-white dark:ring-gray-800 animate-pulse">
                         {cartQuantity}
                       </Badge>
                     </div>
