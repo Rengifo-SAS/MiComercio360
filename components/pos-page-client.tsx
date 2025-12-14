@@ -30,7 +30,7 @@ import { POSMultiVentasTabs } from './pos-multiventas-tabs';
 import { POSShiftWarningDialog } from './pos-shift-warning-dialog';
 import { POSCategoriesPanel } from './pos-categories-panel';
 import { Button } from '@/components/ui/button';
-import { Settings, ShoppingCart } from 'lucide-react';
+import { Settings, ShoppingCart, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { PaymentMethod } from '@/lib/types/payment-methods';
@@ -76,6 +76,39 @@ const formatQuantity = (quantity: number, unit: string): string => {
   }
   return quantity.toString();
 };
+
+// Componente para el botón flotante del carrito en móviles - Más compacto
+function MobileCartButton({ 
+  totalItems, 
+  totalAmount, 
+  onToggle 
+}: { 
+  totalItems: number; 
+  totalAmount: number; 
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="fixed bottom-16 right-3 z-50 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-full shadow-2xl p-3 flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
+      aria-label={`Ver carrito con ${totalItems} productos, total: ${formatCurrency(totalAmount)}`}
+    >
+      <div className="relative">
+        <ShoppingCart className="h-5 w-5" />
+        {totalItems > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+            {totalItems > 99 ? '99+' : totalItems}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col items-start min-w-0">
+        <span className="text-[10px] font-medium opacity-90 leading-tight">Total</span>
+        <span className="text-sm font-bold leading-tight">{formatCurrency(totalAmount)}</span>
+      </div>
+      <ChevronUp className="h-4 w-4 opacity-80 flex-shrink-0" />
+    </button>
+  );
+}
 
 // Usar PendingSaleCartItem directamente desde multiventas
 type CartItem = PendingSaleCartItem;
@@ -626,7 +659,7 @@ export function POSPageClient() {
     updateSaleCart(activeSale.id, newCart);
   }, [activeSale, products, updateSaleCart]);
 
-  const updateCartItemPrice = useCallback((productId: string, price: number) => {
+  const updateCartItemPrice = useCallback((productId: string, price: number, skipValidation: boolean = false) => {
     if (!activeSale || !activeSale.id) {
       return;
     }
@@ -644,6 +677,18 @@ export function POSPageClient() {
 
     const costPrice = parseFloat(product.cost_price?.toString() || '0');
     const originalPrice = parseFloat(product.selling_price.toString());
+    
+    // Si skipValidation es true, actualizar directamente sin validar
+    if (skipValidation) {
+      const newCart = activeSale.cart.map((item) => {
+        if (item.product.id === productId) {
+          return { ...item, customPrice: price };
+        }
+        return item;
+      });
+      updateSaleCart(activeSale.id, newCart);
+      return;
+    }
     
     // Validar que el precio no sea menor al precio de compra
     if (price < costPrice) {
@@ -675,7 +720,7 @@ export function POSPageClient() {
       return item;
     });
     updateSaleCart(activeSale.id, newCart);
-  }, [activeSale, products, updateSaleCart]);
+  }, [activeSale, products, updateSaleCart, formatCurrency]);
 
   const removeFromCart = (productId: string) => {
     if (!activeSale) return;
@@ -1044,9 +1089,9 @@ export function POSPageClient() {
           role="region"
           aria-label="Área principal del POS"
         >
-          {/* En móvil/tablet: Una columna */}
-          <div className="xl:hidden flex-1 flex flex-col min-h-0">
-            {/* Grid de Productos en móvil/tablet - Con scroll propio */}
+          {/* En móvil/tablet: Layout optimizado */}
+          <div className="xl:hidden flex-1 flex flex-col min-h-0 relative">
+            {/* Grid de Productos - Ocupa todo el espacio disponible */}
             <section
               className="flex-1 min-h-0"
               aria-label="Catálogo de productos"
@@ -1062,9 +1107,47 @@ export function POSPageClient() {
               />
             </section>
 
-            {/* Carrito en móvil/tablet - Altura fija optimizada */}
+            {/* Botón flotante del carrito - Compacto y siempre visible */}
+            {activeSale && activeSale.cart.length > 0 && (
+              <MobileCartButton
+                totalItems={activeSale.cart.reduce((sum, item) => sum + item.quantity, 0)}
+                totalAmount={(() => {
+                  const saleItems = activeSale.cart.map((item) => ({
+                    product_id: item.product.id,
+                    quantity: item.quantity,
+                    unit_price: item.customPrice ?? parseFloat(item.product.selling_price.toString()),
+                    discount_percentage: 0,
+                    discount_amount: 0,
+                    total_price: (item.customPrice ?? parseFloat(item.product.selling_price.toString())) * item.quantity,
+                    iva_rate: parseFloat(item.product.iva_rate?.toString() || '0'),
+                    ica_rate: parseFloat(item.product.ica_rate?.toString() || '0'),
+                    retencion_rate: parseFloat(item.product.retencion_rate?.toString() || '0'),
+                  }));
+                  return calculateSaleTotals(
+                    saleItems,
+                    0,
+                    convertProductsForTotals(activeSale.cart.map((item) => item.product))
+                  ).total_amount;
+                })()}
+                onToggle={() => {
+                  const cartElement = document.getElementById('mobile-cart-panel');
+                  if (cartElement) {
+                    cartElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                  }
+                }}
+              />
+            )}
+
+            {/* Carrito en móvil/tablet - Panel fijo optimizado */}
             <aside
-              className="h-96 sm:h-[28rem] border-t dark:border-gray-700 flex-shrink-0"
+              id="mobile-cart-panel"
+              className="fixed bottom-0 left-0 right-0 xl:hidden bg-white dark:bg-gray-800 border-t-2 border-teal-500 dark:border-teal-600 shadow-2xl z-40 flex flex-col"
+              style={{
+                height: activeSale && activeSale.cart.length > 0 
+                  ? 'clamp(45vh, 50vh, 70vh)' 
+                  : 'clamp(25vh, 30vh, 35vh)',
+                maxHeight: '75vh',
+              }}
               aria-label="Carrito de compras"
             >
               <POSCartPanel
@@ -1082,6 +1165,7 @@ export function POSPageClient() {
                 numerations={numerations}
                 selectedNumeration={activeSale?.selectedNumeration || null}
                 onNumerationChange={handleNumerationChange}
+                isMobile={true}
               />
             </aside>
           </div>

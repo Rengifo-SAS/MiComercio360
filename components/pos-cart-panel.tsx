@@ -81,7 +81,7 @@ interface POSCartPanelProps {
   selectedCustomer: Customer | null;
   onCustomerChange: (customer: Customer | null) => void;
   onUpdateQuantity: (productId: string, quantity: number, skipValidation?: boolean) => void;
-  onUpdatePrice?: (productId: string, price: number) => void;
+  onUpdatePrice?: (productId: string, price: number, skipValidation?: boolean) => void;
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onProcessSale: () => void;
@@ -89,6 +89,7 @@ interface POSCartPanelProps {
   numerations: Numeration[];
   selectedNumeration: Numeration | null;
   onNumerationChange: (numeration: Numeration | null) => void;
+  isMobile?: boolean;
 }
 
 export function POSCartPanel({
@@ -106,6 +107,7 @@ export function POSCartPanel({
   numerations,
   selectedNumeration,
   onNumerationChange,
+  isMobile = false,
 }: POSCartPanelProps) {
   const [invoiceType, setInvoiceType] = useState('local');
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
@@ -180,28 +182,30 @@ export function POSCartPanel({
       role="complementary"
       aria-label="Panel del carrito de compras"
     >
-      {/* Header - Moderno y Profesional */}
-      <header className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white flex-shrink-0 shadow-md">
-        <h2 className="flex items-center text-base sm:text-lg font-bold">
-          <ShoppingCart
-            className="h-5 w-5 sm:h-6 sm:w-6 mr-2"
-            aria-hidden="true"
-          />
-          Carrito de Compra
-        </h2>
+      {/* Header - Moderno y Profesional con animación cuando hay items */}
+      <header className={`flex items-center justify-between p-2 sm:p-3 md:p-4 bg-gradient-to-r from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white flex-shrink-0 shadow-md transition-all duration-300 ${totalItems > 0 ? 'animate-pulse-once' : ''}`}>
+          <h2 className="flex items-center text-xs sm:text-sm md:text-base lg:text-lg font-bold">
+            <ShoppingCart
+              className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-1 sm:mr-2 transition-transform duration-300 ${totalItems > 0 ? 'scale-110' : ''}`}
+              aria-hidden="true"
+            />
+            <span className="hidden sm:inline">Carrito de Compra</span>
+            <span className="sm:hidden">Carrito</span>
+          </h2>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-white/20 text-white border-white/30 px-2 py-1">
-            {totalItems} items
+          <Badge className={`bg-white/20 text-white border-white/30 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 ${totalItems > 0 ? 'scale-110 animate-bounce-once' : ''}`}>
+            {totalItems} {totalItems === 1 ? 'item' : 'items'}
           </Badge>
         </div>
       </header>
 
-      {/* Configuración - Moderna y compacta */}
-      <div
-        className="p-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 space-y-2 flex-shrink-0"
-        role="form"
-        aria-label="Configuración de la factura"
-      >
+      {/* Configuración - Colapsable en móvil para ahorrar espacio */}
+      {!isMobile && (
+        <div
+          className="p-1.5 sm:p-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 space-y-1.5 sm:space-y-2 flex-shrink-0"
+          role="form"
+          aria-label="Configuración de la factura"
+        >
         {/* Cliente - Destacado */}
         <div>
           <Label
@@ -313,30 +317,85 @@ export function POSCartPanel({
             </Select>
           </div>
         </div>
-      </div>
+        </div>
+      )}
+      
+      {/* Configuración móvil - Más compacta */}
+      {isMobile && (
+        <div
+          className="px-2 py-1.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0"
+          role="form"
+          aria-label="Configuración de la factura"
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <Label className="text-[9px] text-gray-600 dark:text-gray-400 mb-0.5 block">Cliente</Label>
+              <Select
+                value={selectedCustomer?.id || undefined}
+                onValueChange={(value) => {
+                  const customer = customers.find((c) => c.id === value);
+                  onCustomerChange(customer || null);
+                }}
+              >
+                <SelectTrigger className="h-6 text-[10px] bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded">
+                  <SelectValue placeholder="Cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id} className="text-[10px]">
+                      {customer.business_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-[9px] text-gray-600 dark:text-gray-400 mb-0.5 block">Numeración</Label>
+              <Select
+                value={selectedNumeration?.id || undefined}
+                onValueChange={(value) => {
+                  const numeration = numerations.find((n) => n.id === value);
+                  onNumerationChange(numeration || null);
+                }}
+              >
+                <SelectTrigger className="h-6 text-[10px] bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded">
+                  <SelectValue placeholder="Num." />
+                </SelectTrigger>
+                <SelectContent>
+                  {numerations.map((numeration) => (
+                    <SelectItem key={numeration.id} value={numeration.id} className="text-[10px]">
+                      {numeration.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenido del Carrito - Scroll optimizado */}
-      <div className="flex-1 flex flex-col min-h-0 p-2 overflow-hidden">
-        {/* Lista de Productos - Scroll */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        {/* Lista de Productos - Scroll con altura garantizada */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {cart.length === 0 ? (
             <div
-              className="flex-1 flex items-center justify-center"
+              className="flex items-center justify-center h-full p-4"
               role="status"
               aria-live="polite"
             >
               <div className="text-center text-gray-500">
                 <ShoppingCart
-                  className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-gray-300"
+                  className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-3 text-gray-300"
                   aria-hidden="true"
                 />
-                <p className="text-xs">Aquí verás los productos</p>
-                <p className="text-xs">que elijas</p>
+                <p className="text-xs sm:text-sm font-medium">Carrito vacío</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Agrega productos desde el catálogo</p>
               </div>
             </div>
           ) : (
             <div
-              className="flex-1 overflow-y-auto space-y-3 custom-scrollbar"
+              className={`${isMobile ? 'p-1.5 space-y-2' : 'p-2 sm:p-3 space-y-2 sm:space-y-3'}`}
               role="list"
               aria-label="Productos en el carrito"
             >
@@ -368,31 +427,33 @@ export function POSCartPanel({
                       item.quantity
                     }, precio: ${formatCurrency(totalPrice)}`}
                   >
-                    <CardContent className="p-3 sm:p-4">
+                    <CardContent className={isMobile ? "p-2" : "p-2 sm:p-3 md:p-4"}>
                       {/* Información del producto */}
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                      <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h3 className={`${isMobile ? 'text-xs' : 'text-xs sm:text-sm md:text-base'} font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2`}>
                             {item.product.name}
                           </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
-                            {item.product.sku && `#${item.product.sku}`}
-                          </p>
+                          {!isMobile && (
+                            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 font-mono">
+                              {item.product.sku && `#${item.product.sku}`}
+                            </p>
+                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onRemoveItem(item.product.id)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 focus:ring-2 focus:ring-red-500 rounded-lg transition-all"
+                          className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7 sm:h-8 sm:w-8'} p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 focus:ring-2 focus:ring-red-500 rounded-lg transition-all flex-shrink-0`}
                           aria-label={`Eliminar ${item.product.name} del carrito`}
                         >
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          <Trash2 className={isMobile ? "h-3 w-3" : "h-3.5 w-3.5 sm:h-4 sm:w-4"} aria-hidden="true" />
                         </Button>
                       </div>
 
                       {/* Precio y cantidad */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex flex-col">
+                      <div className={`flex items-center justify-between ${isMobile ? 'mb-2' : 'mb-3'} flex-wrap gap-2`}>
+                        <div className="flex flex-col min-w-0 flex-1">
                           {onUpdatePrice ? (
                             <Input
                               type="number"
@@ -408,7 +469,7 @@ export function POSCartPanel({
                                 const numValue = parseFloat(value);
                                 // Actualizar inmediatamente sin validación para permitir escribir libremente
                                 if (!isNaN(numValue) && numValue >= 0) {
-                                  onUpdatePrice(item.product.id, numValue);
+                                  onUpdatePrice(item.product.id, numValue, true); // Pass true for skipValidation
                                 }
                               }}
                               onBlur={(e) => {
@@ -420,10 +481,10 @@ export function POSCartPanel({
                                 if (isNaN(value) || value < costPrice) {
                                   // Restaurar al precio original o al precio de compra si es inválido
                                   const restorePrice = Math.max(costPrice, originalPrice);
-                                  onUpdatePrice(item.product.id, restorePrice);
+                                  onUpdatePrice(item.product.id, restorePrice, false);
                                 } else {
                                   // Asegurar que se actualice correctamente
-                                  onUpdatePrice(item.product.id, value);
+                                  onUpdatePrice(item.product.id, value, false);
                                 }
                               }}
                               onKeyDown={(e) => {
@@ -432,7 +493,7 @@ export function POSCartPanel({
                                   e.currentTarget.blur();
                                 }
                               }}
-                              className="h-8 w-24 text-sm font-semibold px-2"
+                              className={isMobile ? "h-7 w-20 text-xs font-semibold px-1.5" : "h-8 w-24 text-sm font-semibold px-2"}
                               aria-label={`Precio por ${getUnitLabel(item.product.unit)}`}
                             />
                           ) : (
@@ -440,27 +501,27 @@ export function POSCartPanel({
                               {formatCurrency(unitPrice)}
                             </span>
                           )}
-                          <span className="text-xs text-gray-500">
+                          <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-gray-500`}>
                             Precio por {getUnitLabel(item.product.unit)}
                           </span>
-                          {onUpdatePrice && (
+                          {onUpdatePrice && !isMobile && (
                             <span className="text-[10px] text-gray-400 mt-0.5">
                               Mín: {formatCurrency(costPrice)}
                             </span>
                           )}
                         </div>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        <div className="text-right min-w-0 flex-shrink-0">
+                          <span className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-900 dark:text-gray-100`}>
                             {formatCurrency(totalPrice)}
                           </span>
-                          <p className="text-xs text-gray-500">Total</p>
+                          <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-gray-500`}>Total</p>
                         </div>
                       </div>
 
                       {/* Controles de cantidad */}
-                      <div className="flex items-center justify-between">
+                      <div className={`flex items-center ${isMobile ? 'justify-between gap-1' : 'justify-between'}`}>
                         <div
-                          className="flex items-center gap-2"
+                          className={`flex items-center ${isMobile ? 'gap-1' : 'gap-2'}`}
                           role="group"
                           aria-label={`Controles de cantidad para ${item.product.name}`}
                         >
@@ -477,10 +538,10 @@ export function POSCartPanel({
                                 )
                               )
                             }
-                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                            className={isMobile ? "h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500" : "h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"}
                             aria-label={`Disminuir cantidad de ${item.product.name}`}
                           >
-                            <Minus className="h-4 w-4" aria-hidden="true" />
+                            <Minus className={isMobile ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" />
                           </Button>
                           <div className="flex items-center gap-1">
                             <Input
@@ -527,7 +588,7 @@ export function POSCartPanel({
                                   e.currentTarget.blur();
                                 }
                               }}
-                              className="h-8 w-20 text-center text-sm font-semibold"
+                              className={isMobile ? "h-7 w-16 text-center text-xs font-semibold" : "h-8 w-20 text-center text-sm font-semibold"}
                               aria-label={`Cantidad actual: ${formatQuantity(
                                 item.quantity,
                                 item.product.unit
@@ -548,7 +609,7 @@ export function POSCartPanel({
                               onUpdateQuantity(item.product.id, newQuantity, false);
                             }}
                             disabled={isAtLimit}
-                            className={`h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                            className={`${isMobile ? 'h-7 w-7' : 'h-8 w-8'} p-0 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-teal-500 ${isMobile ? '' : 'focus:ring-offset-2'} ${
                               isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                             aria-label={
@@ -557,7 +618,7 @@ export function POSCartPanel({
                                 : `Aumentar cantidad de ${item.product.name}`
                             }
                           >
-                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            <Plus className={isMobile ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" />
                           </Button>
                         </div>
 
@@ -601,57 +662,62 @@ export function POSCartPanel({
 
       {/* Footer - Moderno con totales destacados */}
       <footer
-        className="border-t-2 dark:border-gray-700 p-4 flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg"
+        className={`border-t-2 dark:border-gray-700 ${isMobile ? 'p-2' : 'p-2 sm:p-3 md:p-4'} flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg`}
         role="contentinfo"
       >
         {/* Resumen de totales */}
-        <div className="mb-4 space-y-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-          <div className="flex items-center justify-between text-sm">
+        <div className={`${isMobile ? 'mb-2 space-y-1' : 'mb-2 sm:mb-3 md:mb-4 space-y-1.5 sm:space-y-2'} bg-gray-50 dark:bg-gray-700/50 rounded-lg ${isMobile ? 'p-1.5' : 'p-2 sm:p-3'}`}>
+          <div className={`flex items-center justify-between ${isMobile ? 'text-[10px]' : 'text-xs sm:text-sm'}`}>
             <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
             <span className="font-medium text-gray-900 dark:text-gray-100">
               {formatCurrency(totals.subtotal)}
             </span>
           </div>
-          {totals.iva_amount > 0 && (
-            <div className="flex items-center justify-between text-sm">
+          {totals.iva_amount > 0 && !isMobile && (
+            <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-gray-600 dark:text-gray-400">IVA:</span>
               <span className="font-medium text-gray-900 dark:text-gray-100">
                 {formatCurrency(totals.iva_amount)}
               </span>
             </div>
           )}
-          <Separator className="my-2" />
+          <Separator className={isMobile ? "my-1" : "my-1.5 sm:my-2"} />
           <div className="flex items-center justify-between">
-            <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+            <span className={`${isMobile ? 'text-xs' : 'text-sm sm:text-base'} font-bold text-gray-900 dark:text-gray-100`}>
               Total:
             </span>
-            <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+            <span className={`${isMobile ? 'text-base' : 'text-lg sm:text-xl md:text-2xl'} font-bold text-teal-600 dark:text-teal-400`}>
               {formatCurrency(totals.total_amount)}
             </span>
           </div>
-          <div className="text-xs text-center text-gray-500 dark:text-gray-400">
-            {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
-          </div>
+          {!isMobile && (
+            <div className="text-[10px] sm:text-xs text-center text-gray-500 dark:text-gray-400">
+              {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+            </div>
+          )}
         </div>
 
         {/* Botones de acción */}
         <div
-          className="flex gap-3"
+          className={`flex ${isMobile ? 'gap-1.5' : 'gap-2 sm:gap-3'}`}
           role="group"
           aria-label="Acciones del carrito"
         >
+          {!isMobile && (
+            <Button
+              variant="outline"
+              className="flex-1 h-10 sm:h-12 md:h-14 text-xs sm:text-sm font-semibold rounded-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              onClick={onClearCart}
+              disabled={cart.length === 0 || loading}
+              aria-label="Limpiar carrito de compras"
+            >
+              <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Cancelar</span>
+              <span className="sm:hidden">Cancel</span>
+            </Button>
+          )}
           <Button
-            variant="outline"
-            className="flex-1 h-12 sm:h-14 text-sm font-semibold rounded-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
-            onClick={onClearCart}
-            disabled={cart.length === 0 || loading}
-            aria-label="Limpiar carrito de compras"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Cancelar
-          </Button>
-          <Button
-            className={`flex-1 h-12 sm:h-14 text-sm font-bold rounded-lg shadow-md transition-all ${
+            className={`flex-1 ${isMobile ? 'h-10 text-xs' : 'h-10 sm:h-12 md:h-14 text-xs sm:text-sm'} font-bold rounded-lg shadow-md transition-all ${
               hasInsufficientInventory || hasOutOfStockItems
                 ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
                 : 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800'

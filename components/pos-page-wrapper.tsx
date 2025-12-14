@@ -10,8 +10,9 @@ export function POSPageWrapper() {
   return (
     <div
       className={cn(
-        'fixed inset-0 top-14 transition-all duration-300 ease-in-out',
+        'fixed inset-0 top-14 transition-all duration-300 ease-in-out overflow-hidden',
         // Ajustar el left según el estado de la barra lateral
+        // En móviles siempre left-0, en desktop ajustar según sidebar
         isCollapsed && !isHovered ? 'left-0 lg:left-16' : 'left-0 lg:left-64'
       )}
     >
