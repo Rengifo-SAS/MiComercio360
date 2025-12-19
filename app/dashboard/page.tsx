@@ -23,8 +23,16 @@ import {
   Plus,
 } from 'lucide-react';
 import Link from 'next/link';
-import { SalesChart } from '@/components/dashboard/sales-chart';
-import { TopProductsChart } from '@/components/dashboard/top-products-chart';
+import dynamic from 'next/dynamic';
+
+// Lazy load componentes de gráficos pesados
+const SalesChart = dynamic(() => import('@/components/dashboard/sales-chart').then(mod => ({ default: mod.SalesChart })), {
+  loading: () => <div className="h-64 flex items-center justify-center">Cargando gráfico...</div>,
+});
+
+const TopProductsChart = dynamic(() => import('@/components/dashboard/top-products-chart').then(mod => ({ default: mod.TopProductsChart })), {
+  loading: () => <div className="h-64 flex items-center justify-center">Cargando gráfico...</div>,
+});
 
 export default async function DashboardPage() {
   const supabase = await createClient();

@@ -51,7 +51,7 @@ export function ReportLineChart({
             />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={formatValue} />
             <Tooltip
-              formatter={(value: number) => formatValue(value)}
+              formatter={(value: number | undefined) => formatValue(value ?? 0)}
               contentStyle={{
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
                 border: '1px solid #ccc',

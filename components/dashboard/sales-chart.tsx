@@ -187,7 +187,10 @@ export function SalesChart({ companyId }: SalesChartProps) {
     }
   };
 
-  const formatTooltipValue = (value: number, name: string) => {
+  const formatTooltipValue = (value: number | undefined, name: string | undefined) => {
+    if (value === undefined) {
+      return ['$0', 'Monto'];
+    }
     if (name === 'amount' || name === 'sales') {
       return [`$${value.toLocaleString('es-CO')}`, 'Monto'];
     }

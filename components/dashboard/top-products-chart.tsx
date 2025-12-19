@@ -124,12 +124,15 @@ export function TopProductsChart({ companyId }: TopProductsChartProps) {
     color: COLORS[index % COLORS.length],
   }));
 
-  const formatTooltip = (value: number, name: string, props: any) => {
+  const formatTooltip = (value: number | undefined, name: string | undefined, props: any) => {
+    if (value === undefined) {
+      return ['0 unidades vendidas', 'Cantidad'];
+    }
     const product = topProducts.find(
       (p) =>
         (p.product_name.length > 20
           ? p.product_name.substring(0, 20) + '...'
-          : p.product_name) === props.payload.name
+          : p.product_name) === props?.payload?.name
     );
 
     return [

@@ -18,12 +18,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { LogOut, User, Settings, Building2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DefaultCompanyLogo } from '@/components/default-company-logo';
-import { POSShiftIndicator } from '@/components/pos-shift-indicator';
-import { POSConfigurationDialog } from '@/components/pos-configuration-dialog';
+
+// Lazy load componentes pesados del POS
+const POSShiftIndicator = lazy(() => import('@/components/pos-shift-indicator').then(mod => ({ default: mod.POSShiftIndicator })));
+const POSConfigurationDialog = lazy(() => import('@/components/pos-configuration-dialog').then(mod => ({ default: mod.POSConfigurationDialog })));
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
@@ -81,8 +83,10 @@ function POSHeaderActions() {
 
   return (
     <>
-      {/* Indicador de turno */}
-      <POSShiftIndicator companyId={companyId} userId={userId} />
+      {/* Indicador de turno - Lazy loaded */}
+      <Suspense fallback={null}>
+        <POSShiftIndicator companyId={companyId} userId={userId} />
+      </Suspense>
 
       {/* Botón de configuración */}
       <Button
@@ -94,20 +98,22 @@ function POSHeaderActions() {
         <Settings className="h-4 w-4" />
       </Button>
 
-      {/* Diálogo de configuración */}
-      <POSConfigurationDialog
-        open={showConfiguration}
-        onOpenChange={setShowConfiguration}
-        configuration={configuration}
-        onConfigurationChange={(newConfig) => {
-          setConfiguration(newConfig);
-          localStorage.setItem('pos-configuration', JSON.stringify(newConfig));
-        }}
-        accounts={accounts}
-        customers={customers}
-        numerations={numerations}
-        companyId={companyId}
-      />
+      {/* Diálogo de configuración - Lazy loaded */}
+      <Suspense fallback={null}>
+        <POSConfigurationDialog
+          open={showConfiguration}
+          onOpenChange={setShowConfiguration}
+          configuration={configuration}
+          onConfigurationChange={(newConfig) => {
+            setConfiguration(newConfig);
+            localStorage.setItem('pos-configuration', JSON.stringify(newConfig));
+          }}
+          accounts={accounts}
+          customers={customers}
+          numerations={numerations}
+          companyId={companyId}
+        />
+      </Suspense>
     </>
   );
 }

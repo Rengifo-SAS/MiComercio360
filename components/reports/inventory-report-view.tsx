@@ -197,7 +197,7 @@ export function InventoryReportView({ data }: InventoryReportViewProps) {
                 />
                 <YAxis />
                 <Tooltip
-                  formatter={(value: any, name: string) => {
+                  formatter={(value: any, name: string | undefined) => {
                     if (name === 'value') {
                       return [
                         '$' + Number(value).toLocaleString('es-CO'),

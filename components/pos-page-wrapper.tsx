@@ -1,8 +1,11 @@
 'use client';
 
 import { useSidebar } from '@/contexts/sidebar-context';
-import { POSPageClient } from '@/components/pos-page-client';
+import { lazy, Suspense } from 'react';
 import { cn } from '@/lib/utils';
+
+// Lazy load el componente POS pesado
+const POSPageClient = lazy(() => import('@/components/pos-page-client').then(mod => ({ default: mod.POSPageClient })));
 
 export function POSPageWrapper() {
   const { isCollapsed, isHovered } = useSidebar();
@@ -16,7 +19,16 @@ export function POSPageWrapper() {
         isCollapsed && !isHovered ? 'left-0 lg:left-16' : 'left-0 lg:left-64'
       )}
     >
-      <POSPageClient />
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-sm text-muted-foreground">Cargando POS...</p>
+          </div>
+        </div>
+      }>
+        <POSPageClient />
+      </Suspense>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 # Dockerfile optimizado para Next.js 15 en Railway con pnpm
-# Multi-stage build para reducir el tamaño de la imagen
+# Multi-stage build para reducir el tamaño de la imagen y mejorar caché
 
 # Etapa 1: Instalación de dependencias
 FROM node:22-alpine AS deps
@@ -10,11 +10,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copiar archivos de configuración de pnpm
-COPY package.json pnpm-lock.yaml ./
+# Copiar archivos de configuración de pnpm primero para mejor caché
+COPY package.json pnpm-lock.yaml* ./
 
-# Instalar dependencias de producción
-RUN pnpm install --prod --frozen-lockfile
+# Instalar todas las dependencias (mejor caché si solo cambia el código)
+RUN pnpm install --frozen-lockfile
 
 # Etapa 2: Build de la aplicación
 FROM node:22-alpine AS builder
@@ -22,11 +22,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copiar archivos de pnpm
-COPY package.json pnpm-lock.yaml ./
-
-# Instalar todas las dependencias (incluyendo dev) para el build
-RUN pnpm install --frozen-lockfile
+# Copiar node_modules desde deps (mejor caché)
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/pnpm-lock.yaml* ./pnpm-lock.yaml
 
 # Copiar el resto del código
 COPY . .
@@ -42,7 +41,10 @@ ENV RAILWAY_ENVIRONMENT=true
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY
 
-# Build de Next.js
+# Habilitar SWC minify y optimizaciones
+ENV NEXT_PRIVATE_STANDALONE=true
+
+# Build de Next.js con optimizaciones
 RUN pnpm run build
 
 # Etapa 3: Imagen de producción
