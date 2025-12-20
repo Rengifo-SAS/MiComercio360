@@ -371,13 +371,13 @@ export function POSProductsGrid({
 
   return (
     <div
-      className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
+      className="h-full flex flex-col bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 dark:from-slate-900 dark:via-indigo-950/20 dark:to-purple-950/20"
       role="main"
       aria-label="Catálogo de productos"
     >
-      {/* Barra de Búsqueda - Moderna y Profesional */}
+      {/* Barra de Búsqueda - Rediseñada completamente */}
       <div
-        className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0"
+        className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 shadow-xl flex-shrink-0 sticky top-0 z-10"
         role="search"
       >
         {/* Indicador de estado offline */}
@@ -386,12 +386,12 @@ export function POSProductsGrid({
           {/* Icono de búsqueda o código de barras según el modo */}
           {isScanning ? (
             <Barcode
-              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-teal-600 h-4 w-4 sm:h-5 sm:w-5 animate-pulse"
+              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-indigo-600 h-4 w-4 sm:h-5 sm:w-5 animate-pulse"
               aria-hidden="true"
             />
           ) : (
             <Search
-              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5"
+              className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-indigo-600 dark:text-indigo-400 h-5 w-5 sm:h-6 sm:w-6"
               aria-hidden="true"
             />
           )}
@@ -399,17 +399,15 @@ export function POSProductsGrid({
           <Input
             ref={searchInputRef}
             placeholder={
-              isScanning
-                ? 'Escanee código...'
-                : 'Buscar producto...'
+              isScanning ? 'Escanee código...' : 'Buscar productos'
             }
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={cn(
-              'pl-9 sm:pl-11 pr-8 sm:pr-10 text-xs sm:text-sm h-9 sm:h-10 rounded-lg transition-all',
+              'pl-9 sm:pl-10 md:pl-11 pr-8 sm:pr-9 md:pr-10 text-sm sm:text-base md:text-lg h-10 sm:h-12 md:h-14 rounded-lg sm:rounded-xl transition-all min-h-[40px] sm:min-h-[48px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-2 shadow-lg',
               isScanning
-                ? 'bg-teal-50 dark:bg-teal-900/20 border-2 border-teal-500 focus:ring-teal-500 focus:border-teal-600'
-                : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
+                ? 'border-yellow-400 focus:ring-yellow-400 focus:border-yellow-500'
+                : 'border-white/50 dark:border-slate-700/50 focus:ring-white focus:border-white'
             )}
             aria-label="Buscar productos por nombre, SKU o código de barras"
             autoComplete="off"
@@ -420,7 +418,7 @@ export function POSProductsGrid({
           {/* Indicadores de estado */}
           {isSearching && (
             <Loader2
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-teal-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-indigo-600"
               aria-hidden="true"
             />
           )}
@@ -447,7 +445,7 @@ export function POSProductsGrid({
               className={cn(
                 'h-10 w-10 flex items-center justify-center transition-colors border-r border-gray-200 dark:border-gray-600',
                 viewMode === 'grid'
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
               )}
               onClick={() => setViewMode('grid')}
@@ -460,7 +458,7 @@ export function POSProductsGrid({
               className={cn(
                 'h-10 w-10 flex items-center justify-center transition-colors',
                 viewMode === 'compact'
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
               )}
               onClick={() => setViewMode('compact')}
@@ -477,7 +475,7 @@ export function POSProductsGrid({
             className={cn(
               'h-10 px-3 rounded-md font-medium transition-all gap-1.5',
               isScanning
-                ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md border-teal-600'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md border-indigo-600'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             )}
             onClick={handleScannerToggle}
@@ -498,7 +496,7 @@ export function POSProductsGrid({
           <Button
             variant="outline"
             size="sm"
-            className="h-10 px-3 rounded-md font-medium hover:bg-teal-50 hover:text-teal-700 hover:border-teal-400 dark:hover:bg-teal-900/20 dark:hover:border-teal-600 transition-all gap-1.5 text-gray-700 dark:text-gray-300"
+            className="h-10 px-3 rounded-md font-medium hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-400 dark:hover:bg-indigo-900/20 dark:hover:border-indigo-600 transition-all gap-1.5 text-gray-700 dark:text-gray-300"
             onClick={() => setShowQuickProductDialog(true)}
             disabled={!isOnline}
             aria-label={
@@ -524,7 +522,7 @@ export function POSProductsGrid({
           >
             <div className="text-center">
               <div
-                className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"
+                className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"
                 aria-hidden="true"
               ></div>
               <p className="text-sm">Cargando productos...</p>
@@ -547,7 +545,7 @@ export function POSProductsGrid({
           </div>
         ) : viewMode === 'grid' ? (
           <div
-            className="flex flex-wrap justify-around align-content-start gap-1.5 sm:gap-2 p-2 sm:p-3 md:p-4"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-5 p-2 sm:p-3 md:p-4 lg:p-6 bg-transparent"
             role="grid"
             aria-label="Catálogo de productos"
           >
@@ -561,9 +559,12 @@ export function POSProductsGrid({
                   key={product.id}
                   role="gridcell"
                   className={cn(
-                    'flex flex-col bg-white dark:bg-gray-800 select-none relative cursor-pointer transition-all duration-150 hover:shadow-lg rounded-sm overflow-hidden w-[110px] sm:w-[130px] md:w-[140px]',
-                    isOutOfStock && 'opacity-50 cursor-not-allowed',
-                    cartQuantity > 0 && 'ring-2 ring-teal-500'
+                    'group flex flex-col bg-white dark:bg-slate-800 select-none relative cursor-pointer transition-all duration-200 active:scale-95 rounded-xl sm:rounded-2xl overflow-hidden border-2 min-h-[140px] sm:min-h-[180px] md:min-h-[200px] lg:min-h-[220px] shadow-md hover:shadow-xl',
+                    isOutOfStock
+                      ? 'opacity-60 cursor-not-allowed border-slate-300 dark:border-slate-600'
+                      : cartQuantity > 0
+                        ? 'border-indigo-500 dark:border-indigo-400 shadow-xl shadow-indigo-500/30 ring-2 ring-indigo-500/20 scale-[1.02]'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-lg hover:scale-[1.01]'
                   )}
                   onClick={() => !isOutOfStock && onAddToCart(product)}
                   onKeyDown={(e) => {
@@ -581,55 +582,86 @@ export function POSProductsGrid({
                     isOutOfStock ? ', sin stock' : ''
                   }`}
                 >
-                  {/* Referencia - Absolute top left */}
-                  {product.sku && (
-                    <p className="absolute top-1 left-1 text-[10px] text-teal-600 dark:text-teal-400 bg-white dark:bg-gray-800 px-1 rounded z-10">
-                      {product.sku}
-                    </p>
-                  )}
+                  {/* Gradiente de fondo sutil */}
+                  <div
+                    className={cn(
+                      'absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300',
+                      isOutOfStock
+                        ? 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900'
+                        : 'from-indigo-50/50 via-purple-50/30 to-pink-50/50 dark:from-indigo-900/10 dark:via-purple-900/10 dark:to-pink-900/10'
+                    )}
+                  />
 
-                  {/* Badge de cantidad en carrito - Absolute top right con animación */}
-                  {cartQuantity > 0 && (
-                    <div className="absolute -top-1 -right-1 z-10 animate-in zoom-in-50 duration-300">
-                      <Badge className="bg-teal-600 text-white rounded-full h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center p-0 text-xs sm:text-sm font-bold shadow-lg ring-2 ring-white dark:ring-gray-800 animate-pulse">
-                        {cartQuantity}
-                      </Badge>
+                  {/* Referencia - Mejorado */}
+                  {product.sku && (
+                    <div className="absolute top-2 left-2 z-20">
+                      <span className="text-[9px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 shadow-sm">
+                        #{product.sku.slice(-6)}
+                      </span>
                     </div>
                   )}
 
-                  {/* Zona de imagen */}
-                  <div className="relative overflow-hidden h-32 w-full">
-                    {/* Cantidad de inventario - Absolute */}
+                  {/* Badge de cantidad en carrito - Mejorado */}
+                  {cartQuantity > 0 && (
+                    <div className="absolute -top-2 -right-2 z-20 animate-in zoom-in-50 duration-300">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-60 animate-pulse" />
+                        <Badge className="relative bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center p-0 text-xs sm:text-sm font-bold shadow-xl ring-2 ring-white dark:ring-gray-800">
+                          {cartQuantity}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Zona de imagen - Rediseñada y más compacta para móvil */}
+                  <div className="relative overflow-hidden h-24 sm:h-28 md:h-32 lg:h-36 xl:h-40 w-full bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/40 dark:via-purple-900/40 dark:to-pink-900/40 flex-shrink-0">
+                    {/* Cantidad de inventario - Mejorado */}
                     {!isOutOfStock ? (
-                      <p className="absolute top-1 right-1 m-0 bg-white dark:bg-gray-800 px-1.5 py-0.5 text-[10px] rounded text-gray-700 dark:text-gray-300 z-10">
-                        Inv {product.available_quantity || 0}
-                      </p>
+                      <div className="absolute top-2 right-2 z-20">
+                        <span className="inline-flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm px-2 py-1 rounded-lg border border-green-200 dark:border-green-800 shadow-sm">
+                          <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                          <span className="text-[10px] font-semibold text-green-700 dark:text-green-400">
+                            {product.available_quantity || 0}
+                          </span>
+                        </span>
+                      </div>
                     ) : (
-                      <div className="absolute top-1 right-1 flex items-center gap-1 bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded z-10">
-                        <AlertCircle className="h-3 w-3 text-amber-500" />
-                        <p className="text-[9px] text-gray-600 dark:text-gray-400 m-0">
-                          Agotado
-                        </p>
+                      <div className="absolute top-2 right-2 z-20">
+                        <span className="inline-flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm px-2 py-1 rounded-lg border border-red-200 dark:border-red-800 shadow-sm">
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                          <span className="text-[9px] font-semibold text-red-600 dark:text-red-400">
+                            Agotado
+                          </span>
+                        </span>
                       </div>
                     )}
 
-                    {/* Icono/imagen del producto */}
-                    <div className="w-full h-full flex items-center justify-center absolute bg-gray-50 dark:bg-gray-700/30">
-                      <Package className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+                    {/* Icono/imagen del producto - Mejorado */}
+                    <div className="w-full h-full flex items-center justify-center absolute">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
+                        <div className="relative bg-gradient-to-br from-white to-indigo-50 dark:from-slate-800 dark:to-indigo-900/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                          <Package className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 text-indigo-600 dark:text-indigo-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Nombre del producto */}
-                  <p className="text-center text-xs leading-tight px-2 py-1.5 h-10 flex items-center justify-center overflow-hidden text-gray-900 dark:text-gray-100">
-                    <span className="line-clamp-2">{product.name}</span>
-                  </p>
+                  {/* Nombre del producto - Rediseñado */}
+                  <div className="relative px-3 sm:px-4 py-3 sm:py-4 bg-gradient-to-b from-white to-indigo-50/50 dark:from-slate-800 dark:to-indigo-950/30 border-t-2 border-indigo-100 dark:border-indigo-900/50 flex-1 flex items-center justify-center min-h-[56px]">
+                    <p className="text-center text-sm sm:text-base leading-tight font-bold text-slate-900 dark:text-slate-100 line-clamp-2 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                      {product.name}
+                    </p>
+                  </div>
 
-                  {/* Precio */}
-                  <p className="text-center text-sm font-semibold text-gray-900 dark:text-gray-100 pb-2">
-                    {formatCurrency(
-                      parseFloat(product.selling_price.toString())
-                    )}
-                  </p>
+                  {/* Precio - Super destacado */}
+                  <div className="px-3 sm:px-4 pb-4 sm:pb-5 pt-2 bg-gradient-to-b from-indigo-50/50 via-purple-50/30 to-pink-50/30 dark:from-indigo-950/30 dark:via-purple-950/20 dark:to-pink-950/20 flex-shrink-0">
+                    <p className="text-center text-lg sm:text-xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
+                      {formatCurrency(
+                        parseFloat(product.selling_price.toString())
+                      )}
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -651,9 +683,12 @@ export function POSProductsGrid({
                   key={product.id}
                   role="listitem"
                   className={cn(
-                    'cursor-pointer transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800 border dark:border-gray-700 relative focus:ring-2 focus:ring-teal-500 focus:outline-none',
-                    isOutOfStock && 'opacity-50 cursor-not-allowed',
-                    cartQuantity > 0 && 'ring-2 ring-teal-500 border-teal-300'
+                    'cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white dark:bg-gray-800 border-2 relative focus:ring-2 focus:ring-indigo-500 focus:outline-none rounded-xl',
+                    isOutOfStock
+                      ? 'opacity-60 cursor-not-allowed border-gray-200 dark:border-gray-700'
+                      : cartQuantity > 0
+                        ? 'ring-2 ring-indigo-500/30 border-indigo-400 dark:border-indigo-500 shadow-lg shadow-indigo-500/10'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500'
                   )}
                   onClick={() => !isOutOfStock && onAddToCart(product)}
                   tabIndex={0}
@@ -661,8 +696,8 @@ export function POSProductsGrid({
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-4">
                       {/* Icono */}
-                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-lg flex items-center justify-center">
-                        <Package className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 rounded-xl flex items-center justify-center border-2 border-indigo-200 dark:border-indigo-800 shadow-sm">
+                        <Package className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                       </div>
 
                       {/* Info */}
@@ -676,7 +711,7 @@ export function POSProductsGrid({
                         <div className="flex items-center gap-2 mt-2">
                           {getInventoryBadge(product)}
                           {cartQuantity > 0 && (
-                            <Badge className="bg-teal-600 text-white text-xs">
+                            <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs border-0 shadow-md">
                               En carrito: {cartQuantity}
                             </Badge>
                           )}
@@ -685,7 +720,7 @@ export function POSProductsGrid({
 
                       {/* Precio */}
                       <div className="flex-shrink-0 text-right">
-                        <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
+                        <div className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
                           {formatCurrency(
                             parseFloat(product.selling_price.toString())
                           )}

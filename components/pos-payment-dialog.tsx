@@ -205,7 +205,7 @@ export function POSPaymentDialog({
   const OtherIcon = ({ className }: { className?: string }) => (
     <div className={`${className} relative`}>
       <Settings className="h-6 w-6" />
-      <div className="absolute -top-1 -right-1 w-2 h-2 bg-teal-500 rounded-full"></div>
+      <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"></div>
     </div>
   );
 
@@ -274,10 +274,10 @@ export function POSPaymentDialog({
                     onClick={() => handleMethodSelect(method.id)}
                     disabled={!method.is_active}
                     className={`
-                      relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 min-h-[80px] sm:min-h-[100px] flex flex-col justify-center focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none
+                      relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 min-h-[80px] sm:min-h-[100px] flex flex-col justify-center focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none
                       ${
                         isSelected
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
+                          ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 shadow-md'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
                       }
                       ${
@@ -295,7 +295,7 @@ export function POSPaymentDialog({
                       <div
                         className={`p-2 rounded-lg ${
                           isSelected
-                            ? 'bg-teal-100 dark:bg-teal-800'
+                            ? 'bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800'
                             : 'bg-gray-100 dark:bg-gray-700'
                         }`}
                         aria-hidden="true"
@@ -305,7 +305,7 @@ export function POSPaymentDialog({
                       <span
                         className={`text-xs sm:text-sm font-medium text-center leading-tight px-1 break-words ${
                           isSelected
-                            ? 'text-teal-700 dark:text-teal-300'
+                            ? 'text-indigo-700 dark:text-indigo-300'
                             : 'text-gray-700 dark:text-gray-300'
                         }`}
                         title={label}
@@ -317,7 +317,7 @@ export function POSPaymentDialog({
                     </div>
                     {isSelected && (
                       <div
-                        className="absolute top-2 right-2 w-3 h-3 bg-teal-500 rounded-full"
+                        className="absolute top-2 right-2 w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"
                         aria-hidden="true"
                       ></div>
                     )}
@@ -360,7 +360,7 @@ export function POSPaymentDialog({
                         relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 min-h-[80px] sm:min-h-[100px] flex flex-col justify-center
                         ${
                           isSelected
-                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 shadow-md'
+                            ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 shadow-md'
                             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
                         }
                         ${
@@ -374,7 +374,7 @@ export function POSPaymentDialog({
                         <div
                           className={`p-2 rounded-lg ${
                             isSelected
-                              ? 'bg-teal-100 dark:bg-teal-800'
+                              ? 'bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800'
                               : 'bg-gray-100 dark:bg-gray-700'
                           }`}
                         >
@@ -383,7 +383,7 @@ export function POSPaymentDialog({
                         <span
                           className={`text-xs sm:text-sm font-medium text-center leading-tight px-1 ${
                             isSelected
-                              ? 'text-teal-700 dark:text-teal-300'
+                              ? 'text-indigo-700 dark:text-indigo-300'
                               : 'text-gray-700 dark:text-gray-300'
                           }`}
                           title={label}
@@ -394,7 +394,7 @@ export function POSPaymentDialog({
                         </span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-2 right-2 w-3 h-3 bg-teal-500 rounded-full"></div>
+                        <div className="absolute top-2 right-2 w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"></div>
                       )}
                     </button>
                   );
@@ -418,7 +418,7 @@ export function POSPaymentDialog({
                       setCashAmount(parseFloat(e.target.value) || 0)
                     }
                     placeholder="Ingrese el monto recibido"
-                    className="text-lg focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    className="text-lg focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     aria-label="Monto recibido del cliente"
                     aria-describedby="cash-amount-help"
                   />
@@ -443,7 +443,7 @@ export function POSPaymentDialog({
                         variant="outline"
                         size="sm"
                         onClick={() => setCashAmount(amount)}
-                        className="flex flex-col h-auto py-2 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                        className="flex flex-col h-auto py-2 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                         aria-label={`Establecer monto recibido a ${formatCurrency(
                           amount
                         )}`}
@@ -494,7 +494,7 @@ export function POSPaymentDialog({
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white py-3 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     aria-label="Procesar venta con pago en efectivo"
                   >
                     {loading ? 'Procesando...' : 'Vender'}
@@ -526,7 +526,7 @@ export function POSPaymentDialog({
                         ? 'Número de transacción'
                         : 'Referencia del pago'
                     }
-                    className="focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    className="focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     aria-label="Referencia del pago"
                   />
                 </div>
@@ -535,7 +535,7 @@ export function POSPaymentDialog({
                 <Button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white py-3 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   aria-label="Procesar venta con método de pago seleccionado"
                 >
                   {loading ? 'Procesando...' : 'Vender'}

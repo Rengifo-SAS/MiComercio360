@@ -79,7 +79,7 @@ export function POSCategoriesPanel({
           onClick={() => onSelectCategory(null)}
           className={cn(
             'w-full flex items-center gap-3 p-3 transition-all hover:bg-gray-50 dark:hover:bg-gray-700',
-            selectedCategoryId === null && 'bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-600',
+            selectedCategoryId === null && 'bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-l-4 border-indigo-600',
             !isHovered && 'justify-center'
           )}
           title={!isHovered ? 'Todas las categorías' : ''}
@@ -87,8 +87,8 @@ export function POSCategoriesPanel({
           <div
             className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center border-2 font-bold text-sm"
             style={{
-              backgroundColor: 'rgb(13, 148, 136)',
-              borderColor: 'rgb(13, 148, 136)',
+              backgroundColor: 'rgb(99, 102, 241)', // indigo-500
+              borderColor: 'rgb(99, 102, 241)',
               color: 'white',
             }}
           >
@@ -116,7 +116,7 @@ export function POSCategoriesPanel({
                 onClick={() => onSelectCategory(category.id)}
                 className={cn(
                   'flex items-center gap-3 p-3 transition-all hover:bg-gray-50 dark:hover:bg-gray-700 border-b dark:border-gray-700',
-                  isSelected && 'bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-600',
+                  isSelected && 'bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-l-4 border-indigo-600',
                   !isHovered && 'justify-center'
                 )}
                 title={!isHovered ? category.name : ''}

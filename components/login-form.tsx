@@ -33,16 +33,35 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push('/protected');
+      if (authError) throw authError;
+
+      // Verificar el estado de setup de forma rápida
+      try {
+        const response = await fetch('/api/auth/check-setup', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+
+        if (response.ok) {
+          const { isSetupComplete } = await response.json();
+          // Redirigir directamente según el estado de setup
+          // Usar replace para evitar historial innecesario
+          router.replace(isSetupComplete ? '/dashboard' : '/protected');
+        } else {
+          // Si falla la verificación, redirigir a protected como fallback
+          router.replace('/protected');
+        }
+      } catch (setupError) {
+        // Si hay error al verificar setup, redirigir a protected
+        console.error('Error checking setup:', setupError);
+        router.replace('/protected');
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Ocurrió un error');
-    } finally {
       setIsLoading(false);
     }
   };

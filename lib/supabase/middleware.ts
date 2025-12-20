@@ -92,10 +92,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users from root to protected area
+  // Redirect authenticated users from root - redirigir a dashboard directamente
+  // El dashboard layout verificará el setup y redirigirá a /protected si es necesario
+  // Esto evita consultas innecesarias en el middleware y mejora el rendimiento
   if (user && request.nextUrl.pathname === "/") {
     const url = request.nextUrl.clone();
-    url.pathname = "/protected";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

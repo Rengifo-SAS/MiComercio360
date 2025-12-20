@@ -77,35 +77,45 @@ const formatQuantity = (quantity: number, unit: string): string => {
   return quantity.toString();
 };
 
-// Componente para el botón flotante del carrito en móviles - Más compacto
+// Componente para el botón flotante del carrito en móviles - Estilo Alegra POS optimizado
 function MobileCartButton({ 
   totalItems, 
   totalAmount, 
-  onToggle 
+  onToggle,
+  isOpen = false
 }: { 
   totalItems: number; 
   totalAmount: number; 
   onToggle: () => void;
+  isOpen?: boolean;
 }) {
   return (
     <button
-      onClick={onToggle}
-      className="fixed bottom-16 right-3 z-50 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-full shadow-2xl p-3 flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
-      aria-label={`Ver carrito con ${totalItems} productos, total: ${formatCurrency(totalAmount)}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-2xl min-h-[64px] sm:min-h-[72px] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98] border-t-2 border-white/20"
+      aria-label={`${isOpen ? 'Cerrar' : 'Abrir'} carrito con ${totalItems} productos, total: ${formatCurrency(totalAmount)}`}
+      aria-expanded={isOpen}
     >
-      <div className="relative">
-        <ShoppingCart className="h-5 w-5" />
+      {/* Información a la izquierda - Estilo Alegra */}
+      <div className="flex flex-col items-start min-w-0 flex-1">
+        <span className="text-[11px] sm:text-xs font-semibold leading-tight opacity-95 mb-0.5">
+          {totalItems} {totalItems === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+        </span>
+        <span className="text-lg sm:text-xl md:text-2xl font-black leading-tight tracking-tight">{formatCurrency(totalAmount)}</span>
+      </div>
+      
+      {/* Icono grande a la derecha con badge - Estilo Alegra */}
+      <div className="relative flex-shrink-0 ml-4 sm:ml-6">
+        <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" strokeWidth={2} />
         {totalItems > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-white text-indigo-600 text-xs sm:text-sm font-black rounded-full h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center ring-3 ring-indigo-600 shadow-xl">
             {totalItems > 99 ? '99+' : totalItems}
           </span>
         )}
       </div>
-      <div className="flex flex-col items-start min-w-0">
-        <span className="text-[10px] font-medium opacity-90 leading-tight">Total</span>
-        <span className="text-sm font-bold leading-tight">{formatCurrency(totalAmount)}</span>
-      </div>
-      <ChevronUp className="h-4 w-4 opacity-80 flex-shrink-0" />
     </button>
   );
 }
@@ -134,6 +144,10 @@ interface POSConfiguration {
 }
 
 export function POSPageClient() {
+  // Estado para controlar visibilidad del carrito en móvil
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [lastCartLength, setLastCartLength] = useState(0);
+
   // Hook de multiventas
   const {
     pendingSales,
@@ -148,6 +162,30 @@ export function POSPageClient() {
     updateSaleNumeration,
     clearSaleCart,
   } = useMultiVentas();
+
+  // Escuchar evento para cerrar carrito desde el panel
+  useEffect(() => {
+    const handleCloseCart = () => {
+      setIsMobileCartOpen(false);
+    };
+    window.addEventListener('closeMobileCart', handleCloseCart);
+    return () => {
+      window.removeEventListener('closeMobileCart', handleCloseCart);
+    };
+  }, []);
+
+  // Auto-abrir carrito cuando se agregan productos nuevos
+  useEffect(() => {
+    // Verificar que activeSale esté disponible y tenga cart
+    if (!activeSale || !activeSale.cart || !Array.isArray(activeSale.cart)) return;
+    
+    const currentCartLength = activeSale.cart.length || 0;
+    if (currentCartLength > lastCartLength && currentCartLength > 0 && !isMobileCartOpen) {
+      // Solo auto-abrir si hay productos nuevos y el carrito está cerrado
+      setIsMobileCartOpen(true);
+    }
+    setLastCartLength(currentCartLength);
+  }, [activeSale, lastCartLength, isMobileCartOpen]);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -303,9 +341,8 @@ export function POSPageClient() {
 
   // Aplicar configuración cuando cambia la configuración o se cargan los datos
   useEffect(() => {
-    if (activeSale && customers.length > 0 && numerations.length > 0 && configuration) {
-      applyConfigurationToSale(activeSale.id);
-    }
+    if (!activeSale || !activeSale.id || customers.length === 0 || numerations.length === 0 || !configuration) return;
+    applyConfigurationToSale(activeSale.id);
   }, [activeSale, customers.length, numerations.length, configuration, applyConfigurationToSale]);
 
   // Función para cargar productos
@@ -1057,7 +1094,7 @@ export function POSPageClient() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p>Cargando POS...</p>
         </div>
       </div>
@@ -1066,7 +1103,7 @@ export function POSPageClient() {
 
   return (
     <div
-      className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden relative"
+      className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-slate-900 dark:via-indigo-950/30 dark:to-purple-950/30 overflow-hidden relative"
       role="main"
       aria-label="Sistema de punto de venta"
     >
@@ -1089,11 +1126,11 @@ export function POSPageClient() {
           role="region"
           aria-label="Área principal del POS"
         >
-          {/* En móvil/tablet: Layout optimizado */}
-          <div className="xl:hidden flex-1 flex flex-col min-h-0 relative">
-            {/* Grid de Productos - Ocupa todo el espacio disponible */}
+          {/* En móvil/tablet: Layout completamente optimizado */}
+          <div className="xl:hidden flex-1 flex flex-col min-h-0 relative overflow-hidden">
+            {/* Grid de Productos - Ocupa todo el espacio disponible con mejor padding */}
             <section
-              className="flex-1 min-h-0"
+              className="flex-1 min-h-0 overflow-hidden"
               aria-label="Catálogo de productos"
             >
               <POSProductsGrid
@@ -1107,7 +1144,7 @@ export function POSPageClient() {
               />
             </section>
 
-            {/* Botón flotante del carrito - Compacto y siempre visible */}
+            {/* Botón flotante del carrito - Mejorado estilo Alegra POS */}
             {activeSale && activeSale.cart.length > 0 && (
               <MobileCartButton
                 totalItems={activeSale.cart.reduce((sum, item) => sum + item.quantity, 0)}
@@ -1130,25 +1167,37 @@ export function POSPageClient() {
                   ).total_amount;
                 })()}
                 onToggle={() => {
-                  const cartElement = document.getElementById('mobile-cart-panel');
-                  if (cartElement) {
-                    cartElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                  }
+                  setIsMobileCartOpen((prev) => !prev);
                 }}
+                isOpen={isMobileCartOpen}
               />
             )}
 
-            {/* Carrito en móvil/tablet - Panel fijo optimizado */}
+            {/* Overlay para cerrar carrito */}
+            {isMobileCartOpen && (
+              <div 
+                className="fixed inset-0 bg-black/40 dark:bg-black/60 z-30 xl:hidden transition-opacity duration-300"
+                onClick={() => setIsMobileCartOpen(false)}
+                aria-hidden="true"
+              />
+            )}
+
+            {/* Carrito en móvil/tablet - Bottom Sheet optimizado estilo Alegra POS */}
             <aside
               id="mobile-cart-panel"
-              className="fixed bottom-0 left-0 right-0 xl:hidden bg-white dark:bg-gray-800 border-t-2 border-teal-500 dark:border-teal-600 shadow-2xl z-40 flex flex-col"
+              className={`fixed bottom-[64px] sm:bottom-[72px] left-0 right-0 xl:hidden bg-white dark:bg-gray-800 border-t-4 border-indigo-500 dark:border-indigo-600 shadow-2xl z-40 flex flex-col transition-transform duration-300 ease-out ${
+                isMobileCartOpen 
+                  ? 'translate-y-0' 
+                  : 'translate-y-full'
+              }`}
               style={{
-                height: activeSale && activeSale.cart.length > 0 
-                  ? 'clamp(45vh, 50vh, 70vh)' 
-                  : 'clamp(25vh, 30vh, 35vh)',
-                maxHeight: '75vh',
+                height: 'calc(100vh - 64px)',
+                maxHeight: 'calc(100vh - 64px)',
+                borderTopLeftRadius: '1.5rem',
+                borderTopRightRadius: '1.5rem',
               }}
               aria-label="Carrito de compras"
+              aria-hidden={!isMobileCartOpen}
             >
               <POSCartPanel
                 cart={activeSale?.cart || []}

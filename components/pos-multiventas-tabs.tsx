@@ -107,7 +107,7 @@ export function POSMultiVentasTabs({
                 key={sale.id}
                 className={`flex items-center gap-1 px-2 py-1 rounded-t-md border-b-2 transition-colors ${
                   isActive
-                    ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 text-teal-700 dark:text-teal-300'
+                    ? 'bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-sm'
                     : 'bg-gray-50 dark:bg-gray-700 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
               >
@@ -124,7 +124,7 @@ export function POSMultiVentasTabs({
                     {String(sale.name || 'Venta')}
                   </span>
                   {itemCount > 0 && (
-                    <span className="bg-teal-100 dark:bg-teal-800 text-teal-700 dark:text-teal-300 text-xs px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center">
+                    <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white dark:text-white text-xs px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center font-bold shadow-sm">
                       {itemCount}
                     </span>
                   )}
@@ -168,7 +168,7 @@ export function POSMultiVentasTabs({
             onClick={handleAddNewSale}
             variant="outline"
             size="sm"
-            className="h-7 px-2 text-xs border-dashed border-gray-300 dark:border-gray-600 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400"
+            className="h-7 px-2 text-xs border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             title="Agregar nueva venta"
           >
             <Plus className="h-3 w-3" />
